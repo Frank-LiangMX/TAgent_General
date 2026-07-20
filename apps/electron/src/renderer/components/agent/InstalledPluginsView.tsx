@@ -1,5 +1,5 @@
 /**
- * InstalledPluginsView — 已安装插件主区（与市场页同构：卡片浏览 + 点击详情）
+ * InstalledPluginsView — 已安装插件主区（spatial）
  */
 
 import { CheckCircle2, LayoutGrid, Plug, Sparkles } from 'lucide-react'
@@ -32,6 +32,7 @@ import { installedPluginNavAtom } from '@/atoms/app-mode'
 interface InstalledPluginsViewProps {
   capabilities: WorkspaceCapabilities | null
   workspaceSlug: string
+  toolbar?: React.ReactNode
 }
 
 type InstalledSelection = { kind: 'bundle'; id: string } | { kind: 'skill' | 'mcp'; id: string }
@@ -39,6 +40,7 @@ type InstalledSelection = { kind: 'bundle'; id: string } | { kind: 'skill' | 'mc
 export function InstalledPluginsView({
   capabilities,
   workspaceSlug,
+  toolbar,
 }: InstalledPluginsViewProps): React.ReactElement {
   const installedNav = useAtomValue(installedPluginNavAtom)
   const [catalog, setCatalog] = React.useState<PluginStoreCatalog | null>(null)
@@ -170,17 +172,18 @@ export function InstalledPluginsView({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 space-y-3 border-b border-border/40 px-6 py-4">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">{navTitle}</h2>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
-            点击卡片查看状态与管理选项
-            {!loading ? (
-              <span className="ml-1 tabular-nums text-foreground/70">
-                · 共 {totalCount} 项已安装
-              </span>
-            ) : null}
-          </p>
+      <div className="shrink-0 space-y-3.5 px-6 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="md-text text-[18px] font-semibold tracking-tight">{navTitle}</h2>
+            <p className="md-text-variant mt-1 text-[12px] leading-relaxed">
+              点击卡片查看状态与管理
+              {!loading ? (
+                <span className="ml-1 tabular-nums">· 共 {totalCount} 项</span>
+              ) : null}
+            </p>
+          </div>
+          {toolbar}
         </div>
 
         <SearchInput
@@ -189,22 +192,22 @@ export function InstalledPluginsView({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="搜索已安装插件…"
-          className="max-w-xl"
+          className="max-w-md"
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 scrollbar-thin">
         {loading ? (
           <InstalledSkeletonGrid />
         ) : empty ? (
-          <div className="plugins-panel-empty py-16">
-            <Sparkles size={24} className="text-muted-foreground/35" strokeWidth={1.5} />
-            <p className="mt-2 text-[12px] text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Sparkles size={24} className="md-text-faint" strokeWidth={1.5} />
+            <p className="md-text-variant mt-2 text-[12px]">
               {totalCount === 0 ? '暂无已安装插件，去市场看看吧' : '没有匹配的插件'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="kanban-crew-field grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {bundles.map((group) => (
               <InstalledBundleCard
                 key={group.bundleId}
@@ -234,7 +237,7 @@ function InstalledBundleCard({
   onSelect: () => void
 }): React.ReactElement {
   return (
-    <article
+    <div
       role="button"
       tabIndex={0}
       onClick={onSelect}
@@ -244,41 +247,37 @@ function InstalledBundleCard({
           onSelect()
         }
       }}
-      className={cn(
-        'flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
-        'transition-colors hover:border-border/70 hover:bg-card/70',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35'
-      )}
+      className="kanban-crew-badge flex h-full min-h-[120px] cursor-pointer flex-col p-3.5 text-left titlebar-no-drag ui-pressable"
     >
       <div className="flex items-start gap-3">
         {group.logo ? (
           <PluginBundleLogo
             logo={group.logo}
             alt={group.name}
-            className="size-10 shrink-0 rounded-xl object-cover"
+            className="size-9 shrink-0 rounded-glass-popover object-cover"
           />
         ) : (
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground/[0.06]">
-            <LayoutGrid size={18} strokeWidth={1.75} className="text-muted-foreground" />
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground/[0.04]">
+            <LayoutGrid className="size-4 md-text-variant" strokeWidth={1.75} />
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <h3 className="text-[13px] font-semibold text-foreground">{group.name}</h3>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
+          <h3 className="md-text truncate text-[13px] font-medium tracking-tight">{group.name}</h3>
+          <p className="md-text-faint mt-0.5 text-[10px]">
             整合包 · 已装 {group.installedCount}/{group.totalCount}
           </p>
         </div>
       </div>
-      <p className="mt-3 line-clamp-2 flex-1 text-[11px] leading-5 text-muted-foreground">
+      <p className="md-text-variant mt-3 line-clamp-2 flex-1 text-[11px] leading-relaxed">
         {group.items.map((item) => item.title).join('、') || '暂无成员'}
       </p>
-      <div className="mt-4 flex justify-end">
-        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-          <CheckCircle2 size={12} />
+      <div className="mt-3 flex justify-end border-t border-foreground/[0.05] pt-2">
+        <span className="inline-flex h-7 items-center gap-1 px-2 text-[11px] text-emerald-600 dark:text-emerald-400">
+          <CheckCircle2 className="size-3" strokeWidth={1.75} />
           已安装
         </span>
       </div>
-    </article>
+    </div>
   )
 }
 
@@ -295,7 +294,7 @@ function InstalledItemCard({
     item.kind === 'skill' ? skillOriginLabel(item.skillCreatedBy, item.skillProvenance) : null
 
   return (
-    <article
+    <div
       role="button"
       tabIndex={0}
       onClick={onSelect}
@@ -305,26 +304,22 @@ function InstalledItemCard({
           onSelect()
         }
       }}
-      className={cn(
-        'flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
-        'transition-colors hover:border-border/70 hover:bg-card/70',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35'
-      )}
+      className="kanban-crew-badge flex h-full min-h-[120px] cursor-pointer flex-col p-3.5 text-left titlebar-no-drag ui-pressable"
     >
       <div className="flex items-start gap-3">
         <span
           className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-xl',
+            'flex size-9 shrink-0 items-center justify-center rounded-full',
             item.kind === 'mcp'
               ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400'
               : 'bg-amber-500/12 text-amber-600 dark:text-amber-400'
           )}
         >
-          <Icon size={18} strokeWidth={1.75} />
+          <Icon className="size-4" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
+          <h3 className="md-text truncate text-[13px] font-medium tracking-tight">{item.title}</h3>
+          <p className="md-text-faint mt-0.5 text-[10px]">
             {item.kind === 'mcp' ? 'MCP' : 'Skill'}
             {item.skillScope === 'global' ? ' · 全局' : ''}
             {item.subtitle
@@ -333,13 +328,13 @@ function InstalledItemCard({
           </p>
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3">
         <span
           className={cn(
-            'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium',
+            'rounded-full px-2 py-0.5 text-[10px] font-medium',
             item.enabled
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-              : 'bg-muted text-muted-foreground'
+              : 'bg-foreground/[0.05] md-text-faint'
           )}
         >
           {item.enabled ? '已启用' : '已禁用'}
@@ -347,31 +342,30 @@ function InstalledItemCard({
         {statusLabel ? (
           <span
             className={cn(
-              'inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium',
-              item.skillStatus === 'draft' &&
-                'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+              'rounded-full px-2 py-0.5 text-[10px] font-medium',
+              item.skillStatus === 'draft' && 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
               item.skillStatus === 'active' &&
                 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
               item.skillStatus === 'stale' &&
                 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-              item.skillStatus === 'archived' && 'bg-muted text-muted-foreground'
+              item.skillStatus === 'archived' && 'bg-foreground/[0.05] md-text-faint'
             )}
           >
             {statusLabel}
           </span>
         ) : null}
         {originLabel ? (
-          <span className="inline-flex rounded-md bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
+          <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
             {originLabel}
           </span>
         ) : null}
         {item.skillPinned ? (
-          <span className="inline-flex rounded-md bg-foreground/5 px-2 py-0.5 text-[10px] text-muted-foreground">
+          <span className="rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[10px] md-text-faint">
             钉住
           </span>
         ) : null}
         {typeof item.skillUseCount === 'number' && item.skillUseCount > 0 ? (
-          <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+          <span className="md-text-faint ml-auto text-[10px] tabular-nums">
             用过 {item.skillUseCount} 次
           </span>
         ) : null}
@@ -379,15 +373,18 @@ function InstalledItemCard({
           <span className="text-[10px] text-amber-600 dark:text-amber-400">有更新</span>
         ) : null}
       </div>
-    </article>
+    </div>
   )
 }
 
 function InstalledSkeletonGrid(): React.ReactElement {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="kanban-crew-field grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-[132px] animate-pulse rounded-2xl bg-muted/25" />
+        <div
+          key={i}
+          className="h-[120px] animate-pulse rounded-glass-popover bg-foreground/[0.04]"
+        />
       ))}
     </div>
   )

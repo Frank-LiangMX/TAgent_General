@@ -32,6 +32,9 @@
   --surface-opacity: 0.56;
   --surface-opacity-elevated: 0.62;
   --surface-opacity-chip: 0.62;
+  /* 浮层（Popover/Dropdown）再透一档，靠 blur 保可读 */
+  --surface-opacity-popover: 0.42;
+  --surface-blur-popover: 34px;
 
   /*
    * MD 角色已是完整色值 → 直接 var()，禁止 hsl(var(--md-xxx))
@@ -41,7 +44,8 @@
   --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   --surface-bg-well: rgb(var(--glass-rgb) / 0.38);
   --surface-bg-tooltip: hsl(var(--tooltip));
-  --surface-bg-popover: hsl(var(--popover));
+  /* 与 elevated 同族半透：Dropdown/Context/Popover 不再走实心 --popover 白卡 */
+  --surface-bg-popover: rgb(var(--glass-rgb) / var(--surface-opacity-popover));
   --surface-bg-dialog: var(--md-surface-container-lowest);
 
   /*
@@ -98,13 +102,15 @@
   --surface-opacity: 0.84;
   --surface-opacity-elevated: 0.86;
   --surface-opacity-chip: 0.82;
+  --surface-opacity-popover: 0.64;
+  --surface-blur-popover: 28px;
 
   --surface-bg: rgb(var(--glass-rgb) / var(--surface-opacity));
   --surface-bg-elevated: rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
   --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   --surface-bg-well: rgb(var(--glass-rgb) / 0.68);
   --surface-bg-tooltip: hsl(var(--tooltip));
-  --surface-bg-popover: hsl(var(--popover));
+  --surface-bg-popover: rgb(var(--glass-rgb) / var(--surface-opacity-popover));
   --surface-bg-dialog: var(--md-surface-container-lowest);
 
   --surface-rim: rgb(255 255 255 / 0.1);
@@ -155,6 +161,8 @@
   --surface-opacity: 0.08;
   --surface-opacity-elevated: 0.11;
   --surface-opacity-chip: 0.14;
+  --surface-opacity-popover: 0.09;
+  --surface-blur-popover: 56px;
   /* 极轻渐变背景 - 液态玻璃 */
   --surface-bg:
     linear-gradient(
@@ -188,9 +196,9 @@
   );
   --surface-bg-popover: linear-gradient(
     145deg,
-    hsl(var(--popover) / 0.032) 0%,
-    hsl(var(--popover) / 0.048) 52%,
-    hsl(var(--popover) / 0.038) 100%
+    hsl(var(--popover) / 0.024) 0%,
+    hsl(var(--popover) / 0.038) 52%,
+    hsl(var(--popover) / 0.028) 100%
   );
   --surface-bg-dialog: linear-gradient(
     145deg,
@@ -257,6 +265,8 @@
   --surface-opacity: 0.14;
   --surface-opacity-elevated: 0.18;
   --surface-opacity-chip: 0.2;
+  --surface-opacity-popover: 0.14;
+  --surface-blur-popover: 48px;
   --surface-bg:
     linear-gradient(
       138deg,
@@ -301,9 +311,9 @@
   );
   --surface-bg-popover: linear-gradient(
     145deg,
-    hsl(var(--popover) / 0.028) 0%,
-    hsl(var(--popover) / 0.042) 52%,
-    hsl(var(--popover) / 0.034) 100%
+    hsl(var(--popover) / 0.02) 0%,
+    hsl(var(--popover) / 0.032) 52%,
+    hsl(var(--popover) / 0.024) 100%
   );
   --surface-bg-dialog: linear-gradient(
     145deg,
@@ -376,11 +386,13 @@
   --surface-opacity: 0.9;
   --surface-opacity-elevated: 0.92;
   --surface-opacity-chip: 0.86;
+  --surface-opacity-popover: 0.72;
+  --surface-blur-popover: 12px;
   --surface-bg: rgb(var(--glass-rgb) / var(--surface-opacity));
   --surface-bg-elevated: rgb(var(--glass-rgb) / var(--surface-opacity-elevated));
   --surface-bg-chip: rgb(var(--glass-rgb) / var(--surface-opacity-chip));
   --surface-bg-tooltip: hsl(var(--tooltip) / 0.98);
-  --surface-bg-popover: hsl(var(--popover) / 0.98);
+  --surface-bg-popover: rgb(var(--glass-rgb) / var(--surface-opacity-popover));
   --surface-bg-dialog: hsl(var(--dialog) / 0.98);
   --surface-rim: rgb(255 255 255 / 0.5);
   --surface-rim-width: 1px;
@@ -421,6 +433,9 @@
   --surface-bg: rgb(var(--glass-rgb) / 0.9);
   --surface-bg-elevated: rgb(var(--glass-rgb) / 0.92);
   --surface-bg-chip: rgb(var(--glass-rgb) / 0.86);
+  --surface-opacity-popover: 0.78;
+  --surface-bg-popover: rgb(var(--glass-rgb) / var(--surface-opacity-popover));
+  --surface-blur-popover: 16px;
   --surface-rim: rgb(255 255 255 / 0.055);
   --press-scale: 0.97;
   --press-shadow:
@@ -618,6 +633,8 @@
  * ========================================================================== */
 
 .session-list-row {
+  /* 预留 hover translateX(2px)，右移时不裁切右侧控件 */
+  margin-right: 2px;
   transition:
     background 240ms cubic-bezier(0.16, 1, 0.3, 1),
     background-color 240ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -900,13 +917,22 @@
   --glass-bg: var(--popover);
   --glass-fg: var(--popover-foreground);
   border-radius: var(--radius-glass-popover);
-  -webkit-backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate))
-    brightness(var(--surface-brightness));
-  backdrop-filter: blur(var(--surface-blur-elevated)) saturate(var(--surface-saturate))
-    brightness(var(--surface-brightness));
+  -webkit-backdrop-filter: blur(var(--surface-blur-popover, var(--surface-blur-elevated)))
+    saturate(var(--surface-saturate)) brightness(var(--surface-brightness));
+  backdrop-filter: blur(var(--surface-blur-popover, var(--surface-blur-elevated)))
+    saturate(var(--surface-saturate)) brightness(var(--surface-brightness));
   background: var(--surface-bg-popover);
   border-color: var(--surface-rim);
   box-shadow: var(--surface-shadow-elevated);
+}
+
+/* 浮层减弱表面高光层，避免 ::before/::after 把半透填成实板 */
+.session-glass-popover.session-glass-surface::before {
+  opacity: calc(var(--surface-shine-opacity) * 0.28);
+}
+
+.session-glass-popover.session-glass-surface::after {
+  opacity: calc(var(--surface-shine-opacity) * 0.22);
 }
 
 /* glass 材质下 modal 使用统一的色散阴影 */

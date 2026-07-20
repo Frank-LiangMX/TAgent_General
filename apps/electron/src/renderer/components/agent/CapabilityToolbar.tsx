@@ -1,18 +1,17 @@
 /**
- * CapabilityToolbar - 插件区主区工具栏
+ * CapabilityToolbar — 插件主区操作簇
  *
- * 集中承载插件管理入口：目录、AI 配置。
+ * 只输出圆形工具钮，不自带底板/分割线；由主区标题行嵌入。
  */
 
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
-import { FolderOpen, MessageSquare } from 'lucide-react'
+import { ArrowLeft, FolderOpen, MessageSquare } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
 import { resolveAgentSessionModelId, type WorkspaceCapabilities } from '@tagent/shared'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { PluginConfigDialog } from './plugin-config-dialog'
-import { PluginToolbarButton } from './plugin-toolbar-button'
 
 import {
   agentChannelIdAtom,
@@ -25,7 +24,6 @@ import {
 import { activeRailItemAtom } from '@/atoms/app-mode'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { useCreateSession } from '@/hooks/useCreateSession'
-import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 interface CapabilityToolbarProps {
@@ -91,7 +89,6 @@ export function CapabilityToolbar({
         return
       }
 
-      // 预先写入 per-session 渠道 / 模型，避免 pendingPrompt 抢跑时上下文不完整
       store.set(agentSessionChannelMapAtom, (prev) => {
         const map = new Map(prev)
         map.set(session.id, agentChannelId)
@@ -106,7 +103,6 @@ export function CapabilityToolbar({
       setActiveRailItem('sessions')
       setConfigDialogOpen(false)
 
-      // 等主区切到 AgentView 后再挂 pending，降低挂载竞态
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() => resolve())
       })
@@ -131,53 +127,34 @@ export function CapabilityToolbar({
     }
   }
 
-  const isWindows = React.useMemo(() => detectIsWindows(), [])
-
   return (
     <>
-      <div
-        className={cn(
-          'relative flex flex-wrap items-center gap-2 border-b border-border/40 bg-muted/15 px-5 py-2.5',
-          isWindows && 'pr-[134px]'
-        )}
-      >
-        <div
-          className={cn(
-            'absolute inset-0 z-[10] titlebar-drag-region pointer-events-none',
-            isWindows && 'right-[126px]'
-          )}
-          aria-hidden
-        />
+      <div className="flex shrink-0 items-center gap-0.5 titlebar-no-drag">
         {skillsDir ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <PluginToolbarButton
-                  variant="outline"
-                  icon={<FolderOpen size={15} strokeWidth={1.75} />}
-                  onClick={handleOpenSkillsDir}
-                >
-                  打开目录
-                </PluginToolbarButton>
-              </span>
+              <button
+                type="button"
+                onClick={handleOpenSkillsDir}
+                className="inline-flex size-9 items-center justify-center rounded-full text-foreground/60 hover:text-foreground"
+                aria-label="打开目录"
+              >
+                <FolderOpen className="size-4" strokeWidth={1.75} />
+              </button>
             </TooltipTrigger>
             <TooltipContent>在文件管理器中打开插件目录</TooltipContent>
           </Tooltip>
         ) : null}
-
-        {skillsDir ? <div className="mx-0.5 h-4 w-px shrink-0 bg-border/60" aria-hidden /> : null}
-
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <PluginToolbarButton
-                variant="subtle"
-                icon={<MessageSquare size={15} strokeWidth={1.75} />}
-                onClick={handleOpenConfigDialog}
-              >
-                AI 配置
-              </PluginToolbarButton>
-            </span>
+            <button
+              type="button"
+              onClick={handleOpenConfigDialog}
+              className="inline-flex size-9 items-center justify-center rounded-full text-foreground/60 hover:text-foreground"
+              aria-label="AI 配置"
+            >
+              <MessageSquare className="size-4" strokeWidth={1.75} />
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs text-xs">
             填写需求后发送，Agent 会帮你写入当前工作区
@@ -195,5 +172,28 @@ export function CapabilityToolbar({
         onSubmit={handleConfigSubmit}
       />
     </>
+  )
+}
+
+/** 详情页「返回」——与记忆页一致的轻按钮 */
+export function PluginBackButton({
+  onClick,
+  label = '返回',
+}: {
+  onClick: () => void
+  label?: string
+}): React.ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'mb-1 inline-flex h-6 items-center gap-1 rounded-glass-popover px-2 text-[10px] font-medium tracking-[0.02em]',
+        'bg-foreground/[0.045] text-foreground/55 transition-colors hover:bg-foreground/[0.07] hover:text-foreground/80'
+      )}
+    >
+      <ArrowLeft className="size-3" strokeWidth={1.75} />
+      {label}
+    </button>
   )
 }

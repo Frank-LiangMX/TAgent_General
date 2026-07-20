@@ -30,8 +30,6 @@ import {
   MicIcon,
   X,
   Sparkles,
-  Eye,
-  Bot,
   MessageSquareText,
 } from 'lucide-react'
 import * as React from 'react'
@@ -58,7 +56,6 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Switch,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -70,7 +67,6 @@ import { AgentModelSelector } from './AgentModelSelector'
 import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
-import { ComposerModeSelector } from './ComposerModeSelector'
 import { ComposerUnderlay } from './ComposerUnderlay'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { KsccInstallGuide } from './KsccInstallGuide'
@@ -79,7 +75,6 @@ import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
 
 import { TaskProgressDock } from './TaskProgressDock'
-import type { SubagentEagerness } from '@/atoms/agent-atoms'
 
 import {
   agentStreamingStatesAtom,
@@ -110,7 +105,6 @@ import {
   workspaceAttachedDirectoriesMapAtom,
   workspaceAttachedFilesMapAtom,
   liveMessagesMapAtom,
-  subagentEagernessAtom,
   stoppedByUserSessionsAtom,
   agentPlanModeSessionsAtom,
   agentPermissionModeMapAtom,
@@ -120,7 +114,6 @@ import {
   allPendingAskUserRequestsAtom,
   allPendingExitPlanRequestsAtom,
   finalizeStreamingActivities,
-  agentProcessGroupsKeepExpandedAtom,
   sessionTokenStatsAtom,
   agentSidePanelOpenAtom,
   agentMessageQueueAtomFamily,
@@ -144,7 +137,6 @@ import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import {
   previewPanelOpenMapAtom,
   previewFileMapAtom,
-  autoPreviewEnabledAtom,
   quotedSelectionMapAtom,
   currentQuotedSelectionAtom,
 } from '@/atoms/preview-atoms'
@@ -225,99 +217,6 @@ function getUserTextFromSDKMessage(message: SDKMessage): string | null {
     .map((block) => (block as { text: string }).text)
 
   return texts.length > 0 ? texts.join('\n') : null
-}
-
-/**
- * SubAgent 派发积极性选择器
- *
- * 圆形按钮 + Popover 形式，与 ContextUsageBadge 风格统一。
- * 4 档：never / conservative（默认）/ balanced / aggressive。
- */
-const SUBAGENT_EAGERNESS_LABELS: Record<SubagentEagerness, { label: string; desc: string }> = {
-  never: { label: '从不派发', desc: '主 Agent 干所有事' },
-  conservative: { label: '保守', desc: '批量 ≥ 5 才派' },
-  balanced: { label: '平衡', desc: '批量 ≥ 3 即派' },
-  aggressive: { label: '积极', desc: '能派就派' },
-}
-
-/** 档位对应的视觉颜色 */
-const SUBAGENT_EAGERNESS_COLORS: Record<SubagentEagerness, string> = {
-  never: 'text-muted-foreground',
-  conservative: 'text-foreground/60',
-  balanced: 'text-blue-500 dark:text-blue-400',
-  aggressive: 'text-amber-500 dark:text-amber-400',
-}
-
-interface SubagentEagernessSelectorProps {
-  value: SubagentEagerness
-  onChange: (v: SubagentEagerness) => void
-}
-
-function SubagentEagernessSelector({
-  value,
-  onChange,
-}: SubagentEagernessSelectorProps): React.ReactElement {
-  const [open, setOpen] = React.useState(false)
-  const current = SUBAGENT_EAGERNESS_LABELS[value]
-  const colorClass = SUBAGENT_EAGERNESS_COLORS[value]
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <PopoverTrigger asChild>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={cn(
-                'agent-toolbar-icon-btn size-[36px] rounded-full',
-                open && 'agent-toolbar-icon-btn--active',
-                colorClass
-              )}
-            >
-              <Bot className="size-5" />
-            </Button>
-          </TooltipTrigger>
-        </PopoverTrigger>
-        <TooltipContent side="bottom">
-          <p className="font-medium">{current!.label}</p>
-          <p className="text-xs text-muted-foreground">{current!.desc}</p>
-          <p className="text-xs text-muted-foreground mt-1">点击调整档位</p>
-        </TooltipContent>
-      </Tooltip>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        className="agent-toolbar-popover w-auto min-w-[180px] p-2"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="flex flex-col gap-0.5">
-          {(Object.keys(SUBAGENT_EAGERNESS_LABELS) as SubagentEagerness[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => {
-                onChange(k)
-                setOpen(false)
-              }}
-              className={cn(
-                'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
-                value === k && 'agent-toolbar-popover-item--active bg-accent/50'
-              )}
-            >
-              <span className="text-xs">{SUBAGENT_EAGERNESS_LABELS[k]!.label}</span>
-              <span className="text-[10px] text-muted-foreground">
-                {SUBAGENT_EAGERNESS_LABELS[k]!.desc}
-              </span>
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
 }
 
 /** 输入增强合并按钮（附件/文件夹/语音） */
@@ -413,90 +312,6 @@ function InputMorePopover({
   )
 }
 
-interface DisplayOptionsPopoverProps {
-  autoPreviewEnabled: boolean
-  processGroupsKeepExpanded: boolean
-  onAutoPreviewChange: (enabled: boolean) => void
-  onProcessGroupsKeepExpandedChange: (expanded: boolean) => void
-}
-
-function DisplayOptionsPopover({
-  autoPreviewEnabled,
-  processGroupsKeepExpanded,
-  onAutoPreviewChange,
-  onProcessGroupsKeepExpandedChange,
-}: DisplayOptionsPopoverProps): React.ReactElement {
-  const [open, setOpen] = React.useState(false)
-  const hasEnabledOption = autoPreviewEnabled || processGroupsKeepExpanded
-  const hoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleMouseEnter = React.useCallback(() => {
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current)
-    setOpen(true)
-  }, [])
-
-  const handleMouseLeave = React.useCallback(() => {
-    hoverTimeout.current = setTimeout(() => setOpen(false), 150)
-  }, [])
-
-  React.useEffect(() => {
-    return () => {
-      if (hoverTimeout.current) clearTimeout(hoverTimeout.current)
-    }
-  }, [])
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn(
-            'agent-toolbar-icon-btn size-[36px] rounded-full',
-            open && 'agent-toolbar-icon-btn--active',
-            hasEnabledOption ? 'text-green-500' : 'text-foreground/60 hover:text-foreground'
-          )}
-          aria-label="显示选项"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          <Eye className="size-5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        className="agent-toolbar-popover w-auto min-w-[190px] p-2 px-2.5"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-foreground/70">自动预览修改中文件</span>
-            <Switch
-              checked={autoPreviewEnabled}
-              onCheckedChange={onAutoPreviewChange}
-              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
-            />
-          </div>
-          <div className="h-px bg-border" />
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-foreground/70">输出完保持展开</span>
-            <Switch
-              checked={processGroupsKeepExpanded}
-              onCheckedChange={onProcessGroupsKeepExpandedChange}
-              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
-            />
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
 export interface AgentViewProps {
   sessionId: string
   /** Classic full workspace or the single conversation surface embedded in AI Office. */
@@ -558,7 +373,6 @@ export function AgentView({
       }),
     [agentChannelIds, globalChannels]
   )
-  const [subagentEagerness, setSubagentEagerness] = useAtom(subagentEagernessAtom)
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const setDraftSessionIds = useSetAtom(draftSessionIdsAtom)
   const globalWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
@@ -3028,12 +2842,8 @@ export function AgentView({
     (allAskUserRequests.get(sessionId)?.length ?? 0) > 0 ||
     (allExitPlanRequests.get(sessionId)?.length ?? 0) > 0
 
-  // ===== 预览面板状态（toggle 快捷键 + auto-preview 设置，分屏布局在 MainArea） =====
+  // ===== 预览面板状态（toggle 快捷键，分屏布局在 MainArea） =====
   const setPreviewOpenMap = useSetAtom(previewPanelOpenMapAtom)
-  const [autoPreviewEnabled, setAutoPreviewEnabled] = useAtom(autoPreviewEnabledAtom)
-  const [processGroupsKeepExpanded, setProcessGroupsKeepExpanded] = useAtom(
-    agentProcessGroupsKeepExpandedAtom
-  )
 
   const togglePreviewPanel = React.useCallback(() => {
     setPreviewOpenMap((prev) => {
@@ -3060,8 +2870,8 @@ export function AgentView({
   const composerMode = useAtomValue(currentComposerModeAtom)
 
   /**
-   * 主工具栏：常驻操作（对齐原型 composer-tools）
-   * 权限 / 推理 / 记忆 / 上下文 → focus 时 ComposerUnderlay
+   * 主工具栏：附件入口（Ask/Agent 档位切换暂隐藏，后续改造）
+   * 推理 / 权限 / SubAgent / 显示 → focus 时 ComposerUnderlay
    */
   const inputToolbarItems = React.useMemo<ToolbarItem[]>(
     () => [
@@ -3076,43 +2886,8 @@ export function AgentView({
           />
         ),
       },
-      { key: 'composer-mode', node: <ComposerModeSelector /> },
-      {
-        key: 'subagent-eagerness',
-        node: (
-          <SubagentEagernessSelector
-            value={subagentEagerness}
-            onChange={(v) => {
-              setSubagentEagerness(v)
-              window.electronAPI.updateSettings({ subagentEagerness: v })
-            }}
-          />
-        ),
-      },
-      {
-        key: 'auto-preview',
-        node: (
-          <DisplayOptionsPopover
-            autoPreviewEnabled={autoPreviewEnabled}
-            processGroupsKeepExpanded={processGroupsKeepExpanded}
-            onAutoPreviewChange={setAutoPreviewEnabled}
-            onProcessGroupsKeepExpandedChange={setProcessGroupsKeepExpanded}
-          />
-        ),
-      },
     ],
-    [
-      handleOpenFileDialog,
-      handleAttachFolder,
-      handleSpeech,
-      composerMode,
-      subagentEagerness,
-      setSubagentEagerness,
-      autoPreviewEnabled,
-      processGroupsKeepExpanded,
-      setAutoPreviewEnabled,
-      setProcessGroupsKeepExpanded,
-    ]
+    [handleOpenFileDialog, handleAttachFolder, handleSpeech, composerMode]
   )
 
   /** 原型 is-composer-expanded：focus 展开 underlay */
@@ -3254,8 +3029,17 @@ export function AgentView({
                         'session-composer-cluster',
                         !isOfficeDock && composerExpanded && 'is-composer-expanded'
                       )}
-                      onFocusCapture={() => {
-                        if (!isOfficeDock) setComposerExpanded(true)
+                      onFocusCapture={(e) => {
+                        if (isOfficeDock) return
+                        const target = e.target
+                        if (!(target instanceof Element)) return
+                        // 只在编辑器本体获焦时展开 underlay。
+                        // 工具栏/底栏控件获焦若也展开，margin 动画会挪走点击目标，吞掉 Popover/按钮交互。
+                        if (
+                          target.closest('.ProseMirror, .tiptap, [contenteditable="true"]')
+                        ) {
+                          setComposerExpanded(true)
+                        }
                       }}
                     >
                     <div
@@ -3393,7 +3177,6 @@ export function AgentView({
                                 : '暂无可用模型，请先在设置中启用渠道'
                           }
                           disabled={!agentChannelId || !hasAvailableModel}
-                          autoFocusTrigger={sessionId}
                           collapsible
                           enableMentions
                           workspacePath={sessionPath}

@@ -1,38 +1,39 @@
 /**
- * ComposerUnderlay — 输入框 focus 时展开的高级选项托盘（对齐 spatial-theme-study）
+ * ComposerUnderlay — 输入框 focus 时展开的高级选项托盘
  *
- * 原型：.composer-underlay 四格
- *   推理强度 / 工具权限 / 记忆写入 / 上下文范围
- *
- * 生产映射：
- *   推理强度 → agentEffort
- *   工具权限 → permissionMode
- *   记忆写入 → 会话级展示（写入仍走 Nudge 体系，此处为范围意图）
- *   上下文范围 → 当前工作区/项目
+ * 四格：推理强度（含关闭思考）/ 工具权限 / SubAgent 派发 / 显示选项
+ * （记忆写入、上下文范围不在会话内改，已从托盘移除）
  */
 
 import { TAGENT_PERMISSION_MODE_CONFIG, TAGENT_PERMISSION_MODE_ORDER } from '@tagent/shared'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import {
-  Brain,
-  Database,
-  Gauge,
-  ShieldCheck,
-  type LucideIcon,
-} from 'lucide-react'
+import { Bot, Eye, Gauge, ShieldCheck, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 
 import type { AgentEffort, TAgentPermissionMode } from '@tagent/shared'
-import { Popover, PopoverContent, PopoverTrigger } from '@tagent/ui'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@tagent/ui'
 import {
   agentDefaultPermissionModeAtom,
   agentEffortAtom,
   agentPermissionModeMapAtom,
   agentPlanModeSessionsAtom,
-  agentWorkspacesAtom,
-  currentAgentWorkspaceIdAtom,
+  agentProcessGroupsKeepExpandedAtom,
+  agentThinkingAtom,
   sessionPersistedPermissionModeAtom,
+  subagentEagernessAtom,
+  type SubagentEagerness,
 } from '@/atoms/agent-atoms'
+import { thinkingExpandedAtom } from '@/atoms/model-atoms'
+import { autoPreviewEnabledAtom } from '@/atoms/preview-atoms'
 import { updatePlanModeSessionSet } from '@/lib/agent-plan-mode'
 import { cn } from '@/lib/utils'
 
@@ -50,32 +51,25 @@ const EFFORT_LABEL: Record<AgentEffort, string> = {
   max: '最大',
 }
 
-/** 记忆写入范围（UI 意图；实际写入仍由 Nudge / 记忆系统执行） */
-type MemoryWriteScope = 'session' | 'project' | 'off'
-
-const MEMORY_WRITE_OPTIONS: { value: MemoryWriteScope; label: string; desc: string }[] = [
-  { value: 'session', label: '会话', desc: '本会话内可写入记忆' },
-  { value: 'project', label: '项目', desc: '写入当前工作区记忆' },
-  { value: 'off', label: '关闭', desc: '本会话不主动写入' },
+const SUBAGENT_EAGERNESS_OPTIONS: {
+  value: SubagentEagerness
+  label: string
+  desc: string
+}[] = [
+  { value: 'never', label: '从不派发', desc: '主 Agent 干所有事' },
+  { value: 'conservative', label: '保守', desc: '批量 ≥ 5 才派' },
+  { value: 'balanced', label: '平衡', desc: '批量 ≥ 3 即派' },
+  { value: 'aggressive', label: '积极', desc: '能派就派' },
 ]
-
-const MEMORY_WRITE_STORAGE_KEY = 'tagent-composer-memory-write-scope'
-
-function readMemoryWriteScope(): MemoryWriteScope {
-  try {
-    const raw = localStorage.getItem(MEMORY_WRITE_STORAGE_KEY)
-    if (raw === 'session' || raw === 'project' || raw === 'off') return raw
-  } catch {
-    /* ignore */
-  }
-  return 'session'
-}
 
 interface UnderlayCellProps {
   icon: LucideIcon
   label: string
   value: string
+  /** hover 说明（字号偏小，靠 tooltip 补全） */
+  tooltip: string
   disabled?: boolean
+  disabledHint?: string
   children: React.ReactNode
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -85,28 +79,64 @@ function UnderlayCell({
   icon: Icon,
   label,
   value,
+  tooltip,
   disabled,
+  disabledHint,
   children,
   open,
   onOpenChange,
 }: UnderlayCellProps): React.ReactElement {
+  const tip = disabled && disabledHint ? disabledHint : tooltip
+
+  if (disabled) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled
+              className="composer-underlay-cell composer-underlay-cell--disabled"
+            >
+              <Icon className="composer-underlay-cell__icon" aria-hidden />
+              <span className="composer-underlay-cell__label">{label}</span>
+              <strong className="composer-underlay-cell__value">{value}</strong>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px]">
+            <p className="font-medium">{label}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{tip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          className={cn(
-            'composer-underlay-cell',
-            open && 'composer-underlay-cell--open',
-            disabled && 'composer-underlay-cell--disabled'
-          )}
-        >
-          <Icon className="composer-underlay-cell__icon" aria-hidden />
-          <span className="composer-underlay-cell__label">{label}</span>
-          <strong className="composer-underlay-cell__value">{value}</strong>
-        </button>
-      </PopoverTrigger>
+      <TooltipProvider delayDuration={300}>
+        <Tooltip open={open ? false : undefined}>
+          <PopoverTrigger asChild>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  'composer-underlay-cell',
+                  open && 'composer-underlay-cell--open'
+                )}
+              >
+                <Icon className="composer-underlay-cell__icon" aria-hidden />
+                <span className="composer-underlay-cell__label">{label}</span>
+                <strong className="composer-underlay-cell__value">{value}</strong>
+              </button>
+            </TooltipTrigger>
+          </PopoverTrigger>
+          <TooltipContent side="top" className="max-w-[220px]">
+            <p className="font-medium">{label}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{tip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <PopoverContent
         side="top"
         align="center"
@@ -122,7 +152,7 @@ function UnderlayCell({
 
 interface ComposerUnderlayProps {
   sessionId: string
-  /** Ask 档位下禁用权限等 Agent 专属项 */
+  /** Ask 档位下禁用权限 / SubAgent 等 Agent 专属项 */
   askMode?: boolean
   className?: string
 }
@@ -133,25 +163,35 @@ export function ComposerUnderlay({
   className,
 }: ComposerUnderlayProps): React.ReactElement {
   const [effort, setEffort] = useAtom(agentEffortAtom)
+  const [agentThinking, setAgentThinking] = useAtom(agentThinkingAtom)
   const [modeMap, setModeMap] = useAtom(agentPermissionModeMapAtom)
   const setPlanModeSessions = useSetAtom(agentPlanModeSessionsAtom)
   const defaultMode = useAtomValue(agentDefaultPermissionModeAtom)
   const persistedMode = useAtomValue(sessionPersistedPermissionModeAtom(sessionId))
   const permissionMode = modeMap.get(sessionId) ?? persistedMode ?? defaultMode
 
-  const workspaces = useAtomValue(agentWorkspacesAtom)
-  const workspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
-  const workspace = workspaces.find((w) => w.id === workspaceId)
-  const contextLabel = workspace?.projectDirectory ? '项目' : '会话'
+  const [subagentEagerness, setSubagentEagerness] = useAtom(subagentEagernessAtom)
+  const [autoPreviewEnabled, setAutoPreviewEnabled] = useAtom(autoPreviewEnabledAtom)
+  const [processGroupsKeepExpanded, setProcessGroupsKeepExpanded] = useAtom(
+    agentProcessGroupsKeepExpandedAtom
+  )
+  const [thinkingExpanded, setThinkingExpanded] = useAtom(thinkingExpandedAtom)
 
-  const [memoryScope, setMemoryScope] = React.useState<MemoryWriteScope>(readMemoryWriteScope)
   const [openKey, setOpenKey] = React.useState<string | null>(null)
 
+  const thinkingOff = agentThinking?.type === 'disabled'
   const effectiveEffort = effort ?? 'medium'
-  const effortLabel = EFFORT_LABEL[effectiveEffort]
+  const effortLabel = thinkingOff ? '关闭' : EFFORT_LABEL[effectiveEffort]
   const permissionLabel = TAGENT_PERMISSION_MODE_CONFIG[permissionMode].label
-  const memoryLabel =
-    MEMORY_WRITE_OPTIONS.find((o) => o.value === memoryScope)?.label ?? '会话'
+  const subagentLabel =
+    SUBAGENT_EAGERNESS_OPTIONS.find((o) => o.value === subagentEagerness)?.label ?? '保守'
+  const displayValue = [
+    autoPreviewEnabled ? '预览' : null,
+    processGroupsKeepExpanded ? '展开' : null,
+    thinkingExpanded ? '思考' : null,
+  ]
+    .filter(Boolean)
+    .join('·') || '默认'
 
   const setCellOpen = React.useCallback((key: string, open: boolean) => {
     setOpenKey(open ? key : null)
@@ -159,12 +199,24 @@ export function ComposerUnderlay({
 
   const handleEffort = React.useCallback(
     (next: AgentEffort) => {
+      const thinking = { type: 'adaptive' as const }
       setEffort(next)
-      window.electronAPI.updateSettings({ agentEffort: next }).catch(console.error)
+      setAgentThinking(thinking)
+      window.electronAPI
+        .updateSettings({ agentEffort: next, agentThinking: thinking })
+        .catch(console.error)
       setOpenKey(null)
     },
-    [setEffort]
+    [setEffort, setAgentThinking]
   )
+
+  /** 关闭思考输出（强度设置保留，下次选档位时一并恢复自适应） */
+  const handleThinkingOff = React.useCallback(() => {
+    const next = { type: 'disabled' as const }
+    setAgentThinking(next)
+    window.electronAPI.updateSettings({ agentThinking: next }).catch(console.error)
+    setOpenKey(null)
+  }, [setAgentThinking])
 
   const handlePermission = React.useCallback(
     async (nextMode: TAgentPermissionMode) => {
@@ -194,15 +246,15 @@ export function ComposerUnderlay({
     [askMode, permissionMode, sessionId, setModeMap, setPlanModeSessions]
   )
 
-  const handleMemory = React.useCallback((next: MemoryWriteScope) => {
-    setMemoryScope(next)
-    try {
-      localStorage.setItem(MEMORY_WRITE_STORAGE_KEY, next)
-    } catch {
-      /* ignore */
-    }
-    setOpenKey(null)
-  }, [])
+  const handleSubagent = React.useCallback(
+    (next: SubagentEagerness) => {
+      if (askMode) return
+      setSubagentEagerness(next)
+      window.electronAPI.updateSettings({ subagentEagerness: next }).catch(console.error)
+      setOpenKey(null)
+    },
+    [askMode, setSubagentEagerness]
+  )
 
   return (
     <div
@@ -214,10 +266,27 @@ export function ComposerUnderlay({
         icon={Gauge}
         label="推理强度"
         value={effortLabel}
+        tooltip={
+          thinkingOff
+            ? '当前已关闭思考输出。点击选择档位可重新开启。'
+            : `当前：${effortLabel}。控制模型思考深度，下次发送生效。`
+        }
         open={openKey === 'effort'}
         onOpenChange={(o) => setCellOpen('effort', o)}
       >
         <div className="flex flex-col gap-0.5">
+          <button
+            type="button"
+            onClick={handleThinkingOff}
+            className={cn(
+              'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left',
+              'hover:bg-accent hover:text-accent-foreground',
+              thinkingOff && 'agent-toolbar-popover-item--active bg-accent/50'
+            )}
+          >
+            <span className="text-xs">关闭</span>
+            <span className="text-[10px] text-muted-foreground">不输出思考</span>
+          </button>
           {EFFORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -226,7 +295,9 @@ export function ComposerUnderlay({
               className={cn(
                 'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left',
                 'hover:bg-accent hover:text-accent-foreground',
-                effectiveEffort === opt.value && 'agent-toolbar-popover-item--active bg-accent/50'
+                !thinkingOff &&
+                  effectiveEffort === opt.value &&
+                  'agent-toolbar-popover-item--active bg-accent/50'
               )}
             >
               <span className="text-xs">{opt.label}</span>
@@ -240,7 +311,13 @@ export function ComposerUnderlay({
         icon={ShieldCheck}
         label="工具权限"
         value={askMode ? 'Ask' : permissionLabel}
+        tooltip={
+          askMode
+            ? 'Ask 档位不能写文件或执行命令。'
+            : `当前：${permissionLabel}。控制工具调用是否需要确认。`
+        }
         disabled={askMode}
+        disabledHint="Ask 档位不适用权限模式。"
         open={openKey === 'permission'}
         onOpenChange={(o) => setCellOpen('permission', o)}
       >
@@ -267,22 +344,29 @@ export function ComposerUnderlay({
       </UnderlayCell>
 
       <UnderlayCell
-        icon={Brain}
-        label="记忆写入"
-        value={memoryLabel}
-        open={openKey === 'memory'}
-        onOpenChange={(o) => setCellOpen('memory', o)}
+        icon={Bot}
+        label="SubAgent"
+        value={askMode ? '—' : subagentLabel}
+        tooltip={
+          askMode
+            ? 'Ask 档位不派发 SubAgent。'
+            : `当前：${subagentLabel}。控制主 Agent 派发子任务的积极性。`
+        }
+        disabled={askMode}
+        disabledHint="Ask 档位不适用 SubAgent 派发。"
+        open={openKey === 'subagent'}
+        onOpenChange={(o) => setCellOpen('subagent', o)}
       >
         <div className="flex flex-col gap-0.5">
-          {MEMORY_WRITE_OPTIONS.map((opt) => (
+          {SUBAGENT_EAGERNESS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => handleMemory(opt.value)}
+              onClick={() => handleSubagent(opt.value)}
               className={cn(
                 'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left',
                 'hover:bg-accent hover:text-accent-foreground',
-                memoryScope === opt.value && 'agent-toolbar-popover-item--active bg-accent/50'
+                subagentEagerness === opt.value && 'agent-toolbar-popover-item--active bg-accent/50'
               )}
             >
               <span className="text-xs">{opt.label}</span>
@@ -293,22 +377,40 @@ export function ComposerUnderlay({
       </UnderlayCell>
 
       <UnderlayCell
-        icon={Database}
-        label="上下文范围"
-        value={contextLabel}
-        open={openKey === 'context'}
-        onOpenChange={(o) => setCellOpen('context', o)}
+        icon={Eye}
+        label="显示选项"
+        value={displayValue}
+        tooltip="预览修改中文件、过程组展开、思考内容默认展开。"
+        open={openKey === 'display'}
+        onOpenChange={(o) => setCellOpen('display', o)}
       >
-        <div className="px-2 py-1.5 text-[11px] text-muted-foreground leading-relaxed max-w-[200px]">
-          {workspace?.projectDirectory ? (
-            <>
-              当前按<strong className="text-foreground font-medium"> 项目工作区 </strong>
-              注入上下文
-              {workspace.name ? `（${workspace.name}）` : ''}。
-            </>
-          ) : (
-            <>当前无绑定项目目录，上下文以会话与全局记忆为主。</>
-          )}
+        <div className="flex min-w-[190px] flex-col gap-1.5 px-0.5">
+          <div className="flex items-center justify-between gap-4 px-1.5 py-0.5">
+            <span className="text-xs text-foreground/70">自动预览修改中文件</span>
+            <Switch
+              checked={autoPreviewEnabled}
+              onCheckedChange={setAutoPreviewEnabled}
+              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
+            />
+          </div>
+          <div className="h-px bg-border" />
+          <div className="flex items-center justify-between gap-4 px-1.5 py-0.5">
+            <span className="text-xs text-foreground/70">输出完保持展开</span>
+            <Switch
+              checked={processGroupsKeepExpanded}
+              onCheckedChange={setProcessGroupsKeepExpanded}
+              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
+            />
+          </div>
+          <div className="h-px bg-border" />
+          <div className="flex items-center justify-between gap-4 px-1.5 py-0.5">
+            <span className="text-xs text-foreground/70">展开思考内容</span>
+            <Switch
+              checked={thinkingExpanded}
+              onCheckedChange={setThinkingExpanded}
+              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
+            />
+          </div>
         </div>
       </UnderlayCell>
     </div>

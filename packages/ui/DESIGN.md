@@ -141,7 +141,7 @@ import { Button, Dialog, Tooltip, Popover } from '@tagent/ui'
 | 组件 | 用途 |
 |---|---|
 | `Tabs` + `TabsList` + `TabsTrigger` + `TabsContent` | 标签页（Radix 标准） |
-| `SegmentedTabs` + `SegmentedTabsItem` | 横向分段 Tab（插件页 MCP/Skill 同款滑动指示器） |
+| `SegmentedTabs` + `SegmentedTabsItem` | 横向分段 Tab（`--surface-role-tab-*`，与工作区标签同族） |
 | `ScrollArea` | 自定义滚动区域 |
 | `ContextMenu` | 右键菜单 |
 

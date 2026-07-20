@@ -1,5 +1,8 @@
 /**
- * SkillsMainView - 插件功能区主区（市场 + 已安装）
+ * SkillsMainView — 插件主区（spatial）
+ *
+ * 透明 content-glass 场；工具钮嵌进子视图标题行，不再叠一层 muted 工具条。
+ * 侧栏仍负责市场分类 / 已安装导航。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -21,6 +24,8 @@ import { InstalledPluginsView } from '@/components/agent/InstalledPluginsView'
 import { PluginMarketplaceView } from '@/components/agent/PluginMarketplaceView'
 import { Panel } from '@/components/app-shell/Panel'
 import { McpServerForm } from '@/components/settings/McpServerForm'
+import { detectIsMac, detectIsWindows } from '@/lib/platform'
+import { cn } from '@/lib/utils'
 
 export function SkillsMainView(): React.ReactElement {
   const section = useAtomValue(pluginSidebarSectionAtom)
@@ -36,6 +41,9 @@ export function SkillsMainView(): React.ReactElement {
     name: string
     entry: McpServerEntry
   } | null>(null)
+
+  const isMac = React.useMemo(() => detectIsMac(), [])
+  const isWindows = React.useMemo(() => detectIsWindows(), [])
 
   React.useEffect(() => {
     if (!workspace?.slug) {
@@ -78,39 +86,51 @@ export function SkillsMainView(): React.ReactElement {
   const installedMcpNames = capabilities?.mcpServers.map((s) => s.name) ?? []
   const installedSkillSlugs = capabilities?.skills.map((s) => s.slug) ?? []
   const showMarketplace = section !== 'installed'
-  const detailKey = section
+
+  const toolbar =
+    workspace != null ? (
+      <CapabilityToolbar
+        capabilities={capabilities}
+        workspaceSlug={workspace.slug}
+        workspaceName={workspace.name}
+      />
+    ) : null
 
   return (
-    <Panel variant="grow" className="content-glass plugins-inspector">
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        {workspace ? (
-          <CapabilityToolbar
+    <Panel variant="grow" className="content-glass relative flex min-h-0 flex-col overflow-hidden">
+      <div
+        className={cn('relative shrink-0', isMac ? 'h-3' : 'h-8', isWindows && 'pr-[134px]')}
+      >
+        <div
+          className="absolute inset-0 titlebar-drag-region"
+          style={isWindows ? { right: 126 } : undefined}
+          aria-hidden
+        />
+      </div>
+
+      <div key={section} className="min-h-0 flex-1 overflow-hidden">
+        {showMarketplace && workspace ? (
+          <PluginMarketplaceView
+            workspaceSlug={workspace.slug}
+            installedSkillSlugs={installedSkillSlugs}
+            installedMcpNames={installedMcpNames}
+            onInstallMcp={handleInstallStoreMcp}
+            onSkillInstalled={handleStoreSkillInstalled}
+            onBundleInstalled={handleStoreBundleInstalled}
+            onAddCustomMcp={handleAddCustomMcp}
+            toolbar={toolbar}
+          />
+        ) : workspace ? (
+          <InstalledPluginsView
             capabilities={capabilities}
             workspaceSlug={workspace.slug}
-            workspaceName={workspace.name}
+            toolbar={toolbar}
           />
-        ) : null}
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div
-            key={detailKey}
-            className="plugins-inspector-body plugins-inspector-body--empty min-h-0 flex-1 overflow-hidden"
-          >
-            {showMarketplace && workspace ? (
-              <PluginMarketplaceView
-                workspaceSlug={workspace.slug}
-                installedSkillSlugs={installedSkillSlugs}
-                installedMcpNames={installedMcpNames}
-                onInstallMcp={handleInstallStoreMcp}
-                onSkillInstalled={handleStoreSkillInstalled}
-                onBundleInstalled={handleStoreBundleInstalled}
-                onAddCustomMcp={handleAddCustomMcp}
-              />
-            ) : workspace ? (
-              <InstalledPluginsView capabilities={capabilities} workspaceSlug={workspace.slug} />
-            ) : null}
+        ) : (
+          <div className="flex h-full items-center justify-center px-6">
+            <p className="md-text-faint text-[12px]">请先选择工作区</p>
           </div>
-        </div>
+        )}
       </div>
 
       {workspace ? (

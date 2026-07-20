@@ -1221,17 +1221,7 @@ export interface AgentQueueMessageInput {
   interrupt?: boolean
 }
 
-// ===== 会话迁移输入 =====
-
-/**
- * 迁移会话到另一个工作区的输入参数
- */
-export interface MoveSessionToWorkspaceInput {
-  /** 要迁移的会话 ID */
-  sessionId: string
-  /** 目标工作区 ID */
-  targetWorkspaceId: string
-}
+// ===== Fork / Rewind 输入 =====
 
 /** Fork（分叉）会话输入 */
 export interface ForkSessionInput {
@@ -1719,8 +1709,6 @@ export const AGENT_IPC_CHANNELS = {
   SEARCH_MESSAGES: 'agent:search-messages',
   /** 搜索当前工作区可引用的 Agent 会话 */
   SEARCH_SESSION_REFERENCES: 'agent:search-session-references',
-  /** 迁移会话到另一个工作区 */
-  MOVE_SESSION_TO_WORKSPACE: 'agent:move-session-to-workspace',
   /** 分叉会话（从指定消息处创建新会话） */
   FORK_SESSION: 'agent:fork-session',
   /** 快照回退（同一会话内回退到指定点，恢复文件 + 截断对话） */

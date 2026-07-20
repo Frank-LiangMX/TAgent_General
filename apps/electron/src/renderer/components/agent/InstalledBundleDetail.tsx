@@ -2,10 +2,11 @@
  * InstalledBundleDetail — 已安装整合包详情（轻量，对齐市场整合包页）
  */
 
-import { ArrowLeft, Plug, Sparkles } from 'lucide-react'
+import { Plug, Sparkles } from 'lucide-react'
 import * as React from 'react'
 
 import type { InstalledBundleGroup, PluginListItem } from './installed-plugins-grouping'
+import { PluginBackButton } from './CapabilityToolbar'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import { cn } from '@/lib/utils'
 
@@ -22,15 +23,8 @@ export function InstalledBundleDetail({
 }: InstalledBundleDetailProps): React.ReactElement {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border/40 px-6 py-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft size={14} strokeWidth={1.75} />
-          返回
-        </button>
+      <div className="shrink-0 px-6 pb-2 pt-1">
+        <PluginBackButton onClick={onBack} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">

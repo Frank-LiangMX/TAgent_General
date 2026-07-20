@@ -2,13 +2,14 @@
  * PluginMarketplaceBundleDetail — 整合包详情页
  */
 
-import { ArrowLeft, CheckCircle2, ExternalLink, Loader2, Plug, Sparkles } from 'lucide-react'
+import { CheckCircle2, ExternalLink, Loader2, Plug, Sparkles } from 'lucide-react'
 import * as React from 'react'
 
 import type { PluginStoreCatalog, StorePluginBundle } from '@tagent/shared'
 
 import { Button } from '@tagent/ui'
 
+import { PluginBackButton } from './CapabilityToolbar'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import { PLUGIN_CATEGORY_LABELS, PLUGIN_SECTION_LABELS } from './plugin-marketplace-shared'
 import type { PluginSidebarSection } from '@/atoms/app-mode'
@@ -54,15 +55,8 @@ export function PluginMarketplaceBundleDetail({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border/40 px-6 py-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft size={14} strokeWidth={1.75} />
-          返回
-        </button>
+      <div className="shrink-0 px-6 pb-2 pt-1">
+        <PluginBackButton onClick={onBack} label="返回市场" />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">

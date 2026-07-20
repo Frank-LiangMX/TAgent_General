@@ -19,7 +19,6 @@ import {
   Pencil,
   ChevronDown,
   ChevronRight,
-  ArrowRightLeft,
   Search,
   Archive,
   ArchiveRestore,
@@ -157,7 +156,6 @@ import {
 import { hasUpdateAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 
-import { MoveSessionDialog } from '@/components/agent/MoveSessionDialog'
 import { PluginSidebarNav } from '@/components/agent/PluginSidebarNav'
 import { clearPreviewCacheForSession } from '@/components/diff/DiffTabContent'
 import { DraftListPanel } from '@/components/draft/DraftListPanel'
@@ -331,8 +329,6 @@ export function LeftSidebar({
     null
   )
   const [deletingWorkspaceId, setDeletingWorkspaceId] = React.useState<string | null>(null)
-  /** 待迁移会话 ID，非空时显示迁移对话框 */
-  const [moveTargetId, setMoveTargetId] = React.useState<string | null>(null)
   /** 折叠状态：用户手动折叠的项目 ID 集合 */
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = React.useState<Set<string>>(new Set())
   /** 拖拽排序：正在拖拽的工作区 ID */
@@ -1253,41 +1249,6 @@ export function LeftSidebar({
     ]
   )
 
-  /** 请求迁移会话到其他工作区（弹出迁移对话框） */
-  const handleRequestMove = React.useCallback((id: string): void => {
-    setMoveTargetId(id)
-  }, [])
-
-  /** 迁移会话到另一个工作区后的回调 */
-  const handleSessionMoved = (
-    updatedSession: AgentSessionMeta,
-    targetWorkspaceName: string
-  ): void => {
-    setAgentSessions((prev) => replaceAgentSessionInFreshnessOrder(prev, updatedSession))
-    // 如果迁移的是当前选中的会话，取消选中并关闭标签页
-    if (currentAgentSessionId === updatedSession.id) {
-      const tabResult = closeTab(tabs, activeTabId, updatedSession.id)
-      setTabs(tabResult.tabs)
-      setActiveTabId(tabResult.activeTabId)
-      // 同步副作用到新激活标签（替代无条件 setCurrentAgentSessionId(null)）
-      const newActiveTab = tabResult.activeTabId
-        ? (tabResult.tabs.find((t) => t.id === tabResult.activeTabId) ?? null)
-        : null
-      syncActiveTabSideEffects(newActiveTab)
-      // 从 Working Done 集合移除
-      setWorkingDone((prev) => {
-        if (!prev.has(updatedSession.id)) return prev
-        const next = new Set(prev)
-        next.delete(updatedSession.id)
-        return next
-      })
-    }
-    setMoveTargetId(null)
-    toast.success('会话已迁移', {
-      description: `已迁移到「${targetWorkspaceName}」，请切换工作区查看`,
-    })
-  }
-
   // ===== 项目分组数据层 =====
   /** Agent 会话按项目（工作区）分组，平铺展示所有项目的会话 */
   const agentProjectGroups = React.useMemo<AgentProjectGroup[]>(() => {
@@ -1433,20 +1394,6 @@ export function LeftSidebar({
     </AlertDialog>
   )
 
-  // 迁移会话对话框（collapsed/expanded 共享）
-  const moveDialog = (
-    <MoveSessionDialog
-      open={moveTargetId !== null}
-      onOpenChange={(open) => {
-        if (!open) setMoveTargetId(null)
-      }}
-      sessionId={moveTargetId ?? ''}
-      currentWorkspaceId={currentWorkspaceId ?? undefined}
-      workspaces={workspaces}
-      onMoved={handleSessionMoved}
-    />
-  )
-
   // ===== 折叠/展开：组件始终挂载，通过外层 width/opacity transition 实现动画 =====
   // 内容始终渲染，仅在折叠态通过外层 pointer-events-none 屏蔽交互
 
@@ -1472,7 +1419,6 @@ export function LeftSidebar({
             handleAgentRename={handleAgentRename}
             handleTogglePinAgent={handleTogglePinAgent}
             handleToggleArchiveAgent={handleToggleArchiveAgent}
-            handleRequestMove={handleRequestMove}
             workspaceNameMap={workspaceNameMap}
             selectWorkspace={selectWorkspace}
             handleNewSessionInWorkspace={handleNewSessionInWorkspace}
@@ -1538,7 +1484,6 @@ export function LeftSidebar({
             handleAgentRename={handleAgentRename}
             handleTogglePinAgent={handleTogglePinAgent}
             handleToggleArchiveAgent={handleToggleArchiveAgent}
-            handleRequestMove={handleRequestMove}
             workspaceNameMap={workspaceNameMap}
             selectWorkspace={selectWorkspace}
             handleNewSessionInWorkspace={handleNewSessionInWorkspace}
@@ -1616,12 +1561,17 @@ export function LeftSidebar({
           </div>
 
           {mode === 'agent' && archivedAgentSessionCount > 0 && (
-            <div className="flex-shrink-0">
+            <footer className="sidebar-footer">
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className="sidebar-archive-btn flex items-center justify-center gap-2 titlebar-no-drag">
-                    <Archive size={13} className="opacity-70" />
-                    <span>已归档 ({archivedAgentSessionCount})</span>
+                  <button
+                    type="button"
+                    className="sidebar-footer-btn titlebar-no-drag"
+                    aria-label={`已归档 ${archivedAgentSessionCount}`}
+                  >
+                    <Archive size={12} strokeWidth={1.75} className="opacity-70" aria-hidden />
+                    <span>已归档</span>
+                    <span className="sidebar-footer-count">{archivedAgentSessionCount}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -1661,7 +1611,6 @@ export function LeftSidebar({
                             }
                             onSelect={handleSelectAgentSession}
                             onRequestDelete={handleRequestDelete}
-                            onRequestMove={handleRequestMove}
                             onRename={handleAgentRename}
                             onTogglePin={handleTogglePinAgent}
                             onToggleArchive={handleToggleArchiveAgent}
@@ -1674,7 +1623,7 @@ export function LeftSidebar({
                   </div>
                 </PopoverContent>
               </Popover>
-            </div>
+            </footer>
           )}
         </div>
       ) : activeRailItem === 'draft' ? (
@@ -1732,7 +1681,6 @@ export function LeftSidebar({
       {deleteDialog}
       {projectDeleteDialog}
       {batchDeleteDialog}
-      {moveDialog}
       <SearchDialog />
       <DraftSearchDialog />
     </div>
@@ -1755,7 +1703,6 @@ function SessionsRailContent({
   handleAgentRename,
   handleTogglePinAgent,
   handleToggleArchiveAgent,
-  handleRequestMove,
   workspaceNameMap,
   selectWorkspace,
   handleNewSessionInWorkspace,
@@ -1790,7 +1737,6 @@ function SessionsRailContent({
   handleAgentRename: (id: string, newTitle: string) => Promise<void>
   handleTogglePinAgent: (id: string) => Promise<void>
   handleToggleArchiveAgent: (id: string) => Promise<void>
-  handleRequestMove: (id: string) => void
   workspaceNameMap: Map<string, string>
   selectWorkspace: (id: string) => void
   handleNewSessionInWorkspace: (workspaceId: string) => Promise<void>
@@ -1866,7 +1812,6 @@ function SessionsRailContent({
                   }
                   onSelect={handleSelectAgentSession}
                   onRequestDelete={handleRequestDelete}
-                  onRequestMove={handleRequestMove}
                   onRename={handleAgentRename}
                   onTogglePin={handleTogglePinAgent}
                   onToggleArchive={handleToggleArchiveAgent}
@@ -1925,7 +1870,6 @@ function SessionsRailContent({
                 handleAgentRename={handleAgentRename}
                 handleTogglePinAgent={handleTogglePinAgent}
                 handleToggleArchiveAgent={handleToggleArchiveAgent}
-                handleRequestMove={handleRequestMove}
                 dragProjectId={dragProjectId}
                 projectDropIndicator={projectDropIndicator}
                 onProjectDragStart={onProjectDragStart}
@@ -2188,7 +2132,6 @@ interface AgentSessionItemProps {
   onToggleBatchSelect?: (id: string) => void
   onSelect: (id: string, title: string) => void
   onRequestDelete: (id: string) => void
-  onRequestMove: (id: string) => void
   onRename: (id: string, newTitle: string) => Promise<void>
   onTogglePin: (id: string) => Promise<void>
   onToggleArchive: (id: string) => Promise<void>
@@ -2224,7 +2167,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   onToggleBatchSelect,
   onSelect,
   onRequestDelete,
-  onRequestMove,
   onRename,
   onTogglePin,
   onToggleArchive,
@@ -2267,8 +2209,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     }
   }
 
-  const canMove = indicatorStatus === 'idle' || indicatorStatus === 'completed'
-
   const menuItems = (
     MenuItem: typeof ContextMenuItem | typeof DropdownMenuItem,
     MenuSeparator: typeof ContextMenuSeparator | typeof DropdownMenuSeparator
@@ -2278,15 +2218,6 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
         {session.pinned ? <PinOff size={14} /> : <Pin size={14} />}
         {session.pinned ? '取消置顶' : '置顶会话'}
       </MenuItem>
-      {canMove && (
-        <MenuItem
-          className="text-xs py-1 [&>svg]:size-3.5"
-          onSelect={() => onRequestMove(session.id)}
-        >
-          <ArrowRightLeft size={14} />
-          迁移到其他工作区
-        </MenuItem>
-      )}
       <MenuItem className="text-xs py-1 [&>svg]:size-3.5" onSelect={() => startEdit()}>
         <Pencil size={14} />
         重命名
@@ -2494,7 +2425,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   handleAgentRename,
   handleTogglePinAgent,
   handleToggleArchiveAgent,
-  handleRequestMove,
   dragProjectId,
   projectDropIndicator,
   onProjectDragStart,
@@ -2527,7 +2457,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   handleAgentRename: (id: string, newTitle: string) => Promise<void>
   handleTogglePinAgent: (id: string) => Promise<void>
   handleToggleArchiveAgent: (id: string) => Promise<void>
-  handleRequestMove: (id: string) => void
   dragProjectId: string | null
   projectDropIndicator: { id: string; position: 'before' | 'after' } | null
   onProjectDragStart: (e: React.DragEvent, workspaceId: string) => void
@@ -2869,7 +2798,6 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   onToggleBatchSelect={onToggleBatchSelect}
                   onSelect={onSelectSession}
                   onRequestDelete={handleRequestDelete}
-                  onRequestMove={handleRequestMove}
                   onRename={handleAgentRename}
                   onTogglePin={handleTogglePinAgent}
                   onToggleArchive={handleToggleArchiveAgent}

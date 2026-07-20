@@ -90,7 +90,6 @@ import type {
   AgentMessageSearchResult,
   AgentSessionReferenceSearchInput,
   AgentSessionReferenceSearchResult,
-  MoveSessionToWorkspaceInput,
   ForkSessionInput,
   RewindSessionInput,
   RewindSessionResult,
@@ -519,9 +518,6 @@ export interface ElectronAPI {
   searchAgentSessionReferences: (
     input: AgentSessionReferenceSearchInput
   ) => Promise<AgentSessionReferenceSearchResult[]>
-
-  /** 迁移 Agent 会话到另一个工作区 */
-  moveAgentSessionToWorkspace: (input: MoveSessionToWorkspaceInput) => Promise<AgentSessionMeta>
 
   /** 分叉 Agent 会话 */
   forkAgentSession: (input: ForkSessionInput) => Promise<AgentSessionMeta>
@@ -2086,10 +2082,6 @@ const electronAPI: ElectronAPI = {
 
   searchAgentSessionReferences: (input: AgentSessionReferenceSearchInput) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.SEARCH_SESSION_REFERENCES, input)
-  },
-
-  moveAgentSessionToWorkspace: (input: MoveSessionToWorkspaceInput) => {
-    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.MOVE_SESSION_TO_WORKSPACE, input)
   },
 
   forkAgentSession: (input: ForkSessionInput) => {

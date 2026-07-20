@@ -826,18 +826,13 @@ html.material-frosted .app-content-boundary-rim {
   font-weight: 500;
 }
 
-/* 会话行 hover：实色 hover-fill；transition/active 由 pressable.css 统一 */
+/* 会话行 hover：实色 hover-fill；右移靠 margin-right 预留，避免裁切三点 */
 .session-list-row:hover:not(.session-list-item-active) {
   background: var(
     --hover-fill,
     color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
   );
   color: var(--md-on-surface, hsl(var(--foreground)));
-}
-
-/* frosted：hover 不横向挪动，避免和 press scale 抢戏；soft 可保留微位移 */
-[data-material='soft'] .session-list-row:hover:not(.session-list-item-active) {
-  transform: translateX(1px);
 }
 
 /* 标签页底部滑动选中条：跟随主题 primary */
@@ -1076,7 +1071,7 @@ html.material-frosted .app-content-boundary-rim {
 /* 按钮点击缩放反馈：轻微收缩（tool-cluster / ghost-plus 等自管交互，排除） */
 button:active:not(:disabled):not(.tool-cluster-accent):not(.tool-cluster-icon):not(.ghost-plus):not(
     .sidebar-archive-btn
-  ) {
+  ):not(.sidebar-footer-btn) {
   transform: scale(0.97);
   transition: transform 0.1s ease;
 }
@@ -4691,7 +4686,7 @@ html.material-frosted .tool-cluster {
   box-sizing: border-box;
 }
 
-/* 会话行：更紧凑的横纵间距 */
+/* 会话行：更紧凑的横纵间距；margin-right 预留 hover 右移，避免裁切 */
 :is(.list-well, .session-well) .session-row-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -4701,7 +4696,7 @@ html.material-frosted .tool-cluster {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  margin: 2px 0;
+  margin: 2px 2px 2px 0;
   padding: 7px 8px;
   overflow: visible;
   border: 1px solid transparent;
@@ -4729,6 +4724,7 @@ html.material-frosted .tool-cluster {
   align-items: center;
   gap: 6px;
   width: 100%;
+  margin-right: 2px;
   padding: 7px 8px;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-glass-rail) - 1px);
@@ -4737,7 +4733,8 @@ html.material-frosted .tool-cluster {
     background 160ms cubic-bezier(0.16, 1, 0.3, 1),
     color 160ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :is(.list-well, .session-well)
@@ -4847,39 +4844,40 @@ html.material-frosted .tool-cluster {
   box-shadow: inset 0 1px 3px hsl(var(--foreground) / 0.1);
 }
 
+/* 侧栏底栏入口：全行可点；spatial 覆写见 app-shell.css `.sidebar-footer*` */
+.sidebar-footer-btn,
 .sidebar-archive-btn {
+  display: flex;
   width: 100%;
-  height: 34px;
-  border: 1px solid hsl(var(--glass-shine) / 0.28);
-  border-radius: var(--radius-glass-rail);
-  font-size: 12px;
-  color: hsl(var(--muted-foreground) / 0.8);
-  background: hsl(var(--background) / 0.32);
-  box-shadow: 0 1px 0 hsl(var(--glass-shine) / 0.3) inset;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-glass-chip);
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground) / 0.85);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
   transition:
     color 160ms cubic-bezier(0.22, 1, 0.36, 1),
-    background 160ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+    background 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (hover: hover) {
+  .sidebar-footer-btn:hover,
   .sidebar-archive-btn:hover {
     color: hsl(var(--foreground) / 0.72);
-    background: hsl(var(--background) / 0.48);
-    transform: translateY(-1px);
-    box-shadow:
-      0 1px 0 hsl(var(--glass-shine) / 0.35) inset,
-      0 3px 10px hsl(var(--foreground) / 0.06);
+    background: hsl(var(--foreground) / 0.04);
   }
 }
 
+.sidebar-footer-btn:active,
 .sidebar-archive-btn:active {
-  transform: translateY(0) scale(0.98);
-  box-shadow:
-    inset 0 2px 5px hsl(var(--foreground) / 0.1),
-    inset 0 1px 0 hsl(var(--glass-shine) / 0.15);
+  transform: none;
+  box-shadow: none;
 }
 
 .dark :is(.list-well, .session-well),
@@ -6152,41 +6150,10 @@ html:not(.dark) .rail-island-btn--active:hover {
   z-index: 10 !important;
 }
 
-/* Agent 模型选择浮窗：普通材质实色；glass 才强玻璃 */
+/* Agent 模型选择浮窗：只补圆角/动效，光学走 session-glass-popover */
 .agent-model-popover {
-  border-radius: 20px;
+  border-radius: var(--radius-glass-modal, 20px);
   transform-origin: var(--radix-popover-content-transform-origin);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: hsl(var(--popover));
-  border-color: hsl(var(--border) / 0.55);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-}
-
-[data-material='glass'] .agent-model-popover {
-  -webkit-backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
-  backdrop-filter: blur(30px) saturate(1.72) brightness(1.05);
-  background:
-    radial-gradient(ellipse 80% 60% at 18% 0%, hsl(var(--glass-shine) / 0.38), transparent 62%),
-    radial-gradient(
-      ellipse 70% 58% at 100% 100%,
-      hsl(var(--glass-ambient) / 0.48),
-      transparent 64%
-    ),
-    linear-gradient(
-      168deg,
-      hsl(var(--popover) / 0.62) 0%,
-      hsl(var(--background) / 0.7) 48%,
-      hsl(var(--popover) / 0.58) 100%
-    );
-  border-color: hsl(var(--glass-rim) / 0.92);
-  box-shadow:
-    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.58),
-    inset 0 1px 0 0 hsl(var(--glass-shine) / 0.34),
-    inset 0 -1px 0 0 hsl(var(--glass-rim) / 0.36),
-    0 0 0 1px hsl(var(--glass-shine) / 0.34),
-    0 12px 34px -12px rgba(0, 0, 0, 0.24),
-    0 28px 70px -24px rgba(0, 0, 0, 0.2);
 }
 
 .agent-model-popover[data-state='open'] {
@@ -6198,13 +6165,77 @@ html:not(.dark) .rail-island-btn--active:hover {
 }
 
 .agent-model-popover-header {
-  background: hsl(var(--muted));
+  background: transparent;
 }
 
 [data-material='glass'] .agent-model-popover-header {
-  background:
-    linear-gradient(180deg, hsl(var(--glass-shine) / 0.15), transparent 72%),
-    hsl(var(--background) / 0.12);
+  background: linear-gradient(180deg, hsl(var(--glass-shine) / 0.1), transparent 80%);
+}
+
+/* 当前模型 ↔ 可选列表：半透分割线（玻璃上比 border-border 更清晰） */
+.agent-model-popover-divider {
+  height: 1px;
+  margin-inline: 12px;
+  background: color-mix(in srgb, hsl(var(--foreground)) 12%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, hsl(var(--background)) 35%, transparent);
+}
+
+.dark .agent-model-popover-divider,
+.dark[data-material] .agent-model-popover-divider {
+  background: color-mix(in srgb, hsl(var(--foreground)) 16%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+}
+
+[data-material='glass'] .agent-model-popover-divider {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--glass-rim) / 0.7) 18%,
+    hsl(var(--glass-shine) / 0.35) 50%,
+    hsl(var(--glass-rim) / 0.7) 82%,
+    transparent 100%
+  );
+  box-shadow: none;
+}
+
+.agent-model-popover .session-list-row {
+  border-radius: var(--radius-glass-sidebar, 12px);
+  overflow: hidden;
+}
+
+.agent-model-popover .session-list-row:not(.session-list-item-active):hover {
+  transform: none;
+}
+
+/*
+ * 模型列表选中态：复用 session-list-item-active 语言，
+ * 但浮层底色接近全局 --selection-fill（仅 4%），会几乎看不见，这里抬对比。
+ */
+.agent-model-popover .session-list-item-active {
+  --selection-fill: color-mix(in srgb, hsl(var(--foreground)) 10%, hsl(var(--background)));
+  --selection-rim: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
+  --selection-text: hsl(var(--foreground));
+  background: var(--selection-fill) !important;
+  color: var(--selection-text) !important;
+  border: 1px solid var(--selection-rim) !important;
+  border-radius: var(--radius-glass-sidebar, 12px) !important;
+  box-shadow:
+    inset 0 1px 0 var(--surface-highlight, hsl(var(--glass-shine) / 0.2)),
+    0 4px 12px hsl(var(--foreground) / 0.06) !important;
+}
+
+.dark .agent-model-popover .session-list-item-active,
+.dark[data-material] .agent-model-popover .session-list-item-active {
+  --selection-fill: color-mix(in srgb, hsl(var(--foreground)) 14%, hsl(var(--background)));
+  --selection-rim: color-mix(in srgb, hsl(var(--foreground)) 18%, transparent);
+}
+
+[data-material='glass'] .agent-model-popover .session-list-item-active {
+  --selection-fill: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background) / 0.55));
+  --selection-rim: color-mix(in srgb, hsl(var(--glass-rim)) 80%, hsl(var(--primary) / 0.35));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip)) saturate(var(--surface-saturate));
+  backdrop-filter: blur(var(--surface-blur-chip)) saturate(var(--surface-saturate));
+  box-shadow: var(--surface-shadow-chip) !important;
 }
 
 .context-usage-popover {
@@ -6297,65 +6328,6 @@ html:not(.dark) .rail-island-btn--active:hover {
       hsl(var(--background) / 0.6) 50%,
       hsl(var(--popover) / 0.44) 100%
     );
-}
-
-.agent-model-list-selection {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 10px;
-  border: 1px solid hsl(var(--primary) / 0.28);
-  background: hsl(var(--md-primary-container));
-  box-shadow: 0 2px 8px -6px hsl(var(--primary) / 0.34);
-  will-change: transform, width, height;
-  transition:
-    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    width 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    height 260ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-[data-material='glass'] .agent-model-list-selection {
-  border-color: hsl(var(--glass-rim) / 0.72);
-  background:
-    linear-gradient(145deg, hsl(var(--glass-shine) / 0.26), transparent 72%),
-    hsl(var(--primary) / 0.16);
-  box-shadow:
-    inset 0 1px 0 hsl(var(--glass-shine) / 0.42),
-    0 4px 12px -8px hsl(var(--primary) / 0.42);
-}
-
-html.theme-neumorph-light .agent-model-list-selection--neumorph,
-html.theme-neumorph-dark .agent-model-list-selection--neumorph {
-  border: 1px solid hsl(var(--border) / 0.88);
-  background:
-    linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%),
-    linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, transparent 72%);
-  box-shadow:
-    0 6px 14px -12px hsl(var(--foreground) / 0.18),
-    inset 1px 1px 0 var(--neumorph-light-edge);
-}
-
-.dark .agent-model-popover {
-  -webkit-backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
-  backdrop-filter: blur(30px) saturate(1.58) brightness(0.96);
-  background:
-    radial-gradient(ellipse 82% 62% at 18% 0%, hsl(var(--glass-shine) / 0.14), transparent 62%),
-    radial-gradient(ellipse 70% 58% at 100% 100%, hsl(var(--primary) / 0.1), transparent 64%),
-    linear-gradient(
-      168deg,
-      hsl(var(--popover) / 0.5) 0%,
-      hsl(var(--background) / 0.62) 48%,
-      hsl(var(--popover) / 0.46) 100%
-    );
-  box-shadow:
-    inset 0 2px 0 0 hsl(var(--glass-shine) / 0.13),
-    inset 0 1px 0 0 hsl(var(--foreground) / 0.08),
-    inset 0 -1px 0 0 hsl(var(--glass-ambient) / 0.28),
-    0 0 0 1px hsl(var(--foreground) / 0.08),
-    0 12px 38px -12px rgba(0, 0, 0, 0.44),
-    0 28px 78px -24px rgba(0, 0, 0, 0.36);
 }
 
 @keyframes agent-model-popover-in {
@@ -7079,7 +7051,6 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material='soft'] .msg-user,
 [data-material='soft'] .process-group,
 [data-material='soft'] .think-block,
-[data-material='soft'] .sidebar-archive-btn,
 [data-material='soft'] .agent-toolbar-pill-btn,
 [data-material='soft'] .header-status-chip {
   background: var(--glass-soft, rgba(236, 240, 246, 0.4));
@@ -7094,7 +7065,6 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 [data-material='soft'].dark .msg-user,
 [data-material='soft'].dark .process-group,
 [data-material='soft'].dark .think-block,
-[data-material='soft'].dark .sidebar-archive-btn,
 [data-material='soft'].dark .agent-toolbar-pill-btn,
 [data-material='soft'].dark .header-status-chip {
   background: var(--glass-soft, rgba(54, 62, 78, 0.38));
@@ -7252,34 +7222,6 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   box-shadow: none;
 }
 
-/* 已归档按钮：扁平化，移除所有立体效果 */
-[data-material='frosted'] .sidebar-archive-btn {
-  border: 1px solid hsl(var(--border) / 0.25);
-  background: hsl(var(--background) / 0.32);
-  box-shadow: none;
-}
-
-[data-material='frosted'] .sidebar-archive-btn:hover {
-  background: hsl(var(--background) / 0.48);
-  transform: none;
-  box-shadow: none;
-}
-
-[data-material='frosted'] .sidebar-archive-btn:active {
-  transform: scale(0.98);
-  box-shadow: none;
-}
-
-[data-material='frosted'].dark .sidebar-archive-btn {
-  border: 1px solid hsl(var(--border) / 0.2);
-  background: hsl(var(--background) / 0.28);
-  box-shadow: none;
-}
-
-[data-material='frosted'].dark .sidebar-archive-btn:hover {
-  background: hsl(var(--background) / 0.42);
-  box-shadow: none;
-}
 /*
  * Session 选中态状态修饰 — 运行中扫光、阻塞/完成变色
  * 仅用于选中的会话，非选中会话使用底部横线指示器

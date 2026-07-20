@@ -585,14 +585,14 @@ export function RichTextInput({
     }
   }, [editor, placeholder])
 
-  // 自动聚焦：组件挂载时 + autoFocusTrigger 变化时
+  // 仅在显式传入 autoFocusTrigger 时聚焦（切会话默认不抢焦点）
   useEffect(() => {
-    if (editor && !disabled) {
-      const timer = setTimeout(() => {
-        editor.commands.focus()
-      }, 100)
-      return () => clearTimeout(timer)
-    }
+    if (!editor || disabled) return
+    if (autoFocusTrigger == null || autoFocusTrigger === '') return
+    const timer = setTimeout(() => {
+      editor.commands.focus()
+    }, 100)
+    return () => clearTimeout(timer)
   }, [editor, disabled, autoFocusTrigger])
 
   // 语音输入回填：优先插入到当前编辑器的光标位置。

@@ -26,7 +26,6 @@ import {
 import { PluginNavItem, PluginNavSlideList } from './PluginNavSlideList'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import { PLUGIN_SECTION_LABELS } from './plugin-marketplace-shared'
-import { cn } from '@/lib/utils'
 import type { PluginSidebarSection } from '@/atoms/app-mode'
 import { installedPluginNavAtom, pluginSidebarSectionAtom } from '@/atoms/app-mode'
 
@@ -243,21 +242,20 @@ export function PluginSidebarNav({ capabilities }: PluginSidebarNavProps): React
         </PluginNavSlideList>
       </nav>
 
-      <div className="shrink-0 border-t border-border/40 p-2">
+      <footer className="sidebar-footer">
         <button
           type="button"
           onClick={() => handleSelectSection('installed')}
-          className={cn(
-            'flex w-full items-center justify-between rounded-[10px] px-2.5 py-2 text-left text-[12px] transition-colors duration-150',
-            'text-muted-foreground hover:bg-primary/5 hover:text-foreground'
-          )}
+          className="sidebar-footer-btn titlebar-no-drag"
+          aria-label={`已安装 ${capabilities ? installedCounts.total : ''}`}
         >
+          <LayoutGrid size={12} strokeWidth={1.75} className="opacity-70" aria-hidden />
           <span>已安装</span>
-          <span className="rounded-md bg-foreground/6 px-1.5 py-0.5 text-[10px] tabular-nums">
+          <span className="sidebar-footer-count">
             {capabilities ? installedCounts.total : '…'}
           </span>
         </button>
-      </div>
+      </footer>
     </div>
   )
 }

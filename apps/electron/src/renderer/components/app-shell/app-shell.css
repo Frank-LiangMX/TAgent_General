@@ -858,6 +858,8 @@
 
 .app-nav-sidebar .app-sidebar-session-row {
   min-height: 49px;
+  /* 预留 hover translateX 空间，避免右移裁切三点菜单 */
+  margin-right: 2px;
   padding: 8px 9px;
   border: 1px solid transparent;
   border-radius: 12px;
@@ -900,18 +902,66 @@
   display: none;
 }
 
-.app-nav-sidebar .sidebar-archive-btn {
-  border: 0;
-  border-top: 1px solid var(--md-outline-variant, hsl(var(--border) / 0.38));
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+/*
+ * 侧栏底栏（会话「已归档」/ 插件「已安装」共用）
+ * 顶线全宽 → 入口也是全行；内容左右铺开，不是贴左小胶囊。
+ */
+.app-nav-sidebar .sidebar-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  margin-top: auto;
+  padding: 6px 8px 0;
+  border-top: 1px solid var(--spatial-line, hsl(var(--border) / 0.38));
+  box-sizing: border-box;
 }
 
+.app-nav-sidebar .sidebar-footer-btn,
+.app-nav-sidebar .sidebar-archive-btn {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-glass-chip, 6px);
+  background: transparent;
+  box-shadow: none;
+  color: var(--spatial-muted, hsl(var(--muted-foreground) / 0.88));
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    color 160ms var(--app-shell-motion),
+    background-color 160ms var(--app-shell-motion);
+}
+
+.app-nav-sidebar .sidebar-footer-btn:hover,
 .app-nav-sidebar .sidebar-archive-btn:hover {
+  color: var(--spatial-ink, hsl(var(--foreground) / 0.78));
   background: var(--md-state-hover, hsl(var(--foreground) / 0.04));
   box-shadow: none;
   transform: none;
+}
+
+.app-nav-sidebar .sidebar-footer-btn:active,
+.app-nav-sidebar .sidebar-archive-btn:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.app-nav-sidebar .sidebar-footer-count {
+  margin-left: auto;
+  border-radius: var(--radius-glass-chip, 6px);
+  padding: 1px 6px;
+  background: hsl(var(--foreground) / 0.05);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  opacity: 0.85;
 }
 
 /*

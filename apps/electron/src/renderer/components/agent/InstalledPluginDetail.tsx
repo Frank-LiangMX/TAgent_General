@@ -2,7 +2,7 @@
  * InstalledPluginDetail — 已安装插件详情（轻量，对齐市场详情页）
  */
 
-import { ArrowLeft, Loader2, Pencil, Plug, Sparkles, Trash2, Zap } from 'lucide-react'
+import { Loader2, Pencil, Plug, Sparkles, Trash2, Zap } from 'lucide-react'
 import * as React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -29,6 +29,7 @@ import {
   Switch,
 } from '@tagent/ui'
 import { useSetAtom } from 'jotai'
+import { PluginBackButton } from './CapabilityToolbar'
 import type { PluginListItem } from './installed-plugins-grouping'
 import { cn } from '@/lib/utils'
 
@@ -53,15 +54,8 @@ export function InstalledPluginDetail({
 }: InstalledPluginDetailProps): React.ReactElement {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border/40 px-6 py-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="material-inline-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft size={14} strokeWidth={1.75} />
-          返回
-        </button>
+      <div className="shrink-0 px-6 pb-2 pt-1">
+        <PluginBackButton onClick={onBack} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">

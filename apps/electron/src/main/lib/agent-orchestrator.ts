@@ -2514,7 +2514,7 @@ export class AgentOrchestrator {
         includePartialMessages: isAgentStreamingEnabled(appSettings),
         // SDK 0.2.52+ 新增选项（从 settings 读取）
         ...(appSettings.agentThinking && { thinking: appSettings.agentThinking }),
-        effort: appSettings.agentEffort ?? 'high',
+        effort: appSettings.agentEffort ?? 'medium',
         ...(appSettings.agentMaxBudgetUsd != null &&
           appSettings.agentMaxBudgetUsd > 0 && {
             maxBudgetUsd: appSettings.agentMaxBudgetUsd,

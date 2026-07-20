@@ -248,7 +248,7 @@ export interface AppSettings {
   agentThinking?: ThinkingConfig
   /** Whether the Agent SDK emits partial streaming events (enabled by default). */
   agentStreaming?: boolean
-  /** Agent 推理深度 */
+  /** Agent 推理深度（未设置时默认 medium / 标准） */
   agentEffort?: AgentEffort
   /** Agent 最大预算（美元/次） */
   agentMaxBudgetUsd?: number

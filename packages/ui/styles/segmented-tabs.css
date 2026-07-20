@@ -1,308 +1,160 @@
 /**
- * 横向分段 Tab — 胶囊轨道 + 滑动指示器
+ * 横向分段 Tab — 对齐全局 spatial tab / chip 语言
  *
- * 默认 frosted：扁平 MD，弱 rim，无深立体
- * soft / glass：由 data-material 带一点光学层次
+ * 与工作区标签选中板（app-workspace-tab-active-plate）同族：
+ *   fill / rim / shadow → --surface-role-tab-*
+ * 轨本身透明，不铺独立「设置风」实心条。
  */
 
 .ui-segmented-tabs {
-  --ui-segmented-count: 2;
-  --ui-segmented-pad: 3px;
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(var(--ui-segmented-count), minmax(0, 1fr));
-  gap: 0;
-  overflow: hidden;
-  padding: var(--ui-segmented-pad);
-  border-radius: 999px;
-  /* 干净浅轨：避免 muted 灰泥感 */
-  background: hsl(var(--background));
-  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
-/* glass：液态玻璃轨道（多层 inset shadow + SVG filter）*/
-[data-material='glass'] .ui-segmented-tabs {
-  --glass-reflex-dark: 1;
-  --glass-reflex-light: 1;
-
-  background: color-mix(in srgb, hsl(var(--glass-ambient, var(--background))) 12%, transparent);
-  border: none;
-  box-shadow:
-    /* 细边框 */
-    inset 0 0 0 0.5px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 10%), transparent),
-    /* 左上高光（玻璃折射）*/
-    inset 1.8px 3px 0px -2px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 90%), transparent),
-    inset -2px -2px 0px -2px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 80%), transparent),
-    inset -3px -8px 1px -6px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 60%), transparent),
-    /* 内凹阴影（深度）*/
-    inset -0.3px -1px 4px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 12%), transparent),
-    inset -1.5px 2.5px 0px -2px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 20%), transparent),
-    inset 0px 3px 4px -2px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 20%), transparent),
-    inset 2px -6.5px 1px -4px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 10%), transparent),
-    /* 外阴影（浮起感）*/
-    0px 1px 5px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 10%), transparent),
-    0px 6px 16px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 8%), transparent);
-
-  /* SVG filter 液态效果 */
-  -webkit-backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-  backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-}
-
-/* Dark Mode glass 轨道 */
-.dark[data-material='glass'] .ui-segmented-tabs,
-[data-material='glass'].dark .ui-segmented-tabs {
-  --glass-reflex-dark: 2;
-  --glass-reflex-light: 0.3;
-}
-
-/* soft：内凹 well */
-[data-material='soft'] .ui-segmented-tabs {
-  background: color-mix(in srgb, hsl(var(--muted)) 55%, hsl(var(--background)));
-  border-color: color-mix(in srgb, hsl(var(--border)) 55%, transparent);
-  box-shadow:
-    inset 1.5px 1.5px 4px color-mix(in srgb, hsl(var(--foreground)) 9%, transparent),
-    inset -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 75%, transparent);
-}
-
+[data-material='glass'] .ui-segmented-tabs,
+[data-material='soft'] .ui-segmented-tabs,
 .dark[data-material='soft'] .ui-segmented-tabs,
 [data-material='soft'].dark .ui-segmented-tabs {
-  background: color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)));
-  box-shadow:
-    inset 1.5px 1.5px 4px color-mix(in srgb, hsl(var(--foreground)) 16%, transparent),
-    inset -1px -1px 2px color-mix(in srgb, hsl(var(--background)) 45%, transparent);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
-/* 滑动指示器：干净白胶囊浮起，不用 primary 灰泥混色 */
 .ui-segmented-tabs-indicator {
-  position: absolute;
-  top: var(--ui-segmented-pad);
-  bottom: var(--ui-segmented-pad);
-  left: var(--ui-segmented-pad);
-  z-index: 0;
-  width: calc((100% - var(--ui-segmented-pad) * 2) / var(--ui-segmented-count));
-  border-radius: 999px;
-  pointer-events: none;
-  background: hsl(var(--card));
-  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
-  box-shadow:
-    0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent),
-    0 0 0 0.5px color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
-  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dark .ui-segmented-tabs-indicator,
-.dark[data-material='frosted'] .ui-segmented-tabs-indicator,
-[data-material='frosted'].dark .ui-segmented-tabs-indicator {
-  background: color-mix(in srgb, hsl(var(--foreground)) 10%, hsl(var(--card)));
-  border-color: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 1px 3px rgba(0, 0, 0, 0.28);
-}
-
-/* frosted：实色选中，无 blur */
-:root .ui-segmented-tabs-indicator,
-[data-material='frosted'] .ui-segmented-tabs-indicator {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-/* glass 指示器：半透液态玻璃胶囊（两层玻璃叠加效果）*/
-[data-material='glass'] .ui-segmented-tabs-indicator {
-  --glass-reflex-dark: 1;
-  --glass-reflex-light: 1;
-
-  /* 真正透明：让轨道玻璃透出来 */
-  background: color-mix(in srgb, hsl(var(--primary)) 16%, transparent);
-  border: none;
-  box-shadow:
-    /* 细边框 */
-    inset 0 0 0 0.5px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 10%), transparent),
-    /* 左上高光（玻璃折射）*/
-    inset 2px 1px 0px -1px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 90%), transparent),
-    inset -1.5px -1px 0px -1px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 80%), transparent),
-    inset -2px -6px 1px -5px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 60%), transparent),
-    /* 内凹阴影（深度）*/
-    inset -1px 2px 3px -1px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 20%), transparent),
-    inset 0px -4px 1px -2px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 10%), transparent),
-    /* 外阴影（浮起感）*/
-    0px 3px 6px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 8%), transparent);
-
-  /* SVG filter 液态效果 */
-  -webkit-backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-  backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-}
-
-/* Dark Mode glass 指示器：更透 */
-.dark[data-material='glass'] .ui-segmented-tabs-indicator,
-[data-material='glass'].dark .ui-segmented-tabs-indicator {
-  --glass-reflex-dark: 2;
-  --glass-reflex-light: 0.3;
-  background: color-mix(in srgb, hsl(var(--primary)) 20%, transparent);
-}
-
-/* soft 指示器：primary 凸起胶囊 */
-[data-material='soft'] .ui-segmented-tabs-indicator {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)));
-  border-color: color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--border)));
-  box-shadow:
-    0 1px 0 color-mix(in srgb, hsl(var(--background)) 85%, transparent) inset,
-    2px 2px 5px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent),
-    -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 70%, transparent),
-    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 12%, transparent);
+  display: none !important;
 }
 
 .ui-segmented-tabs-item {
   position: relative;
   z-index: 1;
-  display: flex;
-  min-height: 30px;
+  display: inline-flex;
+  min-height: 32px;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  border-radius: 999px;
-  border: 0;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--app-shell-tab-radius, var(--radius-glass-popover, 12px));
   background: transparent;
   padding: 6px 12px;
-  /* 未选中：清晰可读，不靠 muted 发脏 */
-  color: hsl(var(--foreground) / 0.55);
+  color: var(--md-on-surface-faint, hsl(var(--foreground) / 0.45));
   font-size: 12px;
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition:
-    color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 160ms ease;
+    color 160ms var(--motion-ease-spatial, cubic-bezier(0.16, 1, 0.3, 1)),
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 200ms var(--motion-ease-spatial, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .ui-segmented-tabs-item:hover:not(:disabled):not(.ui-segmented-tabs-item--active) {
-  color: hsl(var(--foreground) / 0.82);
+  color: var(--md-on-surface-variant, hsl(var(--foreground) / 0.72));
+  background: color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
 }
 
 .ui-segmented-tabs-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.22);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.18);
 }
 
 .ui-segmented-tabs-item:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
-/* 选中文字：实色前景，干净 */
+/* 选中 = 工作区 tab 玻璃板（中性，不染 accent） */
 .ui-segmented-tabs-item--active {
-  color: hsl(var(--foreground));
+  color: var(--md-on-surface, hsl(var(--foreground)));
   font-weight: 600;
+  border-color: var(--surface-role-tab-rim, var(--surface-rim));
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgb(var(--scene-a-rgb) / 0.06), transparent 64%),
+    var(--surface-role-tab-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-tab-shadow, var(--surface-shadow-chip, none));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.06));
 }
 
-/* ===== 基础 Tabs（Radix TabsList / TabsTrigger）— 同款干净胶囊 ===== */
+.dark .ui-segmented-tabs-item--active,
+[data-material='glass'] .ui-segmented-tabs-item--active,
+[data-material='soft'] .ui-segmented-tabs-item--active {
+  /* 光学全走 surface-role-tab，材质分支不另造色 */
+  border-color: var(--surface-role-tab-rim, var(--surface-rim));
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgb(var(--scene-a-rgb) / 0.06), transparent 64%),
+    var(--surface-role-tab-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-tab-shadow, var(--surface-shadow-chip, none));
+}
+
+/* ===== Radix TabsList：同一套 tab 角色 ===== */
 .ui-tabs-list {
-  background: hsl(var(--background));
-  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
-[data-material='glass'] .ui-tabs-list {
-  --glass-reflex-dark: 1;
-  --glass-reflex-light: 1;
-
-  background: color-mix(in srgb, hsl(var(--glass-ambient, var(--background))) 12%, transparent);
-  border: none;
-  box-shadow:
-    /* 细边框 */
-    inset 0 0 0 0.5px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 10%), transparent),
-    /* 左上高光（玻璃折射）*/
-    inset 1.8px 3px 0px -2px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 90%), transparent),
-    inset -2px -2px 0px -2px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 80%), transparent),
-    inset -3px -8px 1px -6px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 60%), transparent),
-    /* 内凹阴影（深度）*/
-    inset -0.3px -1px 4px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 12%), transparent),
-    inset -1.5px 2.5px 0px -2px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 20%), transparent),
-    inset 0px 3px 4px -2px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 20%), transparent),
-    inset 2px -6.5px 1px -4px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 10%), transparent),
-    /* 外阴影（浮起感）*/
-    0px 1px 5px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 10%), transparent),
-    0px 6px 16px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 8%), transparent);
-
-  /* SVG filter 液态效果 */
-  -webkit-backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-  backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-}
-
-.dark[data-material='glass'] .ui-tabs-list,
-[data-material='glass'].dark .ui-tabs-list {
-  --glass-reflex-dark: 2;
-  --glass-reflex-light: 0.3;
-}
-
+[data-material='glass'] .ui-tabs-list,
 [data-material='soft'] .ui-tabs-list {
-  background: color-mix(in srgb, hsl(var(--muted)) 55%, hsl(var(--background)));
-  box-shadow:
-    inset 1.5px 1.5px 4px color-mix(in srgb, hsl(var(--foreground)) 9%, transparent),
-    inset -1px -1px 3px color-mix(in srgb, hsl(var(--background)) 75%, transparent);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.ui-tabs-trigger {
+  border: 1px solid transparent;
+  border-radius: var(--app-shell-tab-radius, var(--radius-glass-popover, 12px));
+  min-height: 32px;
+}
+
+.ui-tabs-trigger::after {
+  display: none;
 }
 
 .ui-tabs-trigger[data-state='active'] {
-  color: hsl(var(--foreground));
+  color: var(--md-on-surface, hsl(var(--foreground)));
   font-weight: 600;
-  background: hsl(var(--card));
-  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
-  box-shadow:
-    0 1px 2px color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+  border-color: var(--surface-role-tab-rim, var(--surface-rim));
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgb(var(--scene-a-rgb) / 0.06), transparent 64%),
+    var(--surface-role-tab-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-tab-shadow, var(--surface-shadow-chip, none));
+  -webkit-backdrop-filter: blur(var(--surface-blur-chip, 12px))
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-blur-chip, 12px)) saturate(var(--surface-saturate, 1.06));
 }
 
-.dark .ui-tabs-trigger[data-state='active'] {
-  background: color-mix(in srgb, hsl(var(--foreground)) 10%, hsl(var(--card)));
-  border-color: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 1px 3px rgba(0, 0, 0, 0.28);
-}
-
+.dark .ui-tabs-trigger[data-state='active'],
+[data-material='glass'] .ui-tabs-trigger[data-state='active'],
 [data-material='soft'] .ui-tabs-trigger[data-state='active'] {
-  background: color-mix(in srgb, hsl(var(--primary)) 14%, hsl(var(--card)));
-  box-shadow:
-    0 1px 0 color-mix(in srgb, hsl(var(--background)) 85%, transparent) inset,
-    2px 2px 5px color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
-}
-
-/* glass tabs：半透液态玻璃选中态（两层玻璃叠加）*/
-[data-material='glass'] .ui-tabs-trigger[data-state='active'] {
-  --glass-reflex-dark: 1;
-  --glass-reflex-light: 1;
-
-  /* 真正透明：让轨道玻璃透出来 */
-  background: color-mix(in srgb, hsl(var(--primary)) 16%, transparent);
-  border: none;
-  box-shadow:
-    /* 细边框 */
-    inset 0 0 0 0.5px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 10%), transparent),
-    /* 左上高光（玻璃折射）*/
-    inset 2px 1px 0px -1px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 90%), transparent),
-    inset -1.5px -1px 0px -1px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 80%), transparent),
-    inset -2px -6px 1px -5px color-mix(in srgb, hsl(var(--glass-shine, 0 0% 100%)) calc(var(--glass-reflex-light) * 60%), transparent),
-    /* 内凹阴影（深度）*/
-    inset -1px 2px 3px -1px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 20%), transparent),
-    inset 0px -4px 1px -2px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 10%), transparent),
-    /* 外阴影（浮起感）*/
-    0px 3px 6px 0px color-mix(in srgb, hsl(var(--glass-rim, var(--foreground))) calc(var(--glass-reflex-dark) * 8%), transparent);
-
-  /* SVG filter 液态效果 */
-  -webkit-backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-  backdrop-filter: blur(8px) url(#liquid-glass-filter) saturate(1.5);
-}
-
-.dark[data-material='glass'] .ui-tabs-trigger[data-state='active'],
-[data-material='glass'].dark .ui-tabs-trigger[data-state='active'] {
-  --glass-reflex-dark: 2;
-  --glass-reflex-light: 0.3;
-  background: color-mix(in srgb, hsl(var(--primary)) 20%, transparent);
+  border-color: var(--surface-role-tab-rim, var(--surface-rim));
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgb(var(--scene-a-rgb) / 0.06), transparent 64%),
+    var(--surface-role-tab-fill, var(--surface-bg-chip));
+  box-shadow: var(--surface-role-tab-shadow, var(--surface-shadow-chip, none));
 }
 
 .ui-tabs-trigger:hover:not(:disabled):not([data-state='active']) {
-  color: hsl(var(--foreground) / 0.78);
+  color: var(--md-on-surface-variant, hsl(var(--foreground) / 0.72));
+  background: color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
 }

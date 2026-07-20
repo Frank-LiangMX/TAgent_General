@@ -86,7 +86,6 @@ import type {
   SystemPrompt,
   SystemPromptCreateInput,
   SystemPromptUpdateInput,
-  MoveSessionToWorkspaceInput,
   ForkSessionInput,
   RewindSessionInput,
   RewindSessionResult,
@@ -167,7 +166,6 @@ import {
   updateAgentSessionMeta,
   deleteAgentSession,
   migrateChatToAgentSession,
-  moveSessionToWorkspace,
   forkAgentSession,
   cleanupStaleAttachedPaths,
   searchAgentSessionMessages,
@@ -1720,22 +1718,6 @@ export function registerIpcHandlers(): void {
     AGENT_IPC_CHANNELS.SEARCH_SESSION_REFERENCES,
     async (_, input: AgentSessionReferenceSearchInput) => {
       return searchAgentSessionReferences(input)
-    }
-  )
-
-  // 迁移 Agent 会话到另一个工作区
-  ipcMain.handle(
-    AGENT_IPC_CHANNELS.MOVE_SESSION_TO_WORKSPACE,
-    async (_, input: MoveSessionToWorkspaceInput): Promise<AgentSessionMeta> => {
-      // 渲染进程的 running 状态可能比主进程 activeSessions 清理更早变为 false
-      // （STREAM_COMPLETE 在 finally 之前发送），短暂等待后重试一次
-      if (isAgentSessionActive(input.sessionId)) {
-        await new Promise((r) => setTimeout(r, 500))
-        if (isAgentSessionActive(input.sessionId)) {
-          throw new Error('会话正在运行中，请停止后再迁移')
-        }
-      }
-      return moveSessionToWorkspace(input.sessionId, input.targetWorkspaceId)
     }
   )
 

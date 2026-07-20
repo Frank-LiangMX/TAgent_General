@@ -1,19 +1,20 @@
 /**
- * PluginMarketplaceView — 插件市场（整合包 + 散落 MCP/Skill）
+ * PluginMarketplaceView — 插件市场（spatial）
+ *
+ * 透明场 + 标题行工具簇 + SegmentedTabs；卡片用 kanban-crew-badge，不用厚白卡。
  */
 
-import { CheckCircle2, LayoutGrid, Loader2, Plug, Plus, Sparkles } from 'lucide-react'
+import { CheckCircle2, Loader2, Plug, Plus, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
 import type { BuiltinMcpCatalogEntry, PluginStoreCatalog } from '@tagent/shared'
 
-import { Button, SearchInput, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
+import { SearchInput, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import { useAtomValue } from 'jotai'
 
 import { PluginMarketplaceBundleDetail } from './PluginMarketplaceBundleDetail'
 import { PluginMarketplaceDetail } from './PluginMarketplaceDetail'
-import { PluginToolbarButton } from './plugin-toolbar-button'
 import { PluginBundleLogo } from './plugin-marketplace-icons'
 import {
   PLUGIN_CATEGORY_LABELS,
@@ -46,6 +47,7 @@ interface PluginMarketplaceViewProps {
   onSkillInstalled: () => void
   onBundleInstalled: () => void
   onAddCustomMcp?: () => void
+  toolbar?: React.ReactNode
 }
 
 export function PluginMarketplaceView({
@@ -56,6 +58,7 @@ export function PluginMarketplaceView({
   onSkillInstalled,
   onBundleInstalled,
   onAddCustomMcp,
+  toolbar,
 }: PluginMarketplaceViewProps): React.ReactElement {
   const section = useAtomValue(pluginSidebarSectionAtom)
   const [catalog, setCatalog] = React.useState<PluginStoreCatalog | null>(null)
@@ -241,86 +244,90 @@ export function PluginMarketplaceView({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 space-y-3 border-b border-border/40 px-6 py-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">{sectionTitle}</h2>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">
-              优先通过整合包安装；MCP / Skill 标签仅展示未收录在整合包中的条目
+      <div className="shrink-0 space-y-3.5 px-6 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="md-text text-[18px] font-semibold tracking-tight">{sectionTitle}</h2>
+            <p className="md-text-variant mt-1 text-[12px] leading-relaxed">
+              优先整合包；MCP / Skill 仅展示未收录条目
             </p>
           </div>
-          {onAddCustomMcp ? (
-            <PluginToolbarButton
-              variant="outline"
-              icon={<Plus size={14} />}
-              onClick={onAddCustomMcp}
-            >
-              自定义 MCP
-            </PluginToolbarButton>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-0.5">
+            {onAddCustomMcp ? (
+              <button
+                type="button"
+                onClick={onAddCustomMcp}
+                className="inline-flex size-9 items-center justify-center rounded-full text-foreground/60 hover:text-foreground"
+                aria-label="自定义 MCP"
+                title="自定义 MCP"
+              >
+                <Plus className="size-4" strokeWidth={1.75} />
+              </button>
+            ) : null}
+            {toolbar}
+          </div>
         </div>
-        <SegmentedTabs
-          className="max-w-lg"
-          value={kindFilter}
-          onValueChange={(next) => setKindFilter(next as MarketplaceKindFilter)}
-        >
-          <SegmentedTabsItem value="bundle" className="gap-1">
-            <LayoutGrid size={12} strokeWidth={1.75} />
-            整合包
-            {!loading ? (
-              <span className="text-[10px] tabular-nums opacity-60">{kindCounts.bundle}</span>
-            ) : null}
-          </SegmentedTabsItem>
-          <SegmentedTabsItem value="all" className="gap-1">
-            全部
-            {!loading ? (
-              <span className="text-[10px] tabular-nums opacity-60">{kindCounts.all}</span>
-            ) : null}
-          </SegmentedTabsItem>
-          <SegmentedTabsItem value="mcp" className="gap-1">
-            <Plug size={12} strokeWidth={1.75} />
-            MCP
-            {!loading ? (
-              <span className="text-[10px] tabular-nums opacity-60">{kindCounts.mcp}</span>
-            ) : null}
-          </SegmentedTabsItem>
-          <SegmentedTabsItem value="skill" className="gap-1">
-            <Sparkles size={12} strokeWidth={1.75} />
-            Skill
-            {!loading ? (
-              <span className="text-[10px] tabular-nums opacity-60">{kindCounts.skill}</span>
-            ) : null}
-          </SegmentedTabsItem>
-        </SegmentedTabs>
 
-        <SearchInput
-          variant="glass"
-          size="md"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={
-            kindFilter === 'bundle'
-              ? '搜索整合包…'
-              : kindFilter === 'mcp'
-                ? '搜索 MCP…'
-                : kindFilter === 'skill'
-                  ? '搜索 Skill…'
-                  : '搜索整合包、Skill、MCP…'
-          }
-          className="max-w-xl"
-        />
+        <div className="flex flex-col gap-3">
+          <SegmentedTabs
+            value={kindFilter}
+            onValueChange={(next) => setKindFilter(next as MarketplaceKindFilter)}
+          >
+            <SegmentedTabsItem value="bundle" className="gap-1">
+              整合包
+              {!loading ? (
+                <span className="text-[10px] tabular-nums opacity-55">{kindCounts.bundle}</span>
+              ) : null}
+            </SegmentedTabsItem>
+            <SegmentedTabsItem value="all" className="gap-1">
+              全部
+              {!loading ? (
+                <span className="text-[10px] tabular-nums opacity-55">{kindCounts.all}</span>
+              ) : null}
+            </SegmentedTabsItem>
+            <SegmentedTabsItem value="mcp" className="gap-1">
+              MCP
+              {!loading ? (
+                <span className="text-[10px] tabular-nums opacity-55">{kindCounts.mcp}</span>
+              ) : null}
+            </SegmentedTabsItem>
+            <SegmentedTabsItem value="skill" className="gap-1">
+              Skill
+              {!loading ? (
+                <span className="text-[10px] tabular-nums opacity-55">{kindCounts.skill}</span>
+              ) : null}
+            </SegmentedTabsItem>
+          </SegmentedTabs>
+
+          <SearchInput
+            variant="glass"
+            size="md"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={
+              kindFilter === 'bundle'
+                ? '搜索整合包…'
+                : kindFilter === 'mcp'
+                  ? '搜索 MCP…'
+                  : kindFilter === 'skill'
+                    ? '搜索 Skill…'
+                    : '搜索整合包、Skill、MCP…'
+            }
+            className="max-w-md"
+          />
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 scrollbar-thin">
         {loading ? (
           <MarketplaceSkeletonGrid />
         ) : empty ? (
-          <div className="plugins-panel-empty py-16">
-            <Sparkles size={24} className="text-muted-foreground/35" strokeWidth={1.5} />
-            <p className="mt-2 text-[12px] text-muted-foreground">此分类下没有匹配的插件</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Sparkles size={24} className="md-text-faint" strokeWidth={1.5} />
+            <p className="md-text-variant mt-2 text-[12px]">此分类下没有匹配的插件</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="kanban-crew-field grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {bundles.map((bundle) => (
               <MarketplaceBundleCard
                 key={`bundle:${bundle.id}`}
@@ -374,7 +381,7 @@ function MarketplaceBundleCard({
   onGet: (event: React.MouseEvent) => void
 }): React.ReactElement {
   return (
-    <article
+    <div
       role="button"
       tabIndex={0}
       onClick={onSelect}
@@ -384,55 +391,54 @@ function MarketplaceBundleCard({
           onSelect()
         }
       }}
-      className={cn(
-        'material-panel-card flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
-        'transition-colors hover:border-border/70 hover:bg-card/70',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35'
-      )}
+      className="kanban-crew-badge group flex h-full min-h-[140px] cursor-pointer flex-col p-3.5 text-left titlebar-no-drag ui-pressable"
     >
       <div className="flex items-start gap-3">
         <PluginBundleLogo
           logo={item.bundle.logo}
           alt={item.title}
-          className="size-10 shrink-0 rounded-xl object-cover"
+          className="size-9 shrink-0 rounded-glass-popover object-cover"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
+            <h3 className="md-text truncate text-[13px] font-medium tracking-tight">{item.title}</h3>
             {item.tier === 'recommended' ? (
-              <span className="material-inline-chip rounded-full px-1.5 py-0.5 text-[9px] font-medium text-primary">
+              <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[9px] text-foreground/50">
                 推荐
               </span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
+          <p className="md-text-faint mt-0.5 text-[10px]">
             整合包 · MCP ×{item.mcpCount} · Skill ×{item.skillCount}
           </p>
         </div>
       </div>
-      <p className="mt-3 line-clamp-3 flex-1 text-[11px] leading-5 text-muted-foreground">
+      <p className="md-text-variant mt-3 line-clamp-3 flex-1 text-[11px] leading-relaxed">
         {item.description}
       </p>
-      <div className="mt-4 flex justify-end">
+      <div
+        className="mt-3 flex justify-end border-t border-foreground/[0.05] pt-2"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         {installed ? (
-          <span className="material-inline-chip inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-            <CheckCircle2 size={12} />
+          <span className="inline-flex h-7 items-center gap-1 px-2 text-[11px] text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-3" strokeWidth={1.75} />
             已安装
           </span>
         ) : (
-          <Button size="sm" variant="secondary" disabled={installing} onClick={onGet}>
-            {installing ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                安装中…
-              </>
-            ) : (
-              '安装'
-            )}
-          </Button>
+          <button
+            type="button"
+            disabled={installing}
+            onClick={onGet}
+            className="inline-flex h-7 items-center gap-1 rounded-glass-popover px-2.5 text-[11px] text-foreground/60 hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-40"
+          >
+            {installing ? <Loader2 className="size-3 animate-spin" /> : null}
+            {installing ? '安装中…' : '安装'}
+          </button>
         )}
       </div>
-    </article>
+    </div>
   )
 }
 
@@ -451,7 +457,7 @@ function MarketplaceItemCard({
 }): React.ReactElement {
   const Icon = item.kind === 'mcp' ? Plug : Sparkles
   return (
-    <article
+    <div
       role="button"
       tabIndex={0}
       onClick={onSelect}
@@ -461,68 +467,70 @@ function MarketplaceItemCard({
           onSelect()
         }
       }}
-      className={cn(
-        'material-panel-card flex cursor-pointer flex-col rounded-2xl border border-border/45 bg-card/40 p-4 shadow-sm shadow-foreground/[0.02]',
-        'transition-colors hover:border-border/70 hover:bg-card/70',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/35'
-      )}
+      className="kanban-crew-badge group flex h-full min-h-[140px] cursor-pointer flex-col p-3.5 text-left titlebar-no-drag ui-pressable"
     >
       <div className="flex items-start gap-3">
         <span
           className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-xl',
+            'flex size-9 shrink-0 items-center justify-center rounded-full',
             item.kind === 'mcp'
               ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400'
               : 'bg-amber-500/12 text-amber-600 dark:text-amber-400'
           )}
         >
-          <Icon size={18} strokeWidth={1.75} />
+          <Icon className="size-4" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="text-[13px] font-semibold text-foreground">{item.title}</h3>
+            <h3 className="md-text truncate text-[13px] font-medium tracking-tight">{item.title}</h3>
             {item.tier === 'recommended' ? (
-              <span className="material-inline-chip rounded-full px-1.5 py-0.5 text-[9px] font-medium text-primary">
+              <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[9px] text-foreground/50">
                 推荐
               </span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
+          <p className="md-text-faint mt-0.5 text-[10px]">
             {item.kind === 'mcp' ? 'MCP' : 'Skill'} · {PLUGIN_CATEGORY_LABELS[item.category]}
           </p>
         </div>
       </div>
-      <p className="mt-3 line-clamp-3 flex-1 text-[11px] leading-5 text-muted-foreground">
+      <p className="md-text-variant mt-3 line-clamp-3 flex-1 text-[11px] leading-relaxed">
         {item.description}
       </p>
-      <div className="mt-4 flex justify-end">
+      <div
+        className="mt-3 flex justify-end border-t border-foreground/[0.05] pt-2"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         {installed ? (
-          <span className="material-inline-chip inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-            <CheckCircle2 size={12} />
+          <span className="inline-flex h-7 items-center gap-1 px-2 text-[11px] text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-3" strokeWidth={1.75} />
             已安装
           </span>
         ) : (
-          <Button size="sm" variant="secondary" disabled={installing} onClick={onGet}>
-            {installing ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                安装中…
-              </>
-            ) : (
-              '安装'
-            )}
-          </Button>
+          <button
+            type="button"
+            disabled={installing}
+            onClick={onGet}
+            className="inline-flex h-7 items-center gap-1 rounded-glass-popover px-2.5 text-[11px] text-foreground/60 hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-40"
+          >
+            {installing ? <Loader2 className="size-3 animate-spin" /> : null}
+            {installing ? '安装中…' : '安装'}
+          </button>
         )}
       </div>
-    </article>
+    </div>
   )
 }
 
 function MarketplaceSkeletonGrid(): React.ReactElement {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="kanban-crew-field grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-[148px] animate-pulse rounded-2xl bg-muted/25" />
+        <div
+          key={i}
+          className="h-[140px] animate-pulse rounded-glass-popover bg-foreground/[0.04]"
+        />
       ))}
     </div>
   )
