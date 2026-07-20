@@ -1174,6 +1174,12 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   margin-left: 12px;
 }
 
+/* 会话状态条移除后槽位为空：不占 Tab 区横向空间 */
+.app-shell-content-stage .app-workspace-session-status-slot:empty {
+  display: none;
+  margin-left: 0;
+}
+
 .app-shell-content-stage .agent-session-header {
   display: flex;
   height: 32px;

@@ -5,12 +5,12 @@
  * - 加载当前 Agent 会话消息
  * - 发送/停止/压缩 Agent 消息
  * - 附件上传处理
- * - AgentHeader 支持标题编辑 + 文件浏览器切换
  *
  * 注意：IPC 流式事件监听已提升到全局 useGlobalAgentListeners，
  * 本组件为纯展示 + 交互组件。
  *
- * 布局：AgentHeader | AgentMessages | AgentInput + 可选 FileBrowser 侧面板
+ * 布局：AgentMessages | Composer（模型/权限在输入区）+ 可选右侧 Inspector
+ * 会话状态条已移除：模型/权限/班组进度分别落在 Composer、Underlay、右轨班组入口。
  */
 
 import {
@@ -33,7 +33,6 @@ import {
   Eye,
   Bot,
   MessageSquareText,
-  Users,
 } from 'lucide-react'
 import * as React from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
@@ -64,7 +63,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@tagent/ui'
-import { AgentHeader } from './AgentHeader'
 import { AgentMessages } from './AgentMessages'
 import { AgentMessageQueue } from './AgentMessageQueue'
 import { reconcilePersistedMessagesOnReload } from './reconcile-persisted-messages'
@@ -155,7 +153,6 @@ import { sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
 import {
   sessionBoardIdAtomFamily,
   sessionSourceKanbanTaskIdAtomFamily,
-  useKanbanBoard,
 } from '@/atoms/kanban-atoms'
 import { rightRailItemAtom } from '@/atoms/app-mode'
 import {
@@ -504,14 +501,11 @@ export interface AgentViewProps {
   sessionId: string
   /** Classic full workspace or the single conversation surface embedded in AI Office. */
   surface?: 'classic' | 'office-dock'
-  /** Extra controls shown in the classic Agent header. */
-  headerActions?: React.ReactNode
 }
 
 export function AgentView({
   sessionId,
   surface = 'classic',
-  headerActions,
 }: AgentViewProps): React.ReactElement {
   const isOfficeDock = surface === 'office-dock'
   const [ksccGuideOpen, setKsccGuideOpen] = React.useState(false)
@@ -579,28 +573,11 @@ export function AgentView({
   // ===== Kanban 班组入口（右栏伴生面板，不再整页切换） =====
   const isNestedWorker = useAtomValue(sessionSourceKanbanTaskIdAtomFamily(sessionId)) !== undefined
   const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
-  const kanbanBoard = useKanbanBoard(sessionId)
-  const [rightRailItem, setRightRailItem] = useAtom(rightRailItemAtom)
-  const [sidePanelOpen, setSidePanelOpen] = useAtom(agentSidePanelOpenAtom)
-  /** 主会话绑定看板后显示顶栏班组进度芯片 */
-  const showKanbanCrewChip = !isNestedWorker && !!boardId
-  const isCrewPanelActive = sidePanelOpen && rightRailItem === 'crew'
-  const crewTaskSummary = React.useMemo(() => {
-    const total = kanbanBoard.tasks.length
-    const done = kanbanBoard.tasks.filter((task) => task.status === 'done').length
-    const running = kanbanBoard.tasks.filter((task) => task.status === 'running').length
-    const blocked = kanbanBoard.tasks.filter((task) => task.status === 'blocked').length
-
-    return {
-      total,
-      done,
-      running,
-      blocked,
-      progress: total > 0 ? (done / total) * 100 : 0,
-    }
-  }, [kanbanBoard.tasks])
+  const setRightRailItem = useSetAtom(rightRailItemAtom)
+  const setSidePanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const previousBoardIdRef = React.useRef<string | undefined>(boardId)
 
+  // 主会话首次绑定看板时自动打开右轨班组面板（进度入口已迁到右轨）
   React.useEffect(() => {
     const previousBoardId = previousBoardIdRef.current
     if (surface === 'classic' && !isNestedWorker && !previousBoardId && boardId) {
@@ -609,15 +586,6 @@ export function AgentView({
     }
     previousBoardIdRef.current = boardId
   }, [boardId, isNestedWorker, setRightRailItem, setSidePanelOpen, surface])
-
-  const toggleCrewPanel = React.useCallback(() => {
-    if (isCrewPanelActive) {
-      setSidePanelOpen(false)
-      return
-    }
-    setRightRailItem('crew')
-    setSidePanelOpen(true)
-  }, [isCrewPanelActive, setRightRailItem, setSidePanelOpen])
   // ===== Kanban 集成结束 =====
 
   const [pendingPrompt, setPendingPrompt] = useAtom(agentPendingPromptAtom)
@@ -3237,53 +3205,7 @@ export function AgentView({
           )}
           data-agent-surface={surface}
         >
-          {/* Agent Header（右侧看板进度 + 切换） — 嵌套工人会话隐藏 */}
-          {!isNestedWorker && surface === 'classic' && (
-            <AgentHeader
-              sessionId={sessionId}
-              rightSlot={
-                showKanbanCrewChip || headerActions ? (
-                  <>
-                    {showKanbanCrewChip && crewTaskSummary.total > 0 ? (
-                      <button
-                        type="button"
-                        onClick={toggleCrewPanel}
-                        title={isCrewPanelActive ? '收起班组面板' : '打开班组面板'}
-                        aria-label={`班组进度：已完成 ${crewTaskSummary.done}/${crewTaskSummary.total}${crewTaskSummary.running > 0 ? `，运行中 ${crewTaskSummary.running}` : ''}${crewTaskSummary.blocked > 0 ? `，受阻 ${crewTaskSummary.blocked}` : ''}`}
-                        aria-pressed={isCrewPanelActive}
-                        className={cn('agent-session-crew', isCrewPanelActive && 'is-active')}
-                      >
-                        <Users className="agent-session-crew__icon" aria-hidden />
-                        <span className="agent-session-crew__count">
-                          {crewTaskSummary.done}/{crewTaskSummary.total}
-                        </span>
-                        {crewTaskSummary.running > 0 && (
-                          <span className="agent-session-crew__signal is-running">
-                            +{crewTaskSummary.running}
-                          </span>
-                        )}
-                        {crewTaskSummary.blocked > 0 && (
-                          <span className="agent-session-crew__signal is-blocked">
-                            !{crewTaskSummary.blocked}
-                          </span>
-                        )}
-                        <span className="agent-session-crew__track" aria-hidden>
-                          <span
-                            className={cn(
-                              'agent-session-crew__progress',
-                              crewTaskSummary.blocked > 0 && 'has-blocked'
-                            )}
-                            style={{ width: `${crewTaskSummary.progress}%` }}
-                          />
-                        </span>
-                      </button>
-                    ) : null}
-                    {headerActions}
-                  </>
-                ) : null
-              }
-            />
-          )}
+          {/* 会话状态条已移除：模型/权限在 Composer，班组进度在右轨 */}
 
           <>
             <SessionFloatingLayout

@@ -63,13 +63,21 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
   const isDesignActive = panelOpen && rightRailItem === 'design'
   const isCrewActive = panelOpen && rightRailItem === 'crew'
 
-  // 班组角标：含工人 parentBoardId；忙碌/求助中时提示（面板已打开班组时不显示）
+  // 班组进度：承接原顶栏 4/4 chip；面板已打开时由面板本身展示，角标隐藏
   const crewBoardId = useAtomValue(sessionCrewBoardIdAtomFamily(currentSessionId ?? ''))
   const { tasks: crewTasks } = useKanbanBoardById(crewBoardId)
-  const showCrewBadge =
-    !!crewBoardId &&
-    !isCrewActive &&
-    crewTasks.some((t) => t.status === 'running' || t.status === 'blocked')
+  const crewSummary = React.useMemo(() => {
+    const total = crewTasks.length
+    const done = crewTasks.filter((t) => t.status === 'done').length
+    const running = crewTasks.filter((t) => t.status === 'running').length
+    const blocked = crewTasks.filter((t) => t.status === 'blocked').length
+    return { total, done, running, blocked }
+  }, [crewTasks])
+  const showCrewCount = !!crewBoardId && !isCrewActive && crewSummary.total > 0
+  const crewBusy = crewSummary.running > 0 || crewSummary.blocked > 0
+  const crewAriaLabel = showCrewCount
+    ? `班组 ${crewSummary.done}/${crewSummary.total}${crewSummary.running > 0 ? `，运行中 ${crewSummary.running}` : ''}${crewSummary.blocked > 0 ? `，受阻 ${crewSummary.blocked}` : ''}`
+    : '班组'
   // 检查是否有可用的渠道
   const hasChannel = React.useMemo(() => {
     if (!channelId) return false
@@ -260,29 +268,42 @@ export function RightPanelRail({ panelOpen, className }: RightPanelRailProps): R
             </TooltipContent>
           </Tooltip>
 
-          {/* 班组墙（数字员工队列） */}
+          {/* 班组墙（数字员工队列）— 进度角标承接原顶栏 4/4 */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 onClick={handleCrewClick}
                 aria-pressed={isCrewActive}
-                aria-label="班组"
+                aria-label={crewAriaLabel}
                 className={cn(
                   'rail-island-btn right-rail-btn size-8 flex items-center justify-center titlebar-no-drag relative z-[2]',
                   isCrewActive && 'rail-island-btn--active'
                 )}
               >
                 <CREW_ICON size={14} strokeWidth={1.75} />
-                {showCrewBadge && (
-                  <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-amber-500 ring-1 ring-background" />
+                {showCrewCount && (
+                  <span
+                    className={cn(
+                      'absolute -right-1 -top-1 z-[3] min-w-[18px] rounded-full px-0.5 text-center text-[8px] font-semibold leading-[12px] tabular-nums ring-1 ring-background',
+                      crewBusy
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-primary text-primary-foreground'
+                    )}
+                  >
+                    {crewSummary.done}/{crewSummary.total}
+                  </span>
                 )}
               </button>
             </TooltipTrigger>
             <TooltipContent side="left">
               <div className="text-xs">
                 <div className="font-medium">班组</div>
-                <div className="text-muted-foreground">本会话数字员工与派活进度</div>
+                <div className="text-muted-foreground">
+                  {showCrewCount
+                    ? `进度 ${crewSummary.done}/${crewSummary.total}${crewSummary.running > 0 ? ` · 运行 ${crewSummary.running}` : ''}${crewSummary.blocked > 0 ? ` · 受阻 ${crewSummary.blocked}` : ''}`
+                    : '本会话数字员工与派活进度'}
+                </div>
               </div>
             </TooltipContent>
           </Tooltip>

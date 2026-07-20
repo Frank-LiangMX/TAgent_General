@@ -1,7 +1,9 @@
 /**
- * AgentHeader — Agent 会话头部
+ * AgentHeader — Agent 会话头部（状态条）
  *
- * 显示当前会话的轻量状态栏。
+ * 历史：曾显示模型 / 权限 / 运行态 / 班组进度。
+ * 2026-07：classic 主路径已停用——模型、权限落在 Composer / Underlay，
+ * 班组进度落在 RightPanelRail。组件保留供紧急回滚或特殊 surface 复用。
  */
 
 import { TAGENT_PERMISSION_MODE_CONFIG } from '@tagent/shared'
