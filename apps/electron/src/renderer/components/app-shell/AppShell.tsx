@@ -15,9 +15,11 @@ import { LeftSidebar } from './LeftSidebar'
 import { getNavClusterWidth, NavIsland } from './NavIsland'
 import { RightInspectorFrame } from './RightInspectorFrame'
 import { RightPanelRail } from './RightPanelRail'
+import { shouldDismissFloatInspector } from './right-inspector-dismiss'
 import {
   createInspectorMotionKeyframes,
   getInspectorProxyStyle,
+  INSPECTOR_MOTION_EASE,
   type InspectorMotionRect,
 } from './right-inspector-motion'
 import { deriveShellLayout } from './shell-layout'
@@ -72,14 +74,19 @@ const MAX_RIGHT_PANEL_WIDTH = 420
 /** 覆盖层 / design 退场时长 */
 const DESIGN_MODE_EXIT_MS = 260
 /**
- * 右栏 morph：对齐 layout-direction-study 左侧边栏手法
- * - 真面板在 morph 中隐藏，由独立 surface 用 WAAPI 多关键帧做几何插值
- * - 内容先离场 / 后入场，不与面板几何抢同一条 transition
+ * 右栏 morph：
+ * - 代理 surface 做胶囊↔面板几何
+ * - 结束后与真面板「交叠交接」（先挂真壳、再溶掉代理），避免闪一下
+ * - 缓动偏线性，减少末端阻尼爬行
  */
-const INSPECTOR_OPEN_MS = 300
-const INSPECTOR_CLOSE_MS = 260
-const INSPECTOR_CONTENT_LEAVE_MS = 42
-const INSPECTOR_CONTENT_REVEAL_MS = 130
+const INSPECTOR_OPEN_MS = 200
+const INSPECTOR_CLOSE_MS = 170
+/** 关闭时内容离场尽量短 */
+const INSPECTOR_CONTENT_LEAVE_MS = 16
+/** 内容淡入（仅 header/tabs/body，壳层不闪） */
+const INSPECTOR_CONTENT_REVEAL_MS = 80
+/** 代理盖住真壳的交叠帧 + 溶出时长 */
+const INSPECTOR_HANDOFF_FADE_MS = 48
 const RIGHT_RAIL_COLLAPSED_WIDTH = 46
 const RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK = 188
 
@@ -97,6 +104,22 @@ function prefersReducedMotion(): boolean {
 function waitMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms)
+  })
+}
+
+/** 等 n 帧 paint，用于 morph 代理与真面板交叠交接 */
+function waitFrames(count = 1): Promise<void> {
+  return new Promise((resolve) => {
+    let left = Math.max(1, count)
+    const tick = () => {
+      left -= 1
+      if (left <= 0) {
+        resolve()
+        return
+      }
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
   })
 }
 
@@ -159,6 +182,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const appMode = useAtomValue(appModeAtom)
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const rightPanelRequestedOpen = useAtomValue(agentSidePanelOpenAtom)
+  const setRightPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const rightPanelPlacement = useAtomValue(agentSidePanelPlacementAtom)
   const sidebarRequestedOpen = useAtomValue(navigationSidebarOpenAtom)
   const rightRailItem = useAtomValue(rightRailItemAtom)
@@ -209,6 +233,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const dragging = React.useRef(false)
   const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
 
+  const rightStackRef = React.useRef<HTMLDivElement>(null)
   const islandRef = React.useRef<HTMLDivElement>(null)
   const morphLayerRef = React.useRef<HTMLDivElement>(null)
   const morphSurfaceRef = React.useRef<HTMLDivElement>(null)
@@ -237,6 +262,28 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     surface.classList.remove('is-active', 'is-opening', 'is-closing')
     surface.removeAttribute('style')
   }, [])
+
+  /**
+   * float 浮层：点 inspector 外自动收起；dock 占位常驻，不监听。
+   * morph 中不响应，避免动画期间误关。
+   */
+  React.useEffect(() => {
+    if (!inspectorOpen) return
+    if (rightPanelPlacement !== 'float') return
+    if (isInspectorMorphing) return
+
+    const onPointerDown = (event: PointerEvent): void => {
+      if (
+        !shouldDismissFloatInspector(event.target, rightStackRef.current ?? islandRef.current)
+      ) {
+        return
+      }
+      setRightPanelOpen(false)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [inspectorOpen, rightPanelPlacement, isInspectorMorphing, setRightPanelOpen])
 
   React.useLayoutEffect(() => {
     if (inspectorShellExpanded) return
@@ -278,6 +325,54 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         return
       }
 
+      /**
+       * 交叠交接：代理仍盖在上面 → 挂真壳并 paint → 代理溶出。
+       * 禁止「先卸代理、再挂真壳」（会空一帧闪白/闪空）。
+       */
+      const handoffToReal = async (mode: 'open' | 'collapsed') => {
+        const finishedAnim = morphAnimRef.current
+        // 把 WAAPI 终态写进 inline，再 cancel，避免 fill:forwards 锁死 opacity
+        if (finishedAnim) {
+          try {
+            finishedAnim.commitStyles()
+          } catch {
+            // 部分环境无 commitStyles：忽略，依赖当前 computed
+          }
+          finishedAnim.cancel()
+          morphAnimRef.current = null
+        }
+
+        // 代理固定盖在终态几何上（展开=满面板，收回=胶囊）
+        surface.style.opacity = '1'
+        surface.style.transition = 'none'
+        surface.classList.add('is-active')
+
+        if (mode === 'open') {
+          // 内容直接上，不再 0→1 二次淡入（否则代理溶掉后会「空壳再闪内容」）
+          setInspectorPhase('open')
+          setIsContentRevealing(false)
+        } else {
+          setInspectorPhase('collapsed')
+          setIsContentRevealing(false)
+        }
+        setIsContentLeaving(false)
+
+        // 等 React commit + 真壳至少 paint 一帧（含 backdrop-filter 首帧）
+        await waitFrames(2)
+        if (cancelled || version !== morphVersionRef.current) return
+
+        // 代理轻溶：盖住真壳与代理材质差
+        surface.style.transition = `opacity ${INSPECTOR_HANDOFF_FADE_MS}ms linear`
+        // 强制 reflow，确保 transition 生效
+        void surface.offsetWidth
+        surface.style.opacity = '0'
+        await waitMs(INSPECTOR_HANDOFF_FADE_MS)
+        if (cancelled || version !== morphVersionRef.current) return
+
+        surface.classList.remove('is-active', 'is-opening', 'is-closing')
+        surface.removeAttribute('style')
+      }
+
       const activeAnimation = morphAnimRef.current
       if (
         activeAnimation &&
@@ -292,10 +387,18 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         activeAnimation.reverse()
         await activeAnimation.finished.catch(() => undefined)
         if (cancelled || version !== morphVersionRef.current) return
+        await handoffToReal(openingEdge ? 'open' : 'collapsed')
+        return
+      }
 
-        resetMorphSurface()
-        setInspectorPhase(openingEdge ? 'open' : 'collapsed')
-        if (openingEdge) {
+      if (openingEdge && contentLeavePendingRef.current) {
+        contentLeavePendingRef.current = false
+        setIsContentLeaving(false)
+        // 关闭中途又打开：代理可能不在，直接真壳
+        if (surface.classList.contains('is-active')) {
+          await handoffToReal('open')
+        } else {
+          setInspectorPhase('open')
           setIsContentRevealing(true)
           window.setTimeout(() => {
             if (version === morphVersionRef.current) setIsContentRevealing(false)
@@ -304,25 +407,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         return
       }
 
-      if (openingEdge && contentLeavePendingRef.current) {
-        contentLeavePendingRef.current = false
-        setInspectorPhase('open')
-        setIsContentLeaving(false)
-        setIsContentRevealing(true)
-        window.setTimeout(() => {
-          if (version === morphVersionRef.current) setIsContentRevealing(false)
-        }, INSPECTOR_CONTENT_REVEAL_MS)
-        return
-      }
-
       if (closingEdge) {
-        setInspectorPhase('open')
+        // 关闭：先量展开几何，再卸内容 + morph
         contentLeavePendingRef.current = true
-        // 1) 内容先离场（原型 70ms）
         setIsContentLeaving(true)
-        await waitMs(INSPECTOR_CONTENT_LEAVE_MS)
-        if (cancelled || version !== morphVersionRef.current) return
-        contentLeavePendingRef.current = false
 
         const overlay = layer.getBoundingClientRect()
         const panelRect = localMorphRect(island.getBoundingClientRect(), overlay)
@@ -333,38 +421,43 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           height: collapsedRailHeightRef.current,
         }
 
+        await waitMs(INSPECTOR_CONTENT_LEAVE_MS)
+        if (cancelled || version !== morphVersionRef.current) return
+        contentLeavePendingRef.current = false
+
         morphAnimRef.current?.cancel()
+        surface.style.transition = ''
         Object.assign(surface.style, {
           ...getInspectorProxyStyle(panelRect),
           opacity: '1',
         })
         surface.classList.add('is-active', 'is-closing')
-        // 真面板隐藏；surface 演面板→胶囊（布局可先收成胶囊，视觉由 surface 接管）
+        surface.classList.remove('is-opening')
+        // 真面板隐藏并卸载内容；surface 演面板→胶囊
         setInspectorPhase('closing')
         setIsContentLeaving(false)
 
         const anim = surface.animate(
           createInspectorMotionKeyframes(capsuleRect, panelRect, 'closing'),
-          { duration: INSPECTOR_CLOSE_MS, easing: 'linear', fill: 'forwards' }
+          {
+            duration: INSPECTOR_CLOSE_MS,
+            easing: INSPECTOR_MOTION_EASE,
+            fill: 'forwards',
+          }
         )
         morphAnimRef.current = anim
         await anim.finished.catch(() => undefined)
         if (cancelled || version !== morphVersionRef.current) return
-
-        surface.classList.remove('is-active', 'is-closing')
-        surface.removeAttribute('style')
-        morphAnimRef.current = null
-        setInspectorPhase('collapsed')
+        await handoffToReal('collapsed')
         return
       }
 
-      // openingEdge：先展开布局（真面板隐藏），surface 从胶囊演到满面板，再 reveal 内容
+      // openingEdge：先展开布局（真面板隐藏），surface 从胶囊演到满面板
       setInspectorPhase('opening')
       setIsContentRevealing(false)
 
       const overlay = layer.getBoundingClientRect()
       const panelBox = island.getBoundingClientRect()
-      // 若尚未铺满，用 stack 几何兜底
       const stackBox = island.parentElement?.getBoundingClientRect()
       const panelDom =
         panelBox.width > RIGHT_RAIL_COLLAPSED_WIDTH + 20
@@ -373,10 +466,13 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             ? stackBox
             : panelBox
       const panelRect = localMorphRect(panelDom, overlay)
-      // 强制目标为当前面板宽 × stack 高（右缘对齐）
       panelRect.width = rightPanelWidthRef.current
       panelRect.left = panelRect.left + panelDom.width - rightPanelWidthRef.current
-      panelRect.height = stackBox?.height || panelRect.height
+      const bandHeight =
+        stackBox && stackBox.height > RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK
+          ? stackBox.height
+          : panelRect.height
+      panelRect.height = bandHeight
 
       const capsuleRect: InspectorMotionRect = {
         left: panelRect.left + panelRect.width - RIGHT_RAIL_COLLAPSED_WIDTH,
@@ -386,28 +482,26 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       }
 
       morphAnimRef.current?.cancel()
+      surface.style.transition = ''
       Object.assign(surface.style, {
         ...getInspectorProxyStyle(panelRect),
-        opacity: '0.96',
+        opacity: '1',
       })
       surface.classList.add('is-active', 'is-opening')
+      surface.classList.remove('is-closing')
 
       const anim = surface.animate(
         createInspectorMotionKeyframes(capsuleRect, panelRect, 'opening'),
-        { duration: INSPECTOR_OPEN_MS, easing: 'linear', fill: 'forwards' }
+        {
+          duration: INSPECTOR_OPEN_MS,
+          easing: INSPECTOR_MOTION_EASE,
+          fill: 'forwards',
+        }
       )
       morphAnimRef.current = anim
       await anim.finished.catch(() => undefined)
       if (cancelled || version !== morphVersionRef.current) return
-
-      surface.classList.remove('is-active', 'is-opening')
-      surface.removeAttribute('style')
-      morphAnimRef.current = null
-      setInspectorPhase('open')
-      setIsContentRevealing(true)
-      window.setTimeout(() => {
-        if (version === morphVersionRef.current) setIsContentRevealing(false)
-      }, INSPECTOR_CONTENT_REVEAL_MS)
+      await handoffToReal('open')
     }
 
     void run()
@@ -623,6 +717,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         {showRightPanel && (
           <div
+            ref={rightStackRef}
             className={cn(
               'app-shell-right-stack',
               inspectorShellExpanded

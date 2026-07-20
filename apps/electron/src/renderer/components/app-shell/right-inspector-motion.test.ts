@@ -15,6 +15,7 @@ describe('right inspector motion', () => {
       expect(frame).not.toHaveProperty('width')
       expect(frame).not.toHaveProperty('height')
       expect(frame.transform).toContain('translate3d(')
+      expect(frame.borderRadius).toBeTruthy()
     }
 
     expect(getInspectorProxyStyle(PANEL)).toMatchObject({
@@ -29,19 +30,32 @@ describe('right inspector motion', () => {
   test('opens from the rail footprint and finishes at the panel geometry', () => {
     const frames = createInspectorMotionKeyframes(CAPSULE, PANEL, 'opening')
 
-    expect(frames.map((frame) => frame.offset)).toEqual([0, 0.2, 0.48, 0.74, 1])
+    expect(frames.map((frame) => frame.offset)).toEqual([0, 1])
     expect(frames[0]?.transform).toContain('scale(0.1437, 0.2611)')
-    expect(frames[1]?.transform).toContain('translate3d(-2px, 4px, 0)')
     expect(frames.at(-1)?.transform).toBe('translate3d(0px, 0px, 0) scale(1, 1)')
+    // scale 会压扁圆角：胶囊端用 R/scale 反补偿，避免缩成直角矩形
+    expect(frames[0]?.borderRadius).toBe('111.3043px / 61.2766px')
+    expect(frames.at(-1)?.borderRadius).toBe('22px')
   })
 
-  test('closing is the exact spatial reverse with monotonic offsets', () => {
+  test('closing is the exact spatial reverse', () => {
     const opening = createInspectorMotionKeyframes(CAPSULE, PANEL, 'opening')
     const closing = createInspectorMotionKeyframes(CAPSULE, PANEL, 'closing')
 
-    expect(closing.map((frame) => frame.offset)).toEqual([0, 0.26, 0.52, 0.8, 1])
+    expect(closing.map((frame) => frame.offset)).toEqual([0, 1])
     expect(closing[0]?.transform).toBe(opening.at(-1)?.transform)
     expect(closing.at(-1)?.transform).toBe(opening[0]?.transform)
+    expect(closing[0]?.borderRadius).toBe(opening.at(-1)?.borderRadius)
+    expect(closing.at(-1)?.borderRadius).toBe(opening[0]?.borderRadius)
+  })
+
+  test('compensates border radius so capsule pose keeps a rounded silhouette', () => {
+    const frames = createInspectorMotionKeyframes(CAPSULE, PANEL, 'closing')
+    const end = frames.at(-1)
+    // 111 / 0.1437 ≈ 16, 61 / 0.2611 ≈ 16 — 视觉圆角回到胶囊 16px
+    expect(String(end?.borderRadius)).toMatch(/px \/ /)
+    expect(end?.borderRadius).not.toBe('22px')
+    expect(end?.borderRadius).not.toBe('0px')
   })
 
   test('clamps zero-sized geometry to finite transforms', () => {

@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { PanelsTopLeft, SquareStack, X } from 'lucide-react'
+import { PanelRight, PictureInPicture2, X } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -16,6 +16,7 @@ import { RightSidePanel } from './RightSidePanel'
 
 import { agentSidePanelOpenAtom, agentSidePanelPlacementAtom } from '@/atoms/agent-atoms'
 import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
+import { cn } from '@/lib/utils'
 
 const INSPECTOR_TITLES: Record<RightRailItem, string> = {
   files: '项目文件',
@@ -47,23 +48,34 @@ export const RightInspectorFrame = React.memo(function RightInspectorFrame({
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className="app-inspector-close"
+                className={cn('app-inspector-close', isDock && 'app-inspector-close--active')}
                 aria-pressed={isDock}
-                aria-label={isDock ? '切换为浮层' : '切换为占位'}
+                aria-label={
+                  isDock
+                    ? '当前占位模式，点击切换为浮层'
+                    : '当前浮层模式，点击切换为占位'
+                }
                 onClick={() => setPlacement(isDock ? 'float' : 'dock')}
               >
+                {/*
+                  图标表示「当前模式」而不是「点了变什么」：
+                  - PanelRight：侧栏占列（主区让宽、常驻）
+                  - PictureInPicture2：浮在内容上（可点外关闭）
+                */}
                 {isDock ? (
-                  <SquareStack size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <PanelRight size={15} strokeWidth={1.5} aria-hidden="true" />
                 ) : (
-                  <PanelsTopLeft size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <PictureInPicture2 size={15} strokeWidth={1.5} aria-hidden="true" />
                 )}
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               <div className="text-xs">
-                <div className="font-medium">{isDock ? '占位模式' : '浮层模式'}</div>
+                <div className="font-medium">{isDock ? '占位 · 常驻' : '浮层 · 点外关闭'}</div>
                 <div className="text-muted-foreground">
-                  {isDock ? '点击改为浮在主区上' : '点击改为真实占列、不重叠'}
+                  {isDock
+                    ? '侧栏占列，主区让宽。点击改为浮在主区上'
+                    : '浮在主区上，点外部收起。点击改为占列常驻'}
                 </div>
               </div>
             </TooltipContent>

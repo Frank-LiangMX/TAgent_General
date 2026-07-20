@@ -228,9 +228,10 @@
  *    · .app-shell-nav          左轨 + sidebar
  *
  *  右侧：折叠/展开均 absolute
- *    · float：抬升悬空（更深阴影 + translateY），main 不让宽
- *    · dock：贴 band 同 left sidebar；main 用 --right-inspector-reserve 动画 margin-right
- *      reserve = 面板宽 + 窗右 gutter（与左 nav↔main 结构缝 0 一致；光学缝靠 session-gutter）
+ *    · float：抬升悬空（更深阴影），main 不让宽
+ *    · dock：贴 band 同 left sidebar；main 用 --right-inspector-reserve 让宽
+ *      reserve = 面板宽 + 窗右 gutter
+ *      float↔dock 时 main margin-right 与右栏几何 240ms 过渡；胶囊开合仍瞬时
  *
  *  工作场（chrome 以下拉满到窗底）
  *    · .app-shell-main
@@ -257,7 +258,7 @@
     transform var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
 }
 
-/* main = 工作场：不与 sidebar 共 height box；dock 时用 margin-right 动画让宽 */
+/* main = 工作场：不与 sidebar 共 height box；dock 时用 margin-right 让宽 */
 .app-shell-main {
   position: relative;
   z-index: 1;
@@ -270,8 +271,24 @@
   margin-right: var(--right-inspector-reserve, 0px);
   height: 100%;
   max-height: none;
-  /* 与右栏 morph 同拍，避免 dock 让宽与面板 width 错拍卡顿 */
-  transition: margin-right 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  /*
+   * 默认无 transition：胶囊展开/收回时 reserve 瞬时到位，避免与 morph 叠 reflow。
+   * float ↔ dock 切换时再开短过渡（见下方 data-right-placement）。
+   */
+  transition: none;
+}
+
+/*
+ * 仅「已展开」且处于 float/dock 时允许 main 让宽过渡。
+ * collapsed/hidden 与 morph 中仍保持瞬时（morph 规则见更下方 :has）。
+ */
+.app-shell-scene[data-right-placement='float'] .app-shell-main,
+.app-shell-scene[data-right-placement='dock'] .app-shell-main {
+  transition: margin-right 240ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+.app-shell-scene:has(.app-shell-right-stack--inspector-morphing) .app-shell-main {
+  transition: none !important;
 }
 
 /*
@@ -332,6 +349,25 @@
   max-height: none;
   min-height: 0;
   align-items: flex-start;
+}
+
+/*
+ * 展开态 float ↔ dock：几何/阴影短过渡，与 main 让宽同拍。
+ * morph 开合时关掉，避免和代理 surface 抢戏。
+ */
+.app-shell-right-stack--open:not(.app-shell-right-stack--inspector-morphing) {
+  transition:
+    top 240ms cubic-bezier(0.33, 0, 0.2, 1),
+    height 240ms cubic-bezier(0.33, 0, 0.2, 1),
+    max-height 240ms cubic-bezier(0.33, 0, 0.2, 1),
+    min-height 240ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+.app-shell-right-stack--open:not(.app-shell-right-stack--inspector-morphing)
+  .right-nav-island-glass.nav-island-glass {
+  transition:
+    box-shadow 240ms cubic-bezier(0.33, 0, 0.2, 1),
+    border-color 240ms cubic-bezier(0.33, 0, 0.2, 1);
 }
 
 /* 浮层：略抬离 band（±4），高度仍固定，不靠 bottom 拉伸 */
@@ -2204,6 +2240,25 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   transform: scale(0.94);
 }
 
+/* 占位模式：高亮当前态，避免和「关闭」按钮语义混同 */
+.app-inspector-close--active {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+}
+
+.app-inspector-close--active:hover {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.16);
+}
+
+.dark .app-inspector-close--active {
+  background: hsl(var(--primary) / 0.18);
+}
+
+.dark .app-inspector-close--active:hover {
+  background: hsl(var(--primary) / 0.24);
+}
+
 /* 展开态：原折叠 rail 选项迁到 sidebar 顶栏（对齐 layout-direction-study inspector-tabs） */
 .app-inspector-tabs {
   display: flex;
@@ -2378,42 +2433,33 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 }
 
 /*
- * morph 中：真面板隐形（对齐原型 is-sidebar-morphing）
- * 几何由 .right-inspector-morph-surface WAAPI 负责
+ * morph 中：真面板完全退出绘制管线（对齐原型 is-sidebar-morphing）
+ * 几何由 .right-inspector-morph-surface WAAPI 负责。
+ * 必须关掉 backdrop-filter：opacity:0 的毛玻璃在 Chromium 仍可能参与合成，是卡顿重灾区。
  */
 .app-shell-right-stack--inspector-morphing .right-nav-island-glass {
+  visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
   transform: none !important;
   box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  contain: strict;
 }
 
-/* 内容先离场 / 后入场（对齐原型 content-leaving / revealing） */
+.app-shell-right-stack--inspector-morphing .right-nav-island-glass::before,
+.app-shell-right-stack--inspector-morphing .right-nav-island-glass::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 关闭：内容先淡出（极短）；展开交接不再做 0→1 reveal，避免代理溶掉后空壳再闪 */
 .app-shell-right-stack--content-leaving
   .nav-island-sidebar
   :is(.app-inspector-header, .app-inspector-tabs, .app-inspector-body) {
   opacity: 0;
-  transform: translateX(8px);
-  transition:
-    opacity 42ms ease-out,
-    transform 80ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.app-shell-right-stack--content-revealing
-  .nav-island-sidebar
-  :is(.app-inspector-header, .app-inspector-tabs, .app-inspector-body) {
-  animation: right-inspector-content-reveal 130ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes right-inspector-content-reveal {
-  from {
-    opacity: 0;
-    transform: translateX(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  transition: opacity 16ms linear;
 }
 
 /* 独立 morph 层（对齐原型 .rail-overlay-layer + .sidebar-morph-surface） */
@@ -2422,6 +2468,8 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   z-index: 80;
   inset: 0;
   pointer-events: none;
+  /* 整层不参与命中与滚动，降低无关合成 */
+  contain: strict;
 }
 
 .right-inspector-morph-surface {
@@ -2431,31 +2479,34 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   overflow: hidden;
   border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
   border-radius: var(--app-shell-drawer-radius, 22px);
-  background: var(--spatial-rail-fill, var(--surface-role-navigation-fill));
-  box-shadow: var(--spatial-panel-shadow, var(--surface-role-panel-shadow));
+  /*
+   * 尽量贴近真面板填充 token，交接时材质差更小。
+   * 仍禁止 backdrop-filter（scale 时毛玻璃极卡）。
+   */
+  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
+  box-shadow: var(--spatial-panel-shadow, 0 8px 24px rgb(23 30 40 / 0.12));
   opacity: 0;
   contain: strict;
   isolation: isolate;
   transform-origin: top right;
   backface-visibility: hidden;
-  will-change: transform, opacity;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  will-change: auto;
 }
 
 .right-inspector-morph-surface.is-active {
   display: block;
+  /* border-radius 随 scale 反补偿，需进合成插值 */
+  will-change: transform, opacity, border-radius;
+}
+
+.dark .right-inspector-morph-surface {
+  box-shadow: var(--spatial-panel-shadow, 0 10px 28px rgb(0 0 0 / 0.32));
 }
 
 .right-inspector-morph-surface::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
-  filter: none;
-  opacity: 0.72;
+  content: none;
 }
 
 .app-shell-right-stack--open.app-shell-right-stack--dock .right-nav-island-glass.nav-island-glass {
@@ -2511,6 +2562,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 @media (prefers-reduced-motion: reduce) {
   .app-shell-nav,
   .app-nav-sidebar,
+  .app-shell-right-stack,
   .app-shell-right-stack .nav-island-sidebar,
   .app-nav-stack .rail-island-btn,
   .app-shell-right-stack .right-nav-island-glass.nav-island-glass,
@@ -2518,7 +2570,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   .app-workspace-tab,
   .app-inspector-close {
     animation: none;
-    transition-duration: 0.01ms;
+    transition-duration: 0.01ms !important;
   }
 
   .app-shell-right-stack--open.app-shell-right-stack--float
