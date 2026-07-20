@@ -216,8 +216,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const showLeftSidebar = shellLayout.sidebar === 'open'
   const showRightPanel = shellLayout.inspector !== 'hidden'
   const inspectorOpen = shellLayout.inspector === 'open'
-  /** 真实占列：仅展开 + dock；折叠胶囊与 float 展开仍走 overlay */
-  const inspectorDocked = inspectorOpen && rightPanelPlacement === 'dock'
   const workspaceInactive = shellLayout.canvas !== 'none'
   const workspaceRef = useInertElement<HTMLElement>(workspaceInactive)
 
@@ -253,6 +251,29 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const inspectorShellExpanded = inspectorOpen || inspectorPhase !== 'collapsed'
   const isInspectorMorphing = inspectorPhase === 'opening' || inspectorPhase === 'closing'
   const inspectorClosing = !inspectorOpen && inspectorPhase !== 'collapsed'
+
+  /**
+   * dock 占位跟 phase（对齐左栏 shellExpanded）：
+   * opening 才撑开、closing 即收窄；禁止用 inspectorOpen（一点击 main 秒切）。
+   */
+  const dockReserveActive =
+    rightPanelPlacement === 'dock' &&
+    (inspectorPhase === 'open' || inspectorPhase === 'opening')
+  const rightLayoutMotionMs =
+    rightPanelPlacement === 'dock' && inspectorPhase === 'opening'
+      ? INSPECTOR_OPEN_MS
+      : rightPanelPlacement === 'dock' && inspectorPhase === 'closing'
+        ? INSPECTOR_CLOSE_MS
+        : 240
+  /** morph / 收起过程中保持 dock，避免 data 掉成 collapsed 导致 main 过渡被关掉 */
+  const rightPlacementAttr =
+    rightPanelPlacement === 'dock' && inspectorPhase !== 'collapsed'
+      ? 'dock'
+      : inspectorOpen
+        ? rightPanelPlacement
+        : showRightPanel
+          ? 'collapsed'
+          : 'hidden'
 
   const resetMorphSurface = React.useCallback(() => {
     morphAnimRef.current?.cancel()
@@ -623,17 +644,17 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         data-shell-scene={shellLayout.scene}
         data-canvas-presentation={shellLayout.canvas}
         data-composer-placement={shellLayout.composer}
-        data-right-placement={
-          inspectorOpen ? rightPanelPlacement : showRightPanel ? 'collapsed' : 'hidden'
-        }
+        data-right-placement={rightPlacementAttr}
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
-          /* dock 占位：面板宽 + 窗右 gutter；与左栏一样结构缝 0，光学缝靠 session-gutter */
+          /* dock 占位：跟 phase 同步过渡，与 morph / 左栏让位同拍 */
           ['--right-inspector-width' as string]: `${clampedRightPanelWidth}px`,
-          ['--right-inspector-reserve' as string]: inspectorDocked
+          ['--right-inspector-reserve' as string]: dockReserveActive
             ? `calc(${clampedRightPanelWidth}px + var(--spatial-gutter))`
             : '0px',
+          ['--right-inspector-layout-ms' as string]: `${rightLayoutMotionMs}ms`,
+          ['--right-inspector-layout-ease' as string]: INSPECTOR_MOTION_EASE,
         }}
       >
         <SpatialTopBar />
@@ -645,6 +666,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         >
           <NavIsland
             sidebarPresence={shellLayout.sidebar}
+            activeRailItem={activeRailItem}
             sidebarWidth={navSidebarWidth}
             railWidth={navRailWidth}
           >

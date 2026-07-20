@@ -230,8 +230,8 @@
  *  右侧：折叠/展开均 absolute
  *    · float：抬升悬空（更深阴影），main 不让宽
  *    · dock：贴 band 同 left sidebar；main 用 --right-inspector-reserve 让宽
- *      reserve = 面板宽 + 窗右 gutter
- *      float↔dock 时 main margin-right 与右栏几何 240ms 过渡；胶囊开合仍瞬时
+ *      reserve 跟 inspectorPhase 同步（opening 撑 / closing 收），与 morph 同拍
+ *      float↔dock 时 main margin-right 240ms；float 胶囊开合仍不占位
  *
  *  工作场（chrome 以下拉满到窗底）
  *    · .app-shell-main
@@ -272,22 +272,25 @@
   height: 100%;
   max-height: none;
   /*
-   * 默认无 transition：胶囊展开/收回时 reserve 瞬时到位，避免与 morph 叠 reflow。
-   * float ↔ dock 切换时再开短过渡（见下方 data-right-placement）。
+   * 默认无 transition：折叠胶囊不占位。
+   * dock / float 开合与 float↔dock 用下方规则 + --right-inspector-layout-ms。
    */
   transition: none;
 }
 
 /*
- * 仅「已展开」且处于 float/dock 时允许 main 让宽过渡。
- * collapsed/hidden 与 morph 中仍保持瞬时（morph 规则见更下方 :has）。
+ * dock：开合与 morph 同相让位（时长由 --right-inspector-layout-ms 注入）。
+ * float：仅 float↔dock 切换时过渡；float morph 本身不占位，见下条关掉。
  */
-.app-shell-scene[data-right-placement='float'] .app-shell-main,
-.app-shell-scene[data-right-placement='dock'] .app-shell-main {
-  transition: margin-right 240ms cubic-bezier(0.33, 0, 0.2, 1);
+.app-shell-scene[data-right-placement='dock'] .app-shell-main,
+.app-shell-scene[data-right-placement='float'] .app-shell-main {
+  transition: margin-right var(--right-inspector-layout-ms, 240ms)
+    var(--right-inspector-layout-ease, cubic-bezier(0.33, 0, 0.2, 1));
 }
 
-.app-shell-scene:has(.app-shell-right-stack--inspector-morphing) .app-shell-main {
+/* float morph 不占列：关掉让位过渡，避免无意义 reflow */
+.app-shell-scene[data-right-placement='float']:has(.app-shell-right-stack--inspector-morphing)
+  .app-shell-main {
   transition: none !important;
 }
 
@@ -411,7 +414,7 @@
   border: 0;
   background: transparent;
   box-shadow: none;
-  transition: gap var(--motion-duration-panel, 280ms) var(--motion-ease-spatial, ease-out);
+  transition: gap var(--left-sidebar-layout-ms, 280ms) var(--left-sidebar-layout-ease, ease-out);
 }
 
 /*
@@ -535,11 +538,13 @@
   -webkit-backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   transform-origin: left center;
-  /* 只动画可插值的几何/透明度；不动画 flex-basis（与 width 双轨会抖）/ backdrop-filter */
+  /*
+   * width 与 rail↔sidebar morph 同相：flex 占位变化驱动右侧 main 让位，
+   * 避免开合时 main 秒切。几何视觉仍由 morph surface 承担。
+   */
   transition:
-    width var(--motion-duration-panel, 320ms) var(--motion-ease-spatial, ease-out),
+    width var(--left-sidebar-layout-ms, 0ms) var(--left-sidebar-layout-ease, ease-out),
     opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
-    transform var(--motion-duration-panel, 320ms) var(--motion-ease-spatial, ease-out),
     border-color var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in);
   contain: layout style;
 }
@@ -554,8 +559,228 @@
   border-width: 0;
   border-color: transparent;
   box-shadow: none;
-  transform: translate3d(-10px, 0, 0);
+  transform: none;
   pointer-events: none;
+}
+
+/*
+ * morph 中：真侧栏退出绘制，几何由 .left-sidebar-morph-surface 承担
+ *（对齐右栏 inspector-morphing）
+ * width 过渡保留：继续驱动 flex，让 main 与 morph 同步让位。
+ */
+.app-nav-stack--sidebar-morphing .app-nav-sidebar {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  transition:
+    width var(--left-sidebar-layout-ms, 0ms) var(--left-sidebar-layout-ease, ease-out) !important;
+  contain: strict;
+}
+
+/* 左栏 morph 层 */
+.left-sidebar-morph-layer {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  pointer-events: none;
+  contain: strict;
+}
+
+.left-sidebar-morph-tether {
+  position: absolute;
+  z-index: 0;
+  display: none;
+  height: 18px;
+  border-radius: 999px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--spatial-panel-fill, hsl(var(--background))) 72%, transparent),
+      color-mix(in srgb, hsl(var(--primary)) 22%, transparent)
+    ),
+    radial-gradient(circle at 100% 50%, hsl(var(--foreground) / 0.12), transparent 58%);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.08),
+    0 5px 18px hsl(var(--foreground) / 0.08);
+  opacity: 0;
+  transform-origin: left center;
+  will-change: transform, opacity;
+  filter: blur(0.35px);
+}
+
+.left-sidebar-morph-tether.is-active {
+  display: block;
+}
+
+.dark .left-sidebar-morph-tether {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--spatial-panel-fill, hsl(var(--background))) 58%, transparent),
+      color-mix(in srgb, hsl(var(--primary)) 28%, transparent)
+    ),
+    radial-gradient(circle at 100% 50%, hsl(var(--foreground) / 0.1), transparent 58%);
+}
+
+.left-sidebar-morph-surface {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  overflow: hidden;
+  border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
+  border-radius: var(--app-shell-drawer-radius, 22px);
+  background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
+  box-shadow: var(--spatial-panel-shadow, 0 8px 24px rgb(23 30 40 / 0.12));
+  opacity: 0;
+  /* 几何用 left/top/width/height 插值，勿 size containment */
+  contain: layout paint style;
+  isolation: isolate;
+  transform-origin: top left;
+  backface-visibility: hidden;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  will-change: auto;
+}
+
+.left-sidebar-morph-surface.is-active {
+  display: block;
+  will-change: left, top, width, height, opacity, border-radius;
+}
+
+.dark .left-sidebar-morph-surface {
+  box-shadow: var(--spatial-panel-shadow, 0 10px 28px rgb(0 0 0 / 0.32));
+}
+
+.left-sidebar-morph-ghost {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.left-sidebar-morph-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--spatial-panel-rim, hsl(var(--border)));
+  border-radius: var(--radius-glass-sidebar, 12px);
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--foreground) / 0.06);
+}
+
+.left-sidebar-morph-ghost div {
+  display: grid;
+  gap: 3px;
+}
+
+.left-sidebar-morph-ghost small {
+  color: hsl(var(--muted-foreground));
+  font-size: 7px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+
+.left-sidebar-morph-ghost strong {
+  color: hsl(var(--foreground) / 0.78);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.left-sidebar-morph-surface.is-opening .left-sidebar-morph-ghost {
+  animation: left-sidebar-morph-ghost-open 500ms var(--motion-ease-spatial, ease-out) both;
+}
+
+.left-sidebar-morph-surface.is-closing .left-sidebar-morph-ghost {
+  animation: left-sidebar-morph-ghost-close 130ms ease both;
+}
+
+@keyframes left-sidebar-morph-ghost-open {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes left-sidebar-morph-ghost-close {
+  from {
+    opacity: 0.72;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+/* 关闭前只淡内容，不动整栏几何；展开交接不再二次 reveal */
+.app-nav-stack--sidebar-content-leaving .app-nav-sidebar-content {
+  opacity: 0;
+  transition: opacity 110ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+.app-nav-stack--sidebar-closing .app-nav-sidebar-content {
+  opacity: 0;
+  transition: none;
+}
+
+.app-nav-stack .rail-island-btn.is-morph-absorbing {
+  animation: left-rail-morph-absorb 380ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.app-nav-stack .rail-island-btn.is-morph-emitting {
+  animation: left-rail-morph-emit 440ms cubic-bezier(0.2, 0.78, 0.2, 1) both;
+}
+
+@keyframes left-rail-morph-absorb {
+  0% {
+    box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.12);
+  }
+  68% {
+    background: hsl(var(--foreground) / 0.08);
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--foreground) / 0.16),
+      0 0 0 7px hsl(var(--primary) / 0.1);
+    transform: scale(0.94);
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--foreground) / 0.12),
+      0 5px 13px hsl(var(--foreground) / 0.08);
+    transform: scale(1);
+  }
+}
+
+@keyframes left-rail-morph-emit {
+  0% {
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--foreground) / 0.12),
+      0 5px 13px hsl(var(--foreground) / 0.08);
+    transform: scale(1);
+  }
+  34% {
+    background: hsl(var(--foreground) / 0.08);
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--foreground) / 0.16),
+      0 0 0 8px hsl(var(--primary) / 0.09);
+    transform: scale(0.93);
+  }
+  100% {
+    box-shadow: inset 0 0 0 1px hsl(var(--foreground) / 0.12);
+    transform: scale(1);
+  }
 }
 
 .app-nav-stack:not(.app-nav-stack--expanded) .app-nav-sidebar-content {
@@ -2562,6 +2787,7 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
 @media (prefers-reduced-motion: reduce) {
   .app-shell-nav,
   .app-nav-sidebar,
+  .app-nav-stack,
   .app-shell-right-stack,
   .app-shell-right-stack .nav-island-sidebar,
   .app-nav-stack .rail-island-btn,
@@ -2571,6 +2797,20 @@ html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn):ho
   .app-inspector-close {
     animation: none;
     transition-duration: 0.01ms !important;
+  }
+
+  .left-sidebar-morph-layer,
+  .left-sidebar-morph-surface,
+  .left-sidebar-morph-tether {
+    display: none !important;
+  }
+
+  .app-nav-stack .rail-island-btn.is-morph-absorbing,
+  .app-nav-stack .rail-island-btn.is-morph-emitting,
+  .left-sidebar-morph-surface.is-opening .left-sidebar-morph-ghost,
+  .left-sidebar-morph-surface.is-closing .left-sidebar-morph-ghost,
+  .app-nav-stack--sidebar-revealing .app-nav-sidebar-content {
+    animation: none !important;
   }
 
   .app-shell-right-stack--open.app-shell-right-stack--float
