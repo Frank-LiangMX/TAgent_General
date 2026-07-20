@@ -31,6 +31,7 @@ import {
   activeTabIdAtom,
   activeTabAtom,
   tabSwitchingAtom,
+  tabsHydratedAtom,
   visibleSessionTabsAtom,
   visibleTabsAtom,
 } from '@/atoms/tab-atoms'
@@ -150,6 +151,7 @@ function GeneralMainArea(): React.ReactElement {
 
   const tabs = useAtomValue(visibleTabsAtom)
   const sessionTabs = useAtomValue(visibleSessionTabsAtom)
+  const tabsHydrated = useAtomValue(tabsHydratedAtom)
   const activeTabId = useAtomValue(activeTabIdAtom)
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   const activeTab = useAtomValue(activeTabAtom)
@@ -209,7 +211,9 @@ function GeneralMainArea(): React.ReactElement {
     sessionPresentation === 'classic' &&
     (previewOpenMap.get(activeTab.sessionId) ?? false)
   const previewSessionId = activeTab?.type === 'agent' ? activeTab.sessionId : null
-  const showSessionWelcome = appMode !== 'draft' && sessionTabs.length === 0
+  // 启动恢复完成前不算「无会话」，避免 Welcome 引导页闪现
+  const showSessionWelcome = tabsHydrated && appMode !== 'draft' && sessionTabs.length === 0
+  const showWelcomeShell = showSessionWelcome || (tabsHydrated && tabs.length === 0)
 
   // 关闭动画状态：当 previewOpen 从 true → false 时，播放退出动画再移除 DOM
   // 在 render 阶段同步派生 closing，避免中间帧出现 flex: 1 1 auto 导致左侧瞬间跳到 100% 宽
@@ -316,9 +320,14 @@ function GeneralMainArea(): React.ReactElement {
             视觉上像"内容从右向左推送"。让左侧瞬间变宽，由右侧 absolute 滑出动画
             覆盖期内呈现"被剥离"的视觉效果。 */}
         <div className="flex flex-col min-w-0 h-full relative" style={leftFlexStyle}>
-          {!showSessionWelcome && !designImmersive && <TabBar />}
+          {!showWelcomeShell && !designImmersive && <TabBar />}
           <div className="content-main-body flex flex-col min-w-0 min-h-0 flex-1 relative">
-            {showSessionWelcome || tabs.length === 0 ? (
+            {!tabsHydrated ? (
+              <>
+                <ContentWindowDragBand />
+                <div className="flex-1 min-h-0" aria-hidden />
+              </>
+            ) : showWelcomeShell ? (
               <>
                 <ContentWindowDragBand />
                 <WelcomeView />

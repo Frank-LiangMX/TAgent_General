@@ -124,6 +124,12 @@ export const tabsAtom = atom<TabItem[], [TabItem[] | ((prev: TabItem[]) => TabIt
 const rawTabsAtom = atom<TabItem[]>([])
 
 /**
+ * 标签页是否已完成启动恢复（settings.tabState）。
+ * 恢复完成前主区不要渲染 Welcome，避免 refresh 时闪一下引导页。
+ */
+export const tabsHydratedAtom = atom(false)
+
+/**
  * 每个顶层模式各自的激活 tab ID。
  * 切模式时从该 map 读取对应模式的上次激活 tab，互不干扰。
  * 写入时通过 useSetActiveTabId 钩子同步设置。

@@ -58,7 +58,7 @@ import {
   notificationSoundsAtom,
   initializeNotifications,
 } from './atoms/notifications'
-import { tabsAtom, activeTabIdAtom, getPersistableTabState } from './atoms/tab-atoms'
+import { tabsAtom, activeTabIdAtom, getPersistableTabState, tabsHydratedAtom } from './atoms/tab-atoms'
 import { tagentBrandAtom, initializeTAgentBrand } from './atoms/tagent-brand'
 import {
   themeModeAtom,
@@ -831,6 +831,7 @@ function TabStatePersistenceInitializer(): null {
       .catch((err) => console.error('[TabRestore] 恢复标签页失败:', err))
       .finally(() => {
         restoredRef.current = true
+        store.set(tabsHydratedAtom, true)
       })
   }, [store])
 
