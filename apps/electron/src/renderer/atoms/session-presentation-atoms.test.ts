@@ -39,6 +39,9 @@ describe('session presentation preference', () => {
     ).toEqual({
       chatCollapsed: true,
       chatWidth: 620,
+      chatHeight: 600,
+      chatPosition: { x: -1, y: -1 },
+      chatUISize: 'medium',
       camera: { scale: 0.3, offsetX: 24, offsetY: 0 },
     })
   })
