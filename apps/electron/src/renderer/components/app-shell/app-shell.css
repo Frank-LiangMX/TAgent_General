@@ -2722,66 +2722,6 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   width: 100%;
 }
 
-/* 「转为主区标签页」小按钮：hover 分页时浮现在右上角 */
-.app-inspector-tab-promote {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  border: 1px solid var(--spatial-line, hsl(var(--border) / 0.5));
-  border-radius: 50%;
-  color: var(--spatial-muted, hsl(var(--muted-foreground)));
-  background: rgb(var(--glass-rgb, 255 255 255) / 0.92);
-  box-shadow: 0 1px 4px rgb(23 30 40 / 0.14);
-  cursor: pointer;
-  opacity: 0;
-  transform: scale(0.6);
-  transition:
-    opacity 140ms var(--app-shell-motion, ease),
-    transform 140ms var(--app-shell-motion, ease),
-    color 140ms var(--app-shell-motion, ease);
-  pointer-events: none;
-}
-
-.app-inspector-tab-wrap:hover .app-inspector-tab-promote,
-.app-inspector-tab-promote:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-  pointer-events: auto;
-}
-
-.app-inspector-tab-promote:hover {
-  color: hsl(var(--primary));
-}
-
-.dark .app-inspector-tab-promote {
-  background: rgb(60 62 66 / 0.95);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
-}
-
-/*
- * rail tab 飞行 ghost：右栏功能 ⇄ 主区标签页过渡时的玻璃残影。
- * 由 lib/rail-tab-flight.ts 创建并用 WAAPI 驱动，动画结束即移除。
- */
-.rail-tab-flight-ghost {
-  position: fixed;
-  z-index: 9999;
-  pointer-events: none;
-  border: 1px solid var(--spatial-accent-line, hsl(var(--primary) / 0.35));
-  border-radius: var(--radius-glass-popover, 12px);
-  background: var(--spatial-accent-soft, hsl(var(--primary) / 0.1));
-  box-shadow: 0 12px 32px -12px hsl(var(--primary) / 0.35);
-  -webkit-backdrop-filter: blur(6px) saturate(1.08);
-  backdrop-filter: blur(6px) saturate(1.08);
-  transform-origin: center center;
-  will-change: transform, opacity;
-}
-
 /*
  * 内容区贴边铺满外层圆角玻璃（对齐左栏 .sidebar-inner）。
  * 子面板根已原生透明、不再自带 header；宽度由外层 island 统一管理。

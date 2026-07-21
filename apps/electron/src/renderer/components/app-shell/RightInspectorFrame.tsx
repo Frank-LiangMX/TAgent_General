@@ -6,7 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { PanelRight, PictureInPicture2, X } from 'lucide-react'
+import { Maximize2, PanelRight, PictureInPicture2, X } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -15,7 +15,12 @@ import { RightRailItems } from './RightRailItems'
 import { RightSidePanel } from './RightSidePanel'
 
 import { agentSidePanelOpenAtom, agentSidePanelPlacementAtom } from '@/atoms/agent-atoms'
-import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
+import {
+  inspectorMagnifiedAtom,
+  rightRailItemAtom,
+  type RightRailItem,
+} from '@/atoms/app-mode'
+import { designFullscreenAtom } from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
 
 const INSPECTOR_TITLES: Record<RightRailItem, string> = {
@@ -29,8 +34,16 @@ const INSPECTOR_TITLES: Record<RightRailItem, string> = {
 export const RightInspectorFrame = React.memo(function RightInspectorFrame(): React.ReactElement {
   const activeItem = useAtomValue(rightRailItemAtom)
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
+  const setInspectorMagnified = useSetAtom(inspectorMagnifiedAtom)
+  const setDesignFullscreen = useSetAtom(designFullscreenAtom)
   const [placement, setPlacement] = useAtom(agentSidePanelPlacementAtom)
   const isDock = placement === 'dock'
+
+  const enterMagnify = () => {
+    setInspectorMagnified(true)
+    // Design 旧字段兼容：当前在 design 分页时同步写入
+    if (activeItem === 'design') setDesignFullscreen(true)
+  }
 
   return (
     // 宽度由外层 island 统一管理（style.width 在 AppShell 设一次）
@@ -41,6 +54,24 @@ export const RightInspectorFrame = React.memo(function RightInspectorFrame(): Re
           <h2 className="app-inspector-title">{INSPECTOR_TITLES[activeItem]}</h2>
         </div>
         <div className="app-inspector-header-actions">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="app-inspector-close"
+                aria-label="聚焦模式：会话与当前面板左右同屏"
+                onClick={enterMagnify}
+              >
+                <Maximize2 size={15} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <div className="text-xs">
+                <div className="font-medium">聚焦模式</div>
+                <div className="text-muted-foreground">会话在左，当前面板占右侧大半屏</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button

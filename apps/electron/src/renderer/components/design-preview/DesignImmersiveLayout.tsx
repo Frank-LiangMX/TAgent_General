@@ -63,7 +63,7 @@ export function DesignImmersiveLayout({
             hideChat && 'design-theater-chat--hidden'
           )}
         >
-          <div className="design-theater-chat-inner min-h-0 flex-1">
+          <div className="design-theater-chat-inner app-shell-content-stage min-h-0 flex-1">
             <MainArea />
           </div>
         </div>

@@ -7,7 +7,10 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { Minimize2 } from 'lucide-react'
 import * as React from 'react'
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 
 import { FunctionalRail } from './FunctionalRail'
 import { InertRegion, useInertElement } from './InertRegion'
@@ -38,6 +41,8 @@ import {
   activeRailItemAtom,
   navigationSidebarOpenAtom,
   rightRailItemAtom,
+  inspectorMagnifiedAtom,
+  focusSplitRatioAtom,
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
@@ -47,7 +52,7 @@ import {
   designImmersiveAtom,
 } from '@/atoms/design-preview-atoms'
 import { DesignImmersiveLayout } from '@/components/design-preview/DesignImmersiveLayout'
-import { DesignPreviewPanel } from '@/components/design-preview/DesignPreviewPanel'
+import { RailItemContent } from '@/components/app-shell/RightSidePanel'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
@@ -192,6 +197,8 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
   const designImmersive = useAtomValue(designImmersiveAtom)
+  const inspectorMagnified = useAtomValue(inspectorMagnifiedAtom)
+  const setInspectorMagnified = useSetAtom(inspectorMagnifiedAtom)
   const setDesignFullscreen = useSetAtom(designFullscreenAtom)
   const setDesignImmersive = useSetAtom(designImmersiveAtom)
 
@@ -206,12 +213,64 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     sidebarRequestedOpen,
     rightPanelRequestedOpen,
     rightRailItem,
+    inspectorMagnified,
     globalOfficeMode,
     hasOfficeSession: Boolean(officeShellSessionId),
     designEnabled,
     designFullscreen,
     designImmersive,
   })
+
+  const exitMagnify = React.useCallback(() => {
+    setInspectorMagnified(false)
+    setDesignFullscreen(false)
+  }, [setDesignFullscreen, setInspectorMagnified])
+
+  // 聚焦模式：会话列 / 面板分界线拖拽
+  const [focusSplitRatio, setFocusSplitRatio] = useAtom(focusSplitRatioAtom)
+  const focusDragging = React.useRef(false)
+  const handleFocusSplitDrag = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      const containerEl = (e.currentTarget as HTMLElement).closest(
+        '[data-focus-split]'
+      ) as HTMLElement | null
+      if (!containerEl) return
+      focusDragging.current = true
+      const rect = containerEl.getBoundingClientRect()
+      let rafId = 0
+
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+      // 拖拽期间避免 iframe / webview 吞掉 mousemove
+      document.querySelectorAll('iframe, webview').forEach((f) => {
+        ;(f as HTMLElement).style.pointerEvents = 'none'
+      })
+
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!focusDragging.current || rafId) return
+        rafId = requestAnimationFrame(() => {
+          rafId = 0
+          const ratio = (ev.clientX - rect.left) / Math.max(1, rect.width)
+          setFocusSplitRatio(Math.max(0.28, Math.min(0.62, ratio)))
+        })
+      }
+      const onMouseUp = () => {
+        focusDragging.current = false
+        if (rafId) cancelAnimationFrame(rafId)
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+        document.querySelectorAll('iframe, webview').forEach((f) => {
+          ;(f as HTMLElement).style.pointerEvents = ''
+        })
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+      }
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    [setFocusSplitRatio]
+  )
 
   const showLeftSidebar = shellLayout.sidebar === 'open'
   const showRightPanel = shellLayout.inspector !== 'hidden'
@@ -584,18 +643,22 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   // Office 模式但 activeTab 还没恢复时，显示 loading
   const officeLoading = shellLayout.office === 'loading'
 
-  // Esc 退出沉浸全屏
+  // Esc 退出沉浸全屏 / 放大模式
   React.useEffect(() => {
-    if (!wantImmersive) return
+    if (!wantImmersive && !wantMagnify) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       const t = e.target as HTMLElement | null
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
-      setDesignImmersive(false)
+      if (wantImmersive) {
+        setDesignImmersive(false)
+        return
+      }
+      exitMagnify()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [wantImmersive, setDesignImmersive])
+  }, [wantImmersive, wantMagnify, setDesignImmersive, exitMagnify])
 
   if (officeLoading) {
     return (
@@ -698,32 +761,44 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           </div>
         </main>
 
-        {/* 放大模式覆盖层 */}
+        {/* 聚焦模式：收起导航，只留 main（会话 | 面板）浮在场景渐变上 */}
         {magnify.mounted && (
           <div
             className="design-mode-overlay design-mode-overlay--magnify"
             data-open={magnify.open ? 'true' : 'false'}
-            style={{ left: `${contentBaseInsetLeft + 8}px` }}
             aria-hidden={!magnify.open}
           >
-            <div className="flex min-h-0 flex-1">
-              <div className="design-theater-chat flex h-full shrink-0 flex-col border-r border-border/40 bg-background">
-                <div className="design-theater-chat-inner min-h-0 flex-1">
+            <div className="focus-stage flex min-h-0 flex-1" data-focus-split>
+              <div
+                className="design-theater-chat focus-stage-chat flex h-full shrink-0 flex-col"
+                style={{ width: `${focusSplitRatio * 100}%` }}
+              >
+                <div className="design-theater-chat-inner app-shell-content-stage min-h-0 flex-1">
                   <MainArea />
                 </div>
-                <div className="flex shrink-0 items-center justify-between border-t border-border/30 px-3 py-1.5 text-xs text-muted-foreground">
-                  <span className="font-medium text-primary">放大模式</span>
-                  <button
-                    type="button"
-                    onClick={() => setDesignFullscreen(false)}
-                    className="text-primary hover:underline"
-                  >
-                    退出放大
-                  </button>
-                </div>
               </div>
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <DesignPreviewPanel />
+              <div
+                className="focus-split-handle titlebar-no-drag"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="拖拽调整会话与面板宽度"
+                onMouseDown={handleFocusSplitDrag}
+              />
+              <div className="focus-stage-panel relative min-w-0 flex-1 overflow-hidden">
+                <RailItemContent item={rightRailItem} />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="focus-exit-btn titlebar-no-drag absolute right-3 top-3 z-20"
+                      onClick={exitMagnify}
+                      aria-label="退出聚焦模式"
+                    >
+                      <Minimize2 size={15} strokeWidth={1.5} aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">退出聚焦（Esc）</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </div>

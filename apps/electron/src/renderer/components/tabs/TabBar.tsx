@@ -320,19 +320,12 @@ function TabBarInner({
         className="app-workspace-tab-list relative z-[2] flex min-w-0 flex-1 items-center overflow-x-auto scrollbar-none"
       >
         <span ref={activePlateRef} className="app-workspace-tab-active-plate" aria-hidden />
-        {tabs.map((tab, index) => {
-          const previousTab = tabs[index - 1]
-          const beginsBoundRailGroup =
-            tab.type === 'rail' &&
-            (previousTab?.type !== 'rail' || previousTab.sessionId !== tab.sessionId)
-
+        {tabs.map((tab) => {
           return (
             <TabBarItem
               key={tab.id}
               id={tab.id}
               type={tab.type}
-              railItem={tab.railItem}
-              showBindLock={beginsBoundRailGroup}
               title={tab.title}
               isActive={tab.id === activeTabId}
               isStreaming={streamingMap.get(tab.id) ?? 'idle'}

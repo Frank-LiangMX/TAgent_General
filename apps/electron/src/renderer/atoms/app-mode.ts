@@ -132,3 +132,12 @@ export type RightRailItem = 'files' | 'btw' | 'browser' | 'design' | 'crew'
 
 /** 右侧边栏功能项 atom */
 export const rightRailItemAtom = atomWithStorage<RightRailItem>('tagent-right-rail', 'files')
+
+/**
+ * Inspector 聚焦模式：会话在左、当前右栏功能面板占右侧大半屏。
+ * 对 files / btw / browser / design / crew 通用（Design 原先的 magnify 并入此机制）。
+ */
+export const inspectorMagnifiedAtom = atomWithStorage<boolean>('tagent-inspector-magnified', false)
+
+/** 聚焦模式：会话列占宽比例（0.28–0.62），拖拽分界线调整并持久化 */
+export const focusSplitRatioAtom = atomWithStorage<number>('tagent-focus-split-ratio', 0.42)

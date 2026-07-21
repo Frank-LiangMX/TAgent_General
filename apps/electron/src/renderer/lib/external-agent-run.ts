@@ -3,7 +3,7 @@ import type { AgentStreamState } from '@/atoms/agent-atoms'
 
 export interface ExternalAgentRunTab {
   id: string
-  type: 'agent' | 'draft' | 'preview' | 'rail'
+  type: 'agent' | 'draft' | 'preview'
   sessionId: string
   title: string
 }

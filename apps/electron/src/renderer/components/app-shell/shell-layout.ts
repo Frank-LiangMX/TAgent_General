@@ -16,6 +16,8 @@ export interface ShellLayoutInput {
   sidebarRequestedOpen: boolean
   rightPanelRequestedOpen: boolean
   rightRailItem: RightRailItem
+  /** Inspector 通用放大（会话 | 功能面板 左右同屏） */
+  inspectorMagnified: boolean
   globalOfficeMode: boolean
   hasOfficeSession: boolean
   designEnabled: boolean
@@ -107,12 +109,10 @@ export function deriveShellLayout(input: ShellLayoutInput): ShellLayout {
       ? 'open'
       : 'collapsed'
 
-  // 会话父标签及其 preview / rail 附属标签共享同一会话上下文，
-  // 因此切到附属标签后仍保留 RightRail / RightSidebar。
+  // 会话父标签及其 preview 附属标签共享同一会话上下文，
+  // 因此切到预览标签后仍保留 RightRail / RightSidebar。
   const activeTabHasSessionContext =
-    input.activeTabType === 'agent' ||
-    input.activeTabType === 'preview' ||
-    input.activeTabType === 'rail'
+    input.activeTabType === 'agent' || input.activeTabType === 'preview'
   const inspectorAvailable =
     input.appMode === 'agent' &&
     activeTabHasSessionContext &&
@@ -137,17 +137,17 @@ export function deriveShellLayout(input: ShellLayoutInput): ShellLayout {
     }
   }
 
+  // 通用放大：任意右栏功能；Design 旧 fullscreen 字段兼容并入
   const magnify =
-    input.designEnabled &&
-    input.designFullscreen &&
-    input.rightRailItem === 'design' &&
-    inspector === 'open'
+    inspectorAvailable &&
+    (input.inspectorMagnified ||
+      (input.designEnabled && input.designFullscreen && input.rightRailItem === 'design'))
 
   if (magnify) {
     return {
       scene: 'canvas',
-      navigation: 'open',
-      sidebar,
+      navigation: 'hidden',
+      sidebar: 'hidden',
       inspector: 'hidden',
       composer: 'dock',
       canvas: 'magnify',

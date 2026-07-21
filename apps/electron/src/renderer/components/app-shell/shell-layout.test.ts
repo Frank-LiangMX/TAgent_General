@@ -16,6 +16,7 @@ const BASE_INPUT: ShellLayoutInput = {
   sidebarRequestedOpen: true,
   rightPanelRequestedOpen: false,
   rightRailItem: 'files',
+  inspectorMagnified: false,
   globalOfficeMode: false,
   hasOfficeSession: false,
   designEnabled: false,
@@ -35,6 +36,7 @@ describe('deriveShellLayout', () => {
         hasOfficeSession: ready,
         designEnabled: true,
         designFullscreen: true,
+        inspectorMagnified: true,
         designImmersive: true,
         rightPanelRequestedOpen: true,
         rightRailItem: 'design',
@@ -62,40 +64,40 @@ describe('deriveShellLayout', () => {
     expect(derive({ designEnabled: false, designImmersive: true }).canvas).toBe('none')
   })
 
-  test('magnify preserves navigation and the normal sidebar while replacing inspector', () => {
+  test('magnify works for any inspector page via inspectorMagnified', () => {
     expect(
       derive({
-        designEnabled: true,
-        designFullscreen: true,
-        rightPanelRequestedOpen: true,
-        rightRailItem: 'design',
+        inspectorMagnified: true,
+        rightRailItem: 'files',
       })
     ).toMatchObject({
       scene: 'canvas',
-      navigation: 'open',
-      sidebar: 'open',
+      navigation: 'hidden',
+      sidebar: 'hidden',
       inspector: 'hidden',
       composer: 'dock',
       canvas: 'magnify',
     })
   })
 
-  test.each([
-    ['design disabled', { designEnabled: false }],
-    ['fullscreen disabled', { designFullscreen: false }],
-    ['wrong inspector item', { rightRailItem: 'files' as const }],
-    ['inspector collapsed', { rightPanelRequestedOpen: false }],
-    ['inspector unavailable', { activeRailItem: 'skills' as const }],
-  ])('does not magnify when %s', (_label, overrides) => {
+  test('legacy designFullscreen still magnifies when on design page', () => {
     expect(
       derive({
         designEnabled: true,
         designFullscreen: true,
-        rightPanelRequestedOpen: true,
         rightRailItem: 'design',
-        ...overrides,
-      }).canvas
-    ).toBe('none')
+      })
+    ).toMatchObject({
+      canvas: 'magnify',
+      inspector: 'hidden',
+    })
+  })
+
+  test.each([
+    ['legacy fullscreen on wrong item', { designFullscreen: true, rightRailItem: 'files' as const }],
+    ['inspector unavailable', { activeRailItem: 'skills' as const, inspectorMagnified: true }],
+  ])('does not magnify when %s', (_label, overrides) => {
+    expect(derive(overrides).canvas).toBe('none')
   })
 
   test.each([
@@ -113,13 +115,14 @@ describe('deriveShellLayout', () => {
     expect(derive({ rightPanelRequestedOpen: false }).inspector).toBe('collapsed')
   })
 
-  test.each(['preview', 'rail'] as const)(
-    'keeps inspector available for session-bound %s tabs',
-    (activeTabType) => {
-      expect(derive({ activeTabType, rightPanelRequestedOpen: true }).inspector).toBe('open')
-      expect(derive({ activeTabType, rightPanelRequestedOpen: false }).inspector).toBe('collapsed')
-    }
-  )
+  test('keeps inspector available for session-bound preview tabs', () => {
+    expect(derive({ activeTabType: 'preview', rightPanelRequestedOpen: true }).inspector).toBe(
+      'open'
+    )
+    expect(derive({ activeTabType: 'preview', rightPanelRequestedOpen: false }).inspector).toBe(
+      'collapsed'
+    )
+  })
 
   test.each([
     ['general', 'skills'],

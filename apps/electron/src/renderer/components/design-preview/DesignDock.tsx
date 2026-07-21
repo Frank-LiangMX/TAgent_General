@@ -36,6 +36,7 @@ import {
   refreshDesignCanvasAtom,
   type DesignCanvasTool,
 } from '@/atoms/design-preview-atoms'
+import { inspectorMagnifiedAtom } from '@/atoms/app-mode'
 import { zoomAtom, resetViewportAtom } from '@/design/canvas-viewport-store'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
@@ -82,7 +83,13 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
   const [activeTool, setActiveTool] = useAtom(designActiveToolAtom)
   const [zoom, setZoom] = useAtom(zoomAtom)
   const resetZoom = useSetAtom(resetViewportAtom)
-  const [magnify, setMagnify] = useAtom(designFullscreenAtom)
+  const [designFullscreen, setDesignFullscreen] = useAtom(designFullscreenAtom)
+  const [inspectorMagnified, setInspectorMagnified] = useAtom(inspectorMagnifiedAtom)
+  const magnify = inspectorMagnified || designFullscreen
+  const setMagnify = (next: boolean) => {
+    setInspectorMagnified(next)
+    setDesignFullscreen(next)
+  }
   const [immersive, setImmersive] = useAtom(designImmersiveAtom)
   const [hideChat, setHideChat] = useAtom(designImmersiveHideChatAtom)
   const refresh = useSetAtom(refreshDesignCanvasAtom)
@@ -177,9 +184,9 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
 
         <span className="mx-0.5 h-4 w-px bg-border/40" />
 
-        {/* 放大模式：扩大画布区，仍保留左侧导航 */}
+        {/* 聚焦模式：扩大画布区，仍保留左侧导航 */}
         {!immersive && (
-          <DockTooltip label={magnify ? '退出放大' : '放大模式'}>
+          <DockTooltip label={magnify ? '退出聚焦' : '聚焦模式'}>
             <button
               type="button"
               onClick={() => setMagnify(!magnify)}
@@ -189,7 +196,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
-              aria-label={magnify ? '退出放大' : '放大模式'}
+              aria-label={magnify ? '退出聚焦' : '聚焦模式'}
             >
               {magnify ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
             </button>

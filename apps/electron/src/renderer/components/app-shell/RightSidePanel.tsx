@@ -7,7 +7,7 @@
  *
  * RailItemContent 是纯内容路由，可被两处复用：
  * - 右栏检查器（本组件）
- * - 主区标签页（rail tab 晋升全屏模式，见 TabContent）
+ * - 放大模式覆盖层右侧（AppShell magnify）
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'

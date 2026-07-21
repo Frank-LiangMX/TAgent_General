@@ -7288,7 +7288,8 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: hsl(var(--background));
+  /* 透出 html 上的 --surface-role-scene-fill 渐变场，禁止实色盖掉设计语言 */
+  background: transparent;
   opacity: 0;
   transform: translateY(6px) scale(0.992);
   pointer-events: none;
@@ -7305,13 +7306,38 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 }
 
 .design-mode-overlay--magnify {
-  inset-block: 0;
-  right: 0;
+  /* 与壳层 band 对齐：顶栏下 + 四边 gutter，只显示 main */
+  top: calc(var(--spatial-chrome-h, 40px) + var(--shell-band-inset-top, var(--spatial-gutter, 16px)));
+  right: var(--spatial-gutter, 16px);
+  bottom: var(--shell-band-inset-bottom, 24px);
+  left: var(--spatial-gutter, 16px);
+  /*
+   * 圆角裁切放在覆盖层本体：它常驻 transform（进出场动画），
+   * 是真实合成表面，能把底部带 backdrop-filter 的玻璃层一并裁进圆角。
+   */
+  border-radius: var(--app-shell-frame-radius, 28px);
+  border: 1px solid var(--spatial-line, hsl(var(--border) / 0.45));
+  box-shadow: var(--spatial-panel-shadow, var(--surface-role-panel-shadow, none));
+  isolation: isolate;
+}
+
+/*
+ * 聚焦 / 沉浸时覆盖层透明 → 必须隐藏底层真实工作区，避免与覆盖层里的
+ * 第二个 MainArea 叠影。导航岛也一起隐掉（聚焦只留 main）。
+ */
+.app-shell-scene[data-canvas-presentation='magnify'] .app-shell-main,
+.app-shell-scene[data-canvas-presentation='immersive'] .app-shell-main {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .design-mode-overlay--immersive {
   inset: 0;
   z-index: 96;
+  /* 沉浸仍用轻遮罩，避免与窗口 chrome 抢戏；场景场仍从边缘透出 */
+  background: hsl(var(--background) / 0.72);
+  -webkit-backdrop-filter: blur(8px) saturate(1.04);
+  backdrop-filter: blur(8px) saturate(1.04);
 }
 
 /* 会话列：给输入框足够横向空间，避免被 overflow / bleed 裁切 */
@@ -7330,10 +7356,95 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
     border-color 180ms ease;
 }
 
+/* 聚焦模式：宽度由拖拽比例（inline style）驱动，只留下限保护 */
 .design-mode-overlay--magnify .design-theater-chat {
-  width: clamp(460px, 44%, 680px);
-  min-width: 460px;
-  max-width: min(680px, 50vw);
+  min-width: 340px;
+  max-width: none;
+  transition: none;
+  background: transparent;
+}
+
+.design-mode-overlay--magnify .design-theater-chat-inner {
+  min-width: 0;
+}
+
+/* 聚焦舞台：外轮廓圆角/描边由 .design-mode-overlay--magnify 本体承担，这里只裁内容 */
+.focus-stage {
+  overflow: hidden;
+  border-radius: inherit;
+  background: transparent;
+  isolation: isolate;
+  contain: paint;
+}
+
+.focus-stage-chat,
+.focus-stage-panel {
+  background: transparent;
+}
+
+/* 聚焦模式分界线：默认一条细线，hover/拖拽时加粗高亮 */
+.focus-split-handle {
+  position: relative;
+  z-index: 5;
+  flex: 0 0 7px;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.focus-split-handle::before {
+  content: '';
+  position: absolute;
+  inset-block: 12%;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--spatial-line, hsl(var(--border) / 0.5));
+  transition:
+    width 140ms var(--app-shell-motion, ease),
+    inset-block 140ms var(--app-shell-motion, ease),
+    background-color 140ms var(--app-shell-motion, ease),
+    border-radius 140ms var(--app-shell-motion, ease);
+}
+
+.focus-split-handle:hover::before,
+.focus-split-handle:active::before {
+  inset-block: 8%;
+  width: 3px;
+  border-radius: 2px;
+  background: hsl(var(--primary) / 0.55);
+}
+
+/* 聚焦模式退出按钮：36px 圆形玻璃钮，浮在面板右上角 */
+.focus-exit-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--spatial-line, hsl(var(--border) / 0.45));
+  border-radius: 9999px;
+  color: hsl(var(--foreground) / 0.6);
+  background: rgb(var(--glass-rgb, 255 255 255) / 0.72);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  backdrop-filter: blur(12px) saturate(1.1);
+  box-shadow: var(--surface-role-popover-shadow, 0 4px 14px rgb(23 30 40 / 0.12));
+  cursor: pointer;
+  transition:
+    color 160ms var(--app-shell-motion, ease),
+    background-color 160ms var(--app-shell-motion, ease);
+}
+
+.focus-exit-btn:hover {
+  color: hsl(var(--foreground));
+  background: rgb(var(--glass-rgb, 255 255 255) / 0.92);
+}
+
+.dark .focus-exit-btn {
+  background: rgb(52 54 58 / 0.82);
+}
+
+.dark .focus-exit-btn:hover {
+  background: rgb(64 66 70 / 0.92);
 }
 
 /* 沉浸全屏：会话列视觉变窄，内容等比 scale 缩小（绝对定位铺满，避免底部留白 / 圆环被裁） */
@@ -7411,4 +7522,26 @@ em-emoji-picker .overflow-y-auto::-webkit-scrollbar-thumb {
 .design-theater-chat .session-bottom-stack {
   padding-left: 0;
   padding-right: 0;
+}
+
+/* 聚焦模式：会话列不显示顶部标签页（沉浸模式已在 MainArea 里跳过渲染） */
+.design-mode-overlay--magnify .app-workspace-tab-strip {
+  display: none;
+}
+
+/*
+ * 剧院会话列：托盘（underlay）保持与普通模式相同的层级关系 —
+ * 输入卡内缩 12px，托盘再各窄 10px（= 22px），不允许比输入卡宽。
+ * 列窄时只收紧格间距，不动外缩。
+ */
+.design-theater-chat .app-shell-content-stage .composer-underlay {
+  --composer-underlay-inset-x: 22px;
+  gap: 2px;
+}
+
+.design-theater-chat .app-shell-content-stage .composer-underlay-cell__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

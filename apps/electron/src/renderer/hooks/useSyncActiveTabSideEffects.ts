@@ -41,7 +41,7 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
         return
       }
 
-      // P3: chat 已退役，仅处理 draft / agent / preview / rail
+      // P3: chat 已退役，仅处理 draft / agent / preview
       if (newActiveTab.type === 'draft') {
         setAppMode('draft')
         if (topLevelMode === 'general') {
@@ -51,7 +51,7 @@ export function useSyncActiveTabSideEffects(): SyncActiveTabSideEffects {
         return
       }
 
-      // Agent / 会话预览 / rail 附属标签都同步到其绑定会话
+      // Agent / 会话预览标签都同步到其绑定会话
       setAppMode('agent')
       if (topLevelMode === 'general') {
         setActiveRailItem('sessions')

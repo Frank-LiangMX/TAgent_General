@@ -211,11 +211,8 @@ function GeneralMainArea(): React.ReactElement {
     sessionPresentation === 'classic' &&
     (previewOpenMap.get(activeTab.sessionId) ?? false)
   const previewSessionId = activeTab?.type === 'agent' ? activeTab.sessionId : null
-  // 启动恢复完成前不算「无会话」，避免 Welcome 引导页闪现；
-  // rail tab（右栏功能晋升）也算工作内容，不落 Welcome
-  const hasRailTab = tabs.some((tab) => tab.type === 'rail')
-  const showSessionWelcome =
-    tabsHydrated && appMode !== 'draft' && sessionTabs.length === 0 && !hasRailTab
+  // 启动恢复完成前不算「无会话」，避免 Welcome 引导页闪现
+  const showSessionWelcome = tabsHydrated && appMode !== 'draft' && sessionTabs.length === 0
   const showWelcomeShell = showSessionWelcome || (tabsHydrated && tabs.length === 0)
 
   // 关闭动画状态：当 previewOpen 从 true → false 时，播放退出动画再移除 DOM

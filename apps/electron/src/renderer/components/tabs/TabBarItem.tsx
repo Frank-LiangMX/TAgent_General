@@ -8,47 +8,21 @@
 
 import { useAtomValue } from 'jotai'
 import { ChatsCircle, Monitor, Note } from '@phosphor-icons/react'
-import {
-  FolderOpen,
-  Globe2,
-  LockKeyhole,
-  MessageCircle,
-  Palette,
-  Users,
-  X,
-  type LucideIcon,
-} from 'lucide-react'
+import { X } from 'lucide-react'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 
 import { TabPreviewPanel } from './TabPreviewPanel'
 
 import type { SessionIndicatorStatus } from '@/atoms/agent-atoms'
-import type { RightRailItem } from '@/atoms/app-mode'
 import type { TabType, TabMinimapItem } from '@/atoms/tab-atoms'
 
 import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
 import { cn } from '@/lib/utils'
 
-/** rail tab 图标：与 RightRailItems 的功能项图标一一对应 */
-const RAIL_TAB_ICONS: Record<string, LucideIcon> = {
-  files: FolderOpen,
-  btw: MessageCircle,
-  browser: Globe2,
-  design: Palette,
-  crew: Users,
-}
-
-function getRailTabIcon(item?: RightRailItem): LucideIcon {
-  return (item && RAIL_TAB_ICONS[item]) || FolderOpen
-}
-
 export interface TabBarItemProps {
   id: string
   type: TabType
-  railItem?: RightRailItem
-  /** 是否在标签左缘叠加「绑定到前方会话」的锁标记（不占布局位） */
-  showBindLock?: boolean
   title: string
   isActive: boolean
   isStreaming: SessionIndicatorStatus
@@ -75,8 +49,6 @@ export interface TabBarItemProps {
 export function TabBarItem({
   id,
   type,
-  railItem,
-  showBindLock,
   title,
   isActive,
   isStreaming,
@@ -148,16 +120,6 @@ export function TabBarItem({
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
-      {/* 绑定锁：悬浮在与前一个标签的接缝正中，不占布局位 */}
-      {showBindLock ? (
-        <span
-          className="app-workspace-tab-bind-lock"
-          aria-label="此标签绑定到前方会话；关闭会话将同时关闭绑定标签"
-          title="绑定到前方会话"
-        >
-          <LockKeyhole size={9} strokeWidth={2} aria-hidden />
-        </span>
-      ) : null}
       <button
         ref={buttonRef}
         type="button"
@@ -190,13 +152,6 @@ export function TabBarItem({
           {type === 'draft' && (
             <Note className="app-workspace-tab__icon" aria-hidden size={14} weight="regular" />
           )}
-          {type === 'rail' &&
-            React.createElement(getRailTabIcon(railItem), {
-              className: 'app-workspace-tab__icon',
-              'aria-hidden': true,
-              size: 14,
-              strokeWidth: 1.75,
-            })}
           {!isNarrow && <span className="app-workspace-tab__title">{title}</span>}
         </span>
 
