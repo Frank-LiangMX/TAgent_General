@@ -5,9 +5,12 @@ import {
   ASSISTANT_REACTION_DURATION_MS,
   clamp,
   damp,
+  getAssistantGestureDuration,
   resolveAssistantPresenceState,
+  sampleAssistantGesture,
   sampleAssistantMotion,
   sampleAssistantReaction,
+  sampleAssistantRollRotation,
   sampleAssistantState,
 } from './assistant-motion'
 import {
@@ -29,6 +32,12 @@ describe('assistant motion', () => {
     const next = damp(0, 1, 7, 16)
     expect(next).toBeGreaterThan(0)
     expect(next).toBeLessThan(1)
+  })
+
+  it('rotates only the assistant body through two turns during a card roll', () => {
+    expect(sampleAssistantRollRotation(1200, 2400, 1, false)).toBeCloseTo(Math.PI * 2)
+    expect(sampleAssistantRollRotation(2400, 2400, -1, false)).toBeCloseTo(-Math.PI * 4)
+    expect(sampleAssistantRollRotation(1200, 2400, 1, true)).toBe(0)
   })
 
   it('keeps quiet internal motion without spatial movement for reduced motion', () => {
@@ -133,6 +142,48 @@ describe('assistant motion', () => {
     expect(reaction.hopY).toBe(0)
     expect(reaction.scaleX).toBe(1)
     expect(reaction.scaleY).toBe(1)
+  })
+
+  it('gives idle gestures distinct silhouettes', () => {
+    const glance = sampleAssistantGesture('glance', 420, false)
+    const stretch = sampleAssistantGesture('stretch', 420, false)
+    const peek = sampleAssistantGesture('peek', 420, false)
+    const orbit = sampleAssistantGesture('orbit', 420, false)
+
+    expect(Math.abs(glance.gazeX)).toBeGreaterThan(1)
+    expect(stretch.scaleY).toBeGreaterThan(1)
+    expect(peek.bodyX).toBeGreaterThan(1)
+    expect(orbit.particleBurst).toBeGreaterThan(0)
+  })
+
+  it('slumps while tired and rises during recovery', () => {
+    const tired = sampleAssistantGesture('tired', 1200, false)
+    const recovery = sampleAssistantGesture('recover', 360, false)
+
+    expect(tired.verticalOffset).toBeGreaterThan(10)
+    expect(tired.scaleX).toBeGreaterThan(1)
+    expect(tired.scaleY).toBeGreaterThan(0.8)
+    expect(tired.scaleY).toBeLessThan(0.9)
+    expect(tired.eyeScaleY).toBeGreaterThan(0.7)
+    expect(tired.eyeScaleY).toBeLessThan(0.85)
+    expect(recovery.hopY).toBeLessThan(0)
+    expect(recovery.glowBoost).toBeGreaterThan(0)
+  })
+
+  it('removes spatial gestures in reduced motion mode', () => {
+    const tired = sampleAssistantGesture('tired', 1200, true)
+
+    expect(tired.verticalOffset).toBe(0)
+    expect(tired.rotation).toBe(0)
+    expect(tired.scaleX).toBe(1)
+    expect(tired.scaleY).toBe(1)
+    expect(tired.eyeScaleY).toBeLessThan(0.3)
+  })
+
+  it('keeps the tired pose active until recovery begins', () => {
+    const duration = getAssistantGestureDuration('tired')
+    expect(sampleAssistantGesture('tired', duration - 1, false).active).toBe(true)
+    expect(sampleAssistantGesture('tired', duration, false).active).toBe(false)
   })
 
   it('resolves session states using the interaction priority', () => {

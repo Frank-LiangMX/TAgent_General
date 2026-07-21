@@ -25,7 +25,6 @@ const STATE_LABELS: Record<AssistantPresenceState, string> = {
 }
 
 const BUBBLE_DURATION = {
-  click: 1600,
   state: 1800,
   tool: 1800,
   typing: 760,
@@ -248,21 +247,26 @@ export function ComposerAssistantPresence({
     [clearBubbleTimer, clearStateTimer, clearTyping]
   )
 
-  const handleActivate = React.useCallback(() => {
-    showBubble(label, BUBBLE_DURATION.click, BUBBLE_PRIORITY.click, true)
-    onActivate()
-  }, [label, onActivate, showBubble])
+  const handlePlayfulMessage = React.useCallback(
+    (message: string, duration: number) => {
+      showBubble(message, duration, BUBBLE_PRIORITY.click, true)
+    },
+    [showBubble]
+  )
 
   return (
     <div
       className="composer-assistant-presence"
       data-announcing={bubble ? 'true' : 'false'}
+      data-assistant-transition-target={location === 'composer' ? sessionId : undefined}
       data-location={location}
       data-state={state}
     >
       <AssistantPresence
         ariaLabel={`Agent 当前状态：${label}`}
-        onActivate={handleActivate}
+        onActivate={onActivate}
+        onPlayfulMessage={handlePlayfulMessage}
+        showPlayfulBubble={false}
         state={state}
         title={`${label} · 点击查看反馈`}
         variant="compact"

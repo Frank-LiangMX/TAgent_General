@@ -11,6 +11,31 @@ export type AssistantPresenceState =
 
 export type AssistantPresenceAccent = 'primary' | 'warm' | 'danger'
 
+export type AssistantGesture =
+  | 'tap'
+  | 'nod'
+  | 'boop'
+  | 'wobble'
+  | 'startle'
+  | 'dizzy'
+  | 'tired'
+  | 'recover'
+  | 'glance'
+  | 'stretch'
+  | 'peek'
+  | 'doze'
+  | 'orbit'
+  | 'shimmy'
+
+export const ASSISTANT_IDLE_GESTURES: readonly AssistantGesture[] = [
+  'glance',
+  'stretch',
+  'peek',
+  'doze',
+  'orbit',
+  'shimmy',
+]
+
 export interface AssistantAppearance {
   bodyAlpha: number
   coreAlpha: number
@@ -47,6 +72,14 @@ export interface AssistantReactionSample {
   ringAlpha: number
   scaleX: number
   scaleY: number
+}
+
+export interface AssistantGestureSample extends AssistantReactionSample {
+  bodyX: number
+  gazeX: number
+  gazeY: number
+  rotation: number
+  verticalOffset: number
 }
 
 export interface AssistantStateSample {
@@ -267,6 +300,17 @@ export function damp(current: number, target: number, smoothing: number, deltaMs
   return current + (target - current) * factor
 }
 
+export function sampleAssistantRollRotation(
+  elapsedMs: number,
+  durationMs: number,
+  direction: number,
+  reducedMotion: boolean
+): number {
+  if (reducedMotion || durationMs <= 0) return 0
+  const progress = clamp(elapsedMs / durationMs, 0, 1)
+  return progress * Math.PI * 4 * (direction >= 0 ? 1 : -1)
+}
+
 /**
  * 点击角色后的短促回应。减少动画模式只保留亮度和眨眼变化，
  * 不产生位移、形变或粒子扩散。
@@ -323,6 +367,247 @@ export function sampleAssistantReaction(
     ringAlpha: Math.pow(1 - progress, 1.7) * 0.82,
     scaleX: 1 + compression * 0.065 - release * 0.026,
     scaleY: 1 - compression * 0.08 + release * 0.06,
+  }
+}
+
+const ASSISTANT_GESTURE_DURATIONS: Record<AssistantGesture, number> = {
+  tap: ASSISTANT_REACTION_DURATION_MS,
+  nod: 520,
+  boop: 560,
+  wobble: 720,
+  startle: 620,
+  dizzy: 900,
+  tired: 4300,
+  recover: 760,
+  glance: 1100,
+  stretch: 960,
+  peek: 1050,
+  doze: 1500,
+  orbit: 1200,
+  shimmy: 820,
+}
+
+export function getAssistantGestureDuration(gesture: AssistantGesture): number {
+  return ASSISTANT_GESTURE_DURATIONS[gesture]
+}
+
+function neutralAssistantGesture(): AssistantGestureSample {
+  return {
+    active: false,
+    bodyX: 0,
+    eyeScaleY: 1,
+    gazeX: 0,
+    gazeY: 0,
+    glowBoost: 0,
+    hopY: 0,
+    particleBurst: 0,
+    progress: 1,
+    ringAlpha: 0,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    verticalOffset: 0,
+  }
+}
+
+function reactionAsGesture(reaction: AssistantReactionSample): AssistantGestureSample {
+  return {
+    ...reaction,
+    bodyX: 0,
+    gazeX: 0,
+    gazeY: 0,
+    rotation: 0,
+    verticalOffset: 0,
+  }
+}
+
+/** 独立动作片段叠加在业务状态之上；不改变布局，也不持有业务状态。 */
+export function sampleAssistantGesture(
+  gesture: AssistantGesture | null,
+  elapsedMs: number,
+  reducedMotion: boolean
+): AssistantGestureSample {
+  if (!gesture) return neutralAssistantGesture()
+  if (gesture === 'tap') return reactionAsGesture(sampleAssistantReaction(elapsedMs, reducedMotion))
+
+  const duration = getAssistantGestureDuration(gesture)
+  const progress = clamp(elapsedMs / duration, 0, 1)
+  if (elapsedMs < 0 || elapsedMs >= duration) return neutralAssistantGesture()
+
+  const pulse = Math.sin(progress * Math.PI)
+  const settle = 1 - Math.pow(1 - clamp(progress / 0.18, 0, 1), 3)
+  const release = Math.pow(1 - progress, 1.4)
+  const base: AssistantGestureSample = {
+    active: true,
+    bodyX: 0,
+    eyeScaleY: 1,
+    gazeX: 0,
+    gazeY: 0,
+    glowBoost: pulse * 0.24,
+    hopY: 0,
+    particleBurst: 0,
+    progress,
+    ringAlpha: 0,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    verticalOffset: 0,
+  }
+
+  if (reducedMotion) {
+    const isResting = gesture === 'tired' || gesture === 'doze'
+    return {
+      ...base,
+      eyeScaleY: isResting ? 0.24 : 1 - pulse * 0.34,
+      glowBoost: isResting ? 0 : pulse * 0.32,
+      ringAlpha: gesture === 'recover' ? pulse * 0.22 : 0,
+    }
+  }
+
+  switch (gesture) {
+    case 'nod':
+      return {
+        ...base,
+        eyeScaleY: 1 - pulse * 0.28,
+        gazeY: 2.4 * pulse,
+        hopY: 2.8 * Math.sin(progress * Math.PI * 2),
+        scaleX: 1 + pulse * 0.025,
+        scaleY: 1 - pulse * 0.035,
+      }
+    case 'boop':
+      return {
+        ...base,
+        eyeScaleY: 1 - pulse * 0.42,
+        glowBoost: pulse * 0.46,
+        hopY: -pulse * 4.5,
+        particleBurst: pulse * 0.42,
+        ringAlpha: release * 0.42,
+        scaleX: 1 + pulse * 0.09,
+        scaleY: 1 - pulse * 0.1,
+      }
+    case 'wobble':
+      return {
+        ...base,
+        bodyX: Math.sin(progress * Math.PI * 4) * 4.6 * release,
+        gazeX: -Math.sin(progress * Math.PI * 4) * 3.2,
+        rotation: Math.sin(progress * Math.PI * 5) * 0.13 * release,
+        scaleX: 1 + pulse * 0.055,
+        scaleY: 1 - pulse * 0.04,
+      }
+    case 'startle':
+      return {
+        ...base,
+        eyeScaleY: 1.18 - pulse * 0.14,
+        gazeY: -3.2 * pulse,
+        glowBoost: pulse * 0.58,
+        hopY: -9 * pulse,
+        particleBurst: pulse * 0.7,
+        ringAlpha: release * 0.56,
+        scaleX: 1 - pulse * 0.055,
+        scaleY: 1 + pulse * 0.11,
+      }
+    case 'dizzy':
+      return {
+        ...base,
+        bodyX: Math.sin(progress * Math.PI * 4) * 4.2,
+        eyeScaleY: 0.72,
+        gazeX: Math.cos(progress * Math.PI * 6) * 3.8,
+        gazeY: Math.sin(progress * Math.PI * 6) * 2.8,
+        rotation: Math.sin(progress * Math.PI * 4) * 0.18,
+        scaleX: 1 + pulse * 0.08,
+        scaleY: 1 - pulse * 0.07,
+        verticalOffset: pulse * 3.4,
+      }
+    case 'tired':
+      return {
+        ...base,
+        bodyX: settle * 2.2,
+        eyeScaleY: 1 - settle * 0.24,
+        gazeX: settle * 1.2,
+        gazeY: settle * 5.2,
+        glowBoost: 0,
+        rotation: settle * 0.035,
+        scaleX: 1 + settle * 0.04,
+        scaleY: 1 - settle * 0.14,
+        verticalOffset: settle * 14,
+      }
+    case 'recover': {
+      const rest = 1 - settle
+      return {
+        ...base,
+        bodyX: rest * 2.2,
+        eyeScaleY: 0.76 + settle * 0.24,
+        gazeX: rest * 1.2,
+        gazeY: rest * 5.2,
+        glowBoost: pulse * 0.52,
+        hopY: -pulse * 5.5,
+        particleBurst: pulse * 0.54,
+        ringAlpha: release * 0.46,
+        rotation: rest * 0.035,
+        scaleX: 1 + rest * 0.04 - pulse * 0.05,
+        scaleY: 0.86 + settle * 0.14 + pulse * 0.08,
+        verticalOffset: rest * 14,
+      }
+    }
+    case 'glance':
+      return {
+        ...base,
+        bodyX: Math.sin(progress * Math.PI) * 2.2,
+        gazeX: Math.sin(progress * Math.PI * 2) * 6.8,
+        gazeY: -pulse * 1.4,
+        rotation: Math.sin(progress * Math.PI * 2) * 0.035,
+      }
+    case 'stretch':
+      return {
+        ...base,
+        eyeScaleY: 1 - pulse * 0.2,
+        gazeY: -pulse * 2.2,
+        hopY: -pulse * 3.2,
+        scaleX: 1 - pulse * 0.075,
+        scaleY: 1 + pulse * 0.12,
+      }
+    case 'peek':
+      return {
+        ...base,
+        bodyX: pulse * 7.5,
+        gazeX: pulse * 5.8,
+        eyeScaleY: 1 - Math.sin(progress * Math.PI * 2) * 0.12,
+        rotation: pulse * 0.07,
+        scaleX: 1 - pulse * 0.025,
+        scaleY: 1 + pulse * 0.035,
+      }
+    case 'doze':
+      return {
+        ...base,
+        eyeScaleY: 1 - pulse * 0.88,
+        gazeY: pulse * 3,
+        rotation: pulse * 0.045,
+        scaleX: 1 + pulse * 0.045,
+        scaleY: 1 - pulse * 0.055,
+        verticalOffset: pulse * 4.5,
+      }
+    case 'orbit':
+      return {
+        ...base,
+        gazeX: Math.cos(progress * Math.PI * 2) * 5.2,
+        gazeY: Math.sin(progress * Math.PI * 2) * 3.4,
+        glowBoost: pulse * 0.48,
+        particleBurst: pulse * 0.68,
+        ringAlpha: pulse * 0.32,
+        rotation: Math.sin(progress * Math.PI * 2) * 0.04,
+      }
+    case 'shimmy':
+      return {
+        ...base,
+        bodyX: Math.sin(progress * Math.PI * 8) * 3.4 * release,
+        eyeScaleY: 1 - pulse * 0.16,
+        particleBurst: pulse * 0.3,
+        rotation: Math.sin(progress * Math.PI * 8) * 0.075 * release,
+        scaleX: 1 + Math.sin(progress * Math.PI * 4) * 0.045,
+        scaleY: 1 - Math.sin(progress * Math.PI * 4) * 0.035,
+      }
+    default:
+      return base
   }
 }
 

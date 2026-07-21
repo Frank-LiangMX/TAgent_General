@@ -3102,6 +3102,8 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
                           isOfficeDock && 'office-conversation-composer'
                         )}
                         data-input-mode="agent"
+                        data-session-transition-enter="composer"
+                        data-session-transition-session={sessionId}
                       >
                         <div
                           className={cn(

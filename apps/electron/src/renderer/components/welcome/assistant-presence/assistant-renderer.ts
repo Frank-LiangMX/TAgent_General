@@ -4,10 +4,14 @@ import type { AssistantPresenceStyle } from '../../../../types'
 
 import {
   ASSISTANT_APPEARANCE,
+  ASSISTANT_IDLE_GESTURES,
   damp,
+  getAssistantGestureDuration,
+  sampleAssistantGesture,
   sampleAssistantMotion,
-  sampleAssistantReaction,
+  sampleAssistantRollRotation,
   sampleAssistantState,
+  type AssistantGesture,
   type AssistantPresenceState,
   type AssistantPresenceTheme,
 } from './assistant-motion'
@@ -125,6 +129,93 @@ function traceFluidBody(graphics: Graphics, radius: number, phase: number): Grap
     .closePath()
 }
 
+function mix(from: number, to: number, amount: number): number {
+  return from + (to - from) * amount
+}
+
+/**
+ * 疲劳时保留一个有体积的圆润上半身，只让底部向卡片表面铺开。
+ * 这比缩放整颗球更像柔软生物趴下，也避免轮廓变成金属圆盘。
+ */
+function tracePresenceBody(
+  graphics: Graphics,
+  radius: number,
+  phase: number,
+  restAmount: number,
+  fluid: boolean
+): Graphics {
+  if (restAmount <= 0.001) {
+    return fluid ? traceFluidBody(graphics, radius, phase) : graphics.circle(0, 0, radius)
+  }
+
+  const horizontal = fluid ? Math.sin(phase) * 1.45 * (1 - restAmount) : 0
+  const vertical = fluid ? Math.cos(phase * 0.84) * 1.2 * (1 - restAmount) : 0
+  const top = {
+    x: mix(horizontal * -0.22, -radius * 0.1, restAmount),
+    y: mix(-radius - vertical, -radius * 0.96, restAmount),
+  }
+  const right = {
+    x: mix(radius + horizontal, radius * 1.06, restAmount),
+    y: mix(vertical * 0.2, radius * 0.04, restAmount),
+  }
+  const bottomRight = {
+    x: mix(radius * 0.7 + horizontal * 0.2, radius * 0.76, restAmount),
+    y: mix(radius * 0.7 + vertical * 0.45, radius * 0.76, restAmount),
+  }
+  const bottomLeft = {
+    x: mix(-radius * 0.7 + horizontal * 0.18, -radius * 0.68, restAmount),
+    y: mix(radius * 0.7 + vertical * 0.48, radius * 0.79, restAmount),
+  }
+  const left = {
+    x: mix(-radius + horizontal * 0.42, -radius * 1.08, restAmount),
+    y: mix(-vertical * 0.18, radius * 0.14, restAmount),
+  }
+
+  return graphics
+    .moveTo(top.x, top.y)
+    .bezierCurveTo(
+      mix(radius * 0.55, radius * 0.5, restAmount),
+      mix(top.y, -radius * 0.98, restAmount),
+      mix(right.x, radius * 1.02, restAmount),
+      mix(-radius * 0.55, -radius * 0.54, restAmount),
+      right.x,
+      right.y
+    )
+    .bezierCurveTo(
+      mix(right.x, radius * 1.1, restAmount),
+      mix(radius * 0.38, radius * 0.34, restAmount),
+      mix(radius * 0.92, radius * 0.9, restAmount),
+      mix(radius * 0.56, radius * 0.62, restAmount),
+      bottomRight.x,
+      bottomRight.y
+    )
+    .bezierCurveTo(
+      mix(radius * 0.4, radius * 0.42, restAmount),
+      mix(radius * 0.86, radius * 0.82, restAmount),
+      mix(-radius * 0.34, -radius * 0.32, restAmount),
+      mix(radius * 0.86, radius * 0.84, restAmount),
+      bottomLeft.x,
+      bottomLeft.y
+    )
+    .bezierCurveTo(
+      mix(-radius * 0.88, -radius * 0.86, restAmount),
+      mix(radius * 0.62, radius * 0.72, restAmount),
+      mix(left.x, -radius * 1.1, restAmount),
+      mix(radius * 0.38, radius * 0.4, restAmount),
+      left.x,
+      left.y
+    )
+    .bezierCurveTo(
+      mix(left.x, -radius * 1.12, restAmount),
+      mix(-radius * 0.55, -radius * 0.3, restAmount),
+      mix(-radius * 0.55, -radius * 0.56, restAmount),
+      mix(top.y, -radius * 0.9, restAmount),
+      top.x,
+      top.y
+    )
+    .closePath()
+}
+
 function drawEyes(
   left: Graphics,
   right: Graphics,
@@ -156,8 +247,14 @@ export class AssistantPresenceRenderer {
   private lastFrame = this.startTime
   private blinkStartedAt: number | null = null
   private nextBlinkAt = this.startTime + 2200
-  private reactionStartedAt: number | null = null
+  private activeGesture: AssistantGesture | null = null
+  private gestureStartedAt: number | null = null
+  private nextIdleGestureAt = this.startTime + 8500
+  private lastIdleGesture: AssistantGesture | null = null
   private stateStartedAt = this.startTime
+  private rollStartedAt: number | null = null
+  private rollDuration = 0
+  private rollDirection = 1
 
   constructor(
     private readonly host: HTMLElement,
@@ -304,6 +401,10 @@ export class AssistantPresenceRenderer {
     if (state === this.presenceState) return
     this.presenceState = state
     this.stateStartedAt = performance.now()
+    if (!this.canPlayIdleGesture() && this.isIdleGesture(this.activeGesture)) {
+      this.activeGesture = null
+      this.gestureStartedAt = null
+    }
     if (!this.app) return
     this.syncTicker()
   }
@@ -326,12 +427,30 @@ export class AssistantPresenceRenderer {
   }
 
   triggerReaction(): void {
+    this.triggerGesture('tap')
+  }
+
+  triggerGesture(gesture: AssistantGesture): void {
     const now = performance.now()
-    this.reactionStartedAt = now
+    this.activeGesture = gesture
+    this.gestureStartedAt = now
+    this.nextIdleGestureAt = now + this.randomIdleDelay()
     this.blinkStartedAt = null
     this.nextBlinkAt = now + 2300
     if (!this.app) return
     this.syncTicker()
+  }
+
+  startRoll(direction: number, duration: number): void {
+    this.rollDirection = direction >= 0 ? 1 : -1
+    this.rollDuration = Math.max(1, duration)
+    this.rollStartedAt = performance.now()
+    this.syncTicker()
+  }
+
+  clearRoll(): void {
+    this.rollStartedAt = null
+    this.rollDuration = 0
   }
 
   destroy(): void {
@@ -356,6 +475,36 @@ export class AssistantPresenceRenderer {
     else this.app.ticker.stop()
   }
 
+  private randomIdleDelay(): number {
+    return 8500 + Math.random() * 11000
+  }
+
+  private canPlayIdleGesture(): boolean {
+    return this.presenceState === 'standby' || this.presenceState === 'input'
+  }
+
+  private isIdleGesture(gesture: AssistantGesture | null): boolean {
+    return gesture !== null && ASSISTANT_IDLE_GESTURES.includes(gesture)
+  }
+
+  private updateGesture(now: number): void {
+    if (this.activeGesture && this.gestureStartedAt !== null) {
+      const duration = getAssistantGestureDuration(this.activeGesture)
+      if (now - this.gestureStartedAt < duration) return
+      this.activeGesture = null
+      this.gestureStartedAt = null
+      this.nextIdleGestureAt = now + this.randomIdleDelay()
+    }
+
+    if (!this.canPlayIdleGesture() || now < this.nextIdleGestureAt) return
+    const candidates = ASSISTANT_IDLE_GESTURES.filter((gesture) => gesture !== this.lastIdleGesture)
+    const index = Math.floor(Math.random() * candidates.length)
+    const gesture = candidates[index] ?? 'glance'
+    this.lastIdleGesture = gesture
+    this.activeGesture = gesture
+    this.gestureStartedAt = now
+  }
+
   private blinkScale(now: number): number {
     if (this.blinkStartedAt === null && now >= this.nextBlinkAt) this.blinkStartedAt = now
     if (this.blinkStartedAt === null) return 1
@@ -374,6 +523,7 @@ export class AssistantPresenceRenderer {
   private draw(now: number): void {
     if (!this.app || !this.layers || !this.palette) return
 
+    this.updateGesture(now)
     const deltaMs = Math.min(64, Math.max(0, now - this.lastFrame))
     this.lastFrame = now
     this.pointerCurrent.x = damp(this.pointerCurrent.x, this.pointerTarget.x, 9, deltaMs)
@@ -389,11 +539,27 @@ export class AssistantPresenceRenderer {
       this.pointerCurrent.y,
       this.reducedMotion
     )
-    const reaction = sampleAssistantReaction(
-      this.reactionStartedAt === null ? Number.POSITIVE_INFINITY : now - this.reactionStartedAt,
+    const reaction = sampleAssistantGesture(
+      this.activeGesture,
+      this.gestureStartedAt === null ? Number.POSITIVE_INFINITY : now - this.gestureStartedAt,
       this.reducedMotion
     )
-    if (!reaction.active) this.reactionStartedAt = null
+    const gestureSettle = 1 - Math.pow(1 - Math.min(1, reaction.progress / 0.18), 3)
+    const restAmount = this.reducedMotion
+      ? 0
+      : this.activeGesture === 'tired'
+        ? gestureSettle
+        : this.activeGesture === 'recover'
+          ? 1 - gestureSettle
+          : 0
+    const rollRotation = sampleAssistantRollRotation(
+      this.rollStartedAt === null ? 0 : now - this.rollStartedAt,
+      this.rollStartedAt === null ? 0 : this.rollDuration,
+      this.rollDirection,
+      this.reducedMotion
+    )
+    const ambientMotionWeight = this.activeGesture === 'tired' ? 0.08 : 1
+    const ambientBreathScale = this.activeGesture === 'tired' ? 1 : motion.breathScale
     const appearance = ASSISTANT_APPEARANCE[this.theme]
     const {
       root,
@@ -424,8 +590,13 @@ export class AssistantPresenceRenderer {
     shadow
       .clear()
       .ellipse(
-        center + motion.bodyX * 0.45,
-        center + BODY_RADIUS + 9 + motion.bodyY * 0.18 + reaction.hopY * 0.12,
+        center + (motion.bodyX * ambientMotionWeight + reaction.bodyX) * 0.45,
+        center +
+          BODY_RADIUS +
+          9 +
+          motion.bodyY * ambientMotionWeight * 0.18 +
+          reaction.hopY * 0.12 +
+          reaction.verticalOffset * 0.3,
         17 + reaction.glowBoost * 3,
         3.5 - reaction.glowBoost * 0.6
       )
@@ -434,29 +605,38 @@ export class AssistantPresenceRenderer {
         alpha: appearance.glowAlpha * state.glowMultiplier * (1 + reaction.glowBoost * 0.65),
       })
     root.position.set(
-      center + motion.bodyX,
-      center + motion.bodyY + motion.floatY + reaction.hopY + state.verticalOffset
+      center + motion.bodyX * ambientMotionWeight + reaction.bodyX,
+      center +
+        motion.bodyY * ambientMotionWeight +
+        motion.floatY * ambientMotionWeight +
+        reaction.hopY +
+        reaction.verticalOffset +
+        state.verticalOffset
     )
     root.alpha = state.opacity
-    root.rotation = motion.tilt + state.rotationOffset
+    root.rotation =
+      motion.tilt * ambientMotionWeight + reaction.rotation + state.rotationOffset + rollRotation
     root.scale.set(
-      motion.breathScale * reaction.scaleX * state.scaleX,
-      (2 - motion.breathScale) * reaction.scaleY * state.scaleY
+      ambientBreathScale * reaction.scaleX * state.scaleX,
+      (2 - ambientBreathScale) * reaction.scaleY * state.scaleY
     )
     halo.scale.set(1 + reaction.glowBoost * 0.055)
     outerGlow.scale.set(1 + reaction.glowBoost * 0.075)
     flow.rotation = motion.flowRotation * (isFluid ? 0.36 : 1)
     particleField.visible = !this.reducedMotion
     particleField.position.set(
-      center + motion.bodyX * 0.45,
-      center + motion.bodyY * 0.35 + motion.floatY * 0.4
+      center + (motion.bodyX * ambientMotionWeight + reaction.bodyX) * 0.45,
+      center +
+        motion.bodyY * ambientMotionWeight * 0.35 +
+        motion.floatY * ambientMotionWeight * 0.4 +
+        reaction.verticalOffset * 0.24
     )
     reactionRing.clear()
     if (state.ringAlpha > 0) {
       reactionRing
         .circle(
-          center + motion.bodyX * 0.55,
-          center + motion.bodyY * 0.4 + motion.floatY * 0.5,
+          center + (motion.bodyX + reaction.bodyX) * 0.55,
+          center + motion.bodyY * 0.4 + motion.floatY * 0.5 + reaction.verticalOffset * 0.3,
           BODY_RADIUS + state.ringRadius
         )
         .stroke({ color: stateAccent, width: 1.25, alpha: state.ringAlpha * appearance.rimAlpha })
@@ -464,8 +644,8 @@ export class AssistantPresenceRenderer {
     if (reaction.active && !this.reducedMotion) {
       reactionRing
         .circle(
-          center + motion.bodyX * 0.55,
-          center + motion.bodyY * 0.4 + motion.floatY * 0.5,
+          center + (motion.bodyX + reaction.bodyX) * 0.55,
+          center + motion.bodyY * 0.4 + motion.floatY * 0.5 + reaction.verticalOffset * 0.3,
           BODY_RADIUS + 3 + reaction.progress * 17
         )
         .stroke({
@@ -503,6 +683,7 @@ export class AssistantPresenceRenderer {
           appearance.particleAlpha *
           state.particleAlphaMultiplier *
           Math.min(1, twinkle + reaction.particleBurst * 0.38) *
+          (1 - restAmount * 0.72) *
           (isFluid ? 0.58 : 1)
         particle.graphic.tint = particleColors[particle.colorIndex] ?? this.palette.primary
       }
@@ -515,15 +696,21 @@ export class AssistantPresenceRenderer {
 
     if (isFluid) {
       const fluidPhase = motion.ribbonPhase * 0.22
-      traceFluidBody(halo.clear(), BODY_RADIUS + 4, fluidPhase).fill({
+      tracePresenceBody(halo.clear(), BODY_RADIUS + 4, fluidPhase, restAmount, true).fill({
         color: stateAccent,
         alpha: appearance.glowAlpha * state.glowMultiplier * (this.reducedMotion ? 0.34 : 0.62),
       })
-      traceFluidBody(outerGlow.clear(), BODY_RADIUS + 1.5, fluidPhase + 1.2).fill({
+      tracePresenceBody(
+        outerGlow.clear(),
+        BODY_RADIUS + 1.5,
+        fluidPhase + 1.2,
+        restAmount,
+        true
+      ).fill({
         color: this.palette.cool,
         alpha: appearance.glowAlpha * state.glowMultiplier * (0.7 + motion.corePulse * 0.12),
       })
-      traceFluidBody(core.clear(), BODY_RADIUS - 7, fluidPhase + 2.4)
+      tracePresenceBody(core.clear(), BODY_RADIUS - 7, fluidPhase + 2.4, restAmount, true)
         .fill({
           color: this.palette.primary,
           alpha: appearance.coreAlpha * motion.corePulse * 0.78,
@@ -533,47 +720,59 @@ export class AssistantPresenceRenderer {
 
       for (const ribbon of ribbons) ribbon.clear()
 
-      traceFluidBody(membrane.clear(), BODY_RADIUS, fluidPhase).fill({
+      tracePresenceBody(membrane.clear(), BODY_RADIUS, fluidPhase, restAmount, true).fill({
         color: this.palette.highlight,
         alpha: this.theme === 'light' ? 0.58 : appearance.bodyAlpha * 0.16,
       })
-      traceFluidBody(membrane, BODY_RADIUS, fluidPhase).fill({
+      tracePresenceBody(membrane, BODY_RADIUS, fluidPhase, restAmount, true).fill({
         color: this.palette.cool,
         alpha: appearance.bodyAlpha * (this.theme === 'light' ? 0.22 : 0.3),
       })
-      traceFluidBody(membrane, BODY_RADIUS, fluidPhase).stroke({
+      tracePresenceBody(membrane, BODY_RADIUS, fluidPhase, restAmount, true).stroke({
         color: this.theme === 'light' ? this.palette.primary : this.palette.eye,
         width: 1.05,
-        alpha: appearance.membraneAlpha * 0.62,
+        alpha: appearance.membraneAlpha * mix(0.62, 0.24, restAmount),
         cap: 'round',
         join: 'round',
       })
 
-      brandFacet
-        .clear()
-        .moveTo(7, -28)
-        .bezierCurveTo(14, -31, 24, -25, 31, -15)
-        .bezierCurveTo(29, -4, 25, 6, 18, 13)
-        .bezierCurveTo(14, 3, 11, -12, 7, -28)
-        .closePath()
-        .fill({
-          color: this.palette.primary,
-          alpha: this.theme === 'dark' ? 0.24 : 0.16,
-        })
+      brandFacet.clear()
+      if (restAmount > 0.001) {
+        brandFacet
+          .ellipse(-2, BODY_RADIUS * 0.67, BODY_RADIUS * 0.68, BODY_RADIUS * 0.09)
+          .fill({ color: this.palette.cool, alpha: 0.1 * restAmount })
+          .ellipse(BODY_RADIUS * 0.7, BODY_RADIUS * 0.43, BODY_RADIUS * 0.13, BODY_RADIUS * 0.1)
+          .fill({ color: this.palette.soft, alpha: 0.13 * restAmount })
+      } else {
+        brandFacet
+          .moveTo(7, -28)
+          .bezierCurveTo(14, -31, 24, -25, 31, -15)
+          .bezierCurveTo(29, -4, 25, 6, 18, 13)
+          .bezierCurveTo(14, 3, 11, -12, 7, -28)
+          .closePath()
+          .fill({
+            color: this.palette.primary,
+            alpha: this.theme === 'dark' ? 0.24 : 0.16,
+          })
+      }
 
-      traceFluidBody(rimLight.clear(), BODY_RADIUS - 0.4, fluidPhase).stroke({
+      tracePresenceBody(rimLight.clear(), BODY_RADIUS - 0.4, fluidPhase, restAmount, true).stroke({
         color: this.palette.eye,
         width: 1.15,
-        alpha: appearance.rimAlpha * (this.reducedMotion ? 0.32 : 0.58),
+        alpha:
+          appearance.rimAlpha *
+          mix(this.reducedMotion ? 0.32 : 0.58, this.theme === 'light' ? 0.2 : 0.28, restAmount),
         cap: 'round',
         join: 'round',
       })
-      rimLight.arc(0, 0, BODY_RADIUS - 1.5, glossStart, glossStart + Math.PI * 0.54).stroke({
-        color: this.palette.cool,
-        width: 1.8,
-        alpha: appearance.rimAlpha * (this.reducedMotion ? 0.18 : 0.46),
-        cap: 'round',
-      })
+      if (restAmount <= 0.001) {
+        rimLight.arc(0, 0, BODY_RADIUS - 1.5, glossStart, glossStart + Math.PI * 0.54).stroke({
+          color: this.palette.cool,
+          width: 1.8,
+          alpha: appearance.rimAlpha * (this.reducedMotion ? 0.18 : 0.46),
+          cap: 'round',
+        })
+      }
 
       specular
         .clear()
@@ -588,41 +787,65 @@ export class AssistantPresenceRenderer {
           alpha: appearance.specularAlpha * (this.reducedMotion ? 0.12 : 0.3),
         })
     } else {
-      halo
-        .clear()
-        .arc(0, 0, BODY_RADIUS + 3, glossStart, glossStart + Math.PI * 0.78)
-        .stroke({
+      if (restAmount > 0.001) {
+        tracePresenceBody(
+          halo.clear(),
+          BODY_RADIUS + 3,
+          motion.ribbonPhase,
+          restAmount,
+          false
+        ).stroke({
           color: this.palette.cool,
-          width: 6,
-          alpha: appearance.rimAlpha * (this.reducedMotion ? 0.16 : 0.36),
+          width: 3,
+          alpha: appearance.rimAlpha * 0.12,
           cap: 'round',
+          join: 'round',
         })
-        .arc(0, 0, BODY_RADIUS + 2, glossStart + Math.PI, glossStart + Math.PI * 1.56)
-        .stroke({
-          color: this.palette.warm,
-          width: 5,
-          alpha: appearance.rimAlpha * (this.reducedMotion ? 0.12 : 0.28),
-          cap: 'round',
-        })
-      outerGlow
-        .clear()
-        .circle(0, 0, BODY_RADIUS + 2)
-        .fill({
-          color: stateAccent,
-          alpha: appearance.glowAlpha * state.glowMultiplier * (0.84 + motion.corePulse * 0.16),
-        })
-      core
-        .clear()
-        .circle(-2, 1, BODY_RADIUS - 8)
+      } else {
+        halo
+          .clear()
+          .arc(0, 0, BODY_RADIUS + 3, glossStart, glossStart + Math.PI * 0.78)
+          .stroke({
+            color: this.palette.cool,
+            width: 6,
+            alpha: appearance.rimAlpha * (this.reducedMotion ? 0.16 : 0.36),
+            cap: 'round',
+          })
+          .arc(0, 0, BODY_RADIUS + 2, glossStart + Math.PI, glossStart + Math.PI * 1.56)
+          .stroke({
+            color: this.palette.warm,
+            width: 5,
+            alpha: appearance.rimAlpha * (this.reducedMotion ? 0.12 : 0.28),
+            cap: 'round',
+          })
+      }
+      tracePresenceBody(
+        outerGlow.clear(),
+        BODY_RADIUS + 2,
+        motion.ribbonPhase,
+        restAmount,
+        false
+      ).fill({
+        color: stateAccent,
+        alpha: appearance.glowAlpha * state.glowMultiplier * (0.84 + motion.corePulse * 0.16),
+      })
+      tracePresenceBody(core.clear(), BODY_RADIUS - 8, motion.ribbonPhase, restAmount, false)
         .fill({ color: this.palette.primary, alpha: appearance.coreAlpha * motion.corePulse })
         .circle(10, -9, BODY_RADIUS - 19)
         .fill({ color: this.palette.soft, alpha: appearance.bodyAlpha })
 
-      drawRibbon(ribbons[0], this.palette.cool, appearance.ribbonAlpha, motion.ribbonPhase, 0, 10)
+      drawRibbon(
+        ribbons[0],
+        this.palette.cool,
+        appearance.ribbonAlpha * (1 - restAmount * 0.85),
+        motion.ribbonPhase,
+        0,
+        10
+      )
       drawRibbon(
         ribbons[1],
         this.palette.warm,
-        appearance.ribbonAlpha * 0.72,
+        appearance.ribbonAlpha * 0.72 * (1 - restAmount * 0.85),
         -motion.ribbonPhase,
         2.1,
         7
@@ -630,63 +853,93 @@ export class AssistantPresenceRenderer {
       drawRibbon(
         ribbons[2],
         this.palette.primary,
-        appearance.ribbonAlpha * 0.8,
+        appearance.ribbonAlpha * 0.8 * (1 - restAmount * 0.85),
         motion.ribbonPhase,
         4.2,
         5
       )
 
-      membrane
-        .clear()
-        .circle(0, 0, BODY_RADIUS)
-        .fill({
-          color: this.palette.highlight,
-          alpha: this.theme === 'light' ? 0.6 : appearance.bodyAlpha * 0.16,
-        })
-        .circle(0, 0, BODY_RADIUS)
-        .fill({
-          color: this.palette.cool,
-          alpha: appearance.bodyAlpha * (this.theme === 'light' ? 0.2 : 0.38),
-        })
-        .arc(0, 0, BODY_RADIUS, Math.PI * 1.06, Math.PI * 1.72)
-        .stroke({
+      tracePresenceBody(membrane.clear(), BODY_RADIUS, motion.ribbonPhase, restAmount, false).fill({
+        color: this.palette.highlight,
+        alpha: this.theme === 'light' ? 0.6 : appearance.bodyAlpha * 0.16,
+      })
+      tracePresenceBody(membrane, BODY_RADIUS, motion.ribbonPhase, restAmount, false).fill({
+        color: this.palette.cool,
+        alpha: appearance.bodyAlpha * (this.theme === 'light' ? 0.2 : 0.38),
+      })
+      if (restAmount > 0.001) {
+        tracePresenceBody(membrane, BODY_RADIUS, motion.ribbonPhase, restAmount, false).stroke({
           color: this.theme === 'light' ? this.palette.primary : this.palette.eye,
-          width: 1.2,
-          alpha: appearance.membraneAlpha,
+          width: 0.95,
+          alpha: appearance.membraneAlpha * 0.28,
           cap: 'round',
+          join: 'round',
         })
-        .arc(0, 0, BODY_RADIUS - 1, Math.PI * 0.02, Math.PI * 0.6)
-        .stroke({
-          color: this.palette.cool,
-          width: 1.5,
-          alpha: appearance.membraneAlpha,
-          cap: 'round',
-        })
+      } else {
+        membrane
+          .arc(0, 0, BODY_RADIUS, Math.PI * 1.06, Math.PI * 1.72)
+          .stroke({
+            color: this.theme === 'light' ? this.palette.primary : this.palette.eye,
+            width: 1.2,
+            alpha: appearance.membraneAlpha,
+            cap: 'round',
+          })
+          .arc(0, 0, BODY_RADIUS - 1, Math.PI * 0.02, Math.PI * 0.6)
+          .stroke({
+            color: this.palette.cool,
+            width: 1.5,
+            alpha: appearance.membraneAlpha,
+            cap: 'round',
+          })
+      }
       brandFacet.clear()
+      if (restAmount > 0.001) {
+        brandFacet
+          .ellipse(-2, BODY_RADIUS * 0.67, BODY_RADIUS * 0.68, BODY_RADIUS * 0.09)
+          .fill({ color: this.palette.cool, alpha: 0.1 * restAmount })
+          .ellipse(BODY_RADIUS * 0.7, BODY_RADIUS * 0.43, BODY_RADIUS * 0.13, BODY_RADIUS * 0.1)
+          .fill({ color: this.palette.soft, alpha: 0.13 * restAmount })
+      }
 
-      rimLight
-        .clear()
-        .arc(0, 0, BODY_RADIUS - 0.4, glossStart, glossStart + Math.PI * 0.62)
-        .stroke({
+      if (restAmount > 0.001) {
+        tracePresenceBody(
+          rimLight.clear(),
+          BODY_RADIUS - 0.4,
+          motion.ribbonPhase,
+          restAmount,
+          false
+        ).stroke({
           color: this.palette.highlight,
-          width: 1.8,
-          alpha: appearance.rimAlpha * (this.reducedMotion ? 0.45 : 0.92),
+          width: 1.05,
+          alpha: appearance.rimAlpha * 0.24,
           cap: 'round',
+          join: 'round',
         })
-        .arc(0, 0, BODY_RADIUS - 1.2, glossStart + Math.PI * 0.82, glossStart + Math.PI * 1.34)
-        .stroke({
-          color: this.palette.warm,
-          width: 1.35,
-          alpha: appearance.rimAlpha * (this.reducedMotion ? 0.28 : 0.68),
-          cap: 'round',
-        })
-        .arc(0, 0, BODY_RADIUS - 2, glossStart + Math.PI * 1.52, glossStart + Math.PI * 1.88)
-        .stroke({
-          color: this.palette.cool,
-          width: 2.2,
-          alpha: appearance.rimAlpha * (this.reducedMotion ? 0.22 : 0.76),
-          cap: 'round',
-        })
+      } else {
+        rimLight
+          .clear()
+          .arc(0, 0, BODY_RADIUS - 0.4, glossStart, glossStart + Math.PI * 0.62)
+          .stroke({
+            color: this.palette.highlight,
+            width: 1.8,
+            alpha: appearance.rimAlpha * (this.reducedMotion ? 0.45 : 0.92),
+            cap: 'round',
+          })
+          .arc(0, 0, BODY_RADIUS - 1.2, glossStart + Math.PI * 0.82, glossStart + Math.PI * 1.34)
+          .stroke({
+            color: this.palette.warm,
+            width: 1.35,
+            alpha: appearance.rimAlpha * (this.reducedMotion ? 0.28 : 0.68),
+            cap: 'round',
+          })
+          .arc(0, 0, BODY_RADIUS - 2, glossStart + Math.PI * 1.52, glossStart + Math.PI * 1.88)
+          .stroke({
+            color: this.palette.cool,
+            width: 2.2,
+            alpha: appearance.rimAlpha * (this.reducedMotion ? 0.22 : 0.76),
+            cap: 'round',
+          })
+      }
 
       specular
         .clear()
@@ -707,8 +960,8 @@ export class AssistantPresenceRenderer {
         })
     }
 
-    const gazeX = motion.gazeX + state.gazeXOffset
-    const gazeY = motion.gazeY - 1 + state.gazeYOffset
+    const gazeX = motion.gazeX * ambientMotionWeight + reaction.gazeX + state.gazeXOffset
+    const gazeY = motion.gazeY * ambientMotionWeight + reaction.gazeY - 1 + state.gazeYOffset
     eyeGlow.position.set(gazeX, gazeY)
     eyes.position.set(gazeX, gazeY)
     eyeGlow.scale.y = eyes.scale.y = this.blinkScale(now) * reaction.eyeScaleY * state.eyeScaleY

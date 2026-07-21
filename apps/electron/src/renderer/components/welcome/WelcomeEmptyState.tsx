@@ -22,6 +22,7 @@ import {
 import * as React from 'react'
 
 import { AssistantPresence } from './assistant-presence/AssistantPresence'
+import { beginAssistantPresenceTransition } from './assistant-presence/assistant-presence-transition'
 
 import {
   agentSessionDraftHtmlAtom,
@@ -270,32 +271,42 @@ export function WelcomeEmptyState(): React.ReactElement {
     async (key: string, prompt?: string): Promise<void> => {
       if (busyId) return
       setBusyId(key)
+      const transition = beginAssistantPresenceTransition(
+        document.querySelector<HTMLElement>('[data-assistant-transition-source="true"]')
+      )
       try {
         const draftText = prompt?.trim() ?? ''
-        await createAgent({
+        const session = await createAgent({
           mode,
-          // 打开前写入草稿，避免 AgentView 挂载后再改造成竞态
-          beforeOpen: draftText
-            ? (session) => {
-                setDraftsMap((prev) => {
-                  const map = new Map(prev)
-                  map.set(session.id, draftText)
-                  return map
-                })
-                setDraftHtmlMap((prev) => {
-                  const map = new Map(prev)
-                  map.delete(session.id)
-                  return map
-                })
-              }
-            : undefined,
+          // 先完成欢迎卡片离场，再打开会话；草稿仍在 AgentView 挂载前写入。
+          beforeOpen: async (session) => {
+            if (draftText) {
+              setDraftsMap((prev) => {
+                const map = new Map(prev)
+                map.set(session.id, draftText)
+                return map
+              })
+              setDraftHtmlMap((prev) => {
+                const map = new Map(prev)
+                map.delete(session.id)
+                return map
+              })
+            }
+            await transition?.readyForNavigation
+          },
         })
+        if (!session) {
+          transition?.cancel()
+          return
+        }
+        await transition?.finish(session.id)
         if (draftText) {
           requestAnimationFrame(() => {
             window.dispatchEvent(new CustomEvent('tagent:focus-input'))
           })
         }
       } finally {
+        transition?.cancel()
         setBusyId(null)
       }
     },
@@ -322,10 +333,19 @@ export function WelcomeEmptyState(): React.ReactElement {
 
   return (
     <div className="flex h-full min-h-0 flex-col items-center overflow-y-auto px-6 py-10 scrollbar-thin">
-      <div className="my-auto w-full max-w-[720px] animate-in fade-in-0 duration-300">
-        <AssistantPresence />
+      <div
+        className="my-auto w-full max-w-[720px] animate-in fade-in-0 duration-300"
+        data-assistant-welcome-transition
+      >
+        <div className="assistant-presence-stage">
+          <AssistantPresence roaming transitionSource />
+        </div>
         {/* 头栏：对齐侧栏 sidebar-head（kicker + 标题 + accent 胶囊），不用实心主按钮 */}
-        <header className="kanban-crew-badge mb-7 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+        <header
+          className="kanban-crew-badge mb-7 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+          data-welcome-transition-direction="left"
+          data-welcome-transition-item
+        >
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/35">
               {isTAMode ? 'TA MODE' : 'WORKSPACE'}
@@ -359,7 +379,11 @@ export function WelcomeEmptyState(): React.ReactElement {
         </header>
 
         {/* 快速开始 */}
-        <section className="mb-6">
+        <section
+          className="mb-6"
+          data-welcome-transition-direction="right"
+          data-welcome-transition-item
+        >
           <SectionLabel>快速开始</SectionLabel>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             {quickStarts.map((item) => {
@@ -402,7 +426,11 @@ export function WelcomeEmptyState(): React.ReactElement {
         </section>
 
         {/* 上手指引 */}
-        <section className="mb-6">
+        <section
+          className="mb-6"
+          data-welcome-transition-direction="left"
+          data-welcome-transition-item
+        >
           <SectionLabel>上手指引</SectionLabel>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             {guides.map((item) => (
@@ -428,7 +456,7 @@ export function WelcomeEmptyState(): React.ReactElement {
 
         {/* 最近会话 */}
         {recentSessions.length > 0 ? (
-          <section>
+          <section data-welcome-transition-direction="right" data-welcome-transition-item>
             <SectionLabel>最近会话</SectionLabel>
             <div className="overflow-hidden rounded-glass-popover border border-foreground/[0.06] bg-foreground/[0.03]">
               {recentSessions.map((session, idx) => (

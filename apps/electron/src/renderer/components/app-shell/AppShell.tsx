@@ -652,6 +652,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
             <div
               ref={islandRef}
+              data-session-transition-enter="rail"
               className={cn(
                 'right-nav-island-glass nav-island-glass nav-island-glass--float',
                 'relative ml-auto flex min-h-0 flex-col',

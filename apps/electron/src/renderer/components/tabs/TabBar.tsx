@@ -306,6 +306,7 @@ function TabBarInner({
     <div
       ref={barRef}
       className="app-workspace-tab-strip flex items-center content-shell-chrome-bleed relative shrink-0"
+      data-session-transition-enter="tab"
     >
       <div className="absolute inset-0 z-[1] titlebar-drag-region pointer-events-none" />
 
