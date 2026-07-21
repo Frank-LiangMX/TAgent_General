@@ -97,7 +97,6 @@ export function SidePanel({
   activeTab,
   onTabChange,
 }: SidePanelProps): React.ReactElement {
-
   // Tab 系统
   const previewFileMap = useAtomValue(previewFileMapAtom)
   const selectedFilePath = previewFileMap.get(sessionId)?.filePath

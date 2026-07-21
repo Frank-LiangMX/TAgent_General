@@ -49,15 +49,7 @@ export async function injectSkillManageMcpServer(
 ): Promise<void> {
   const { z } = await import('zod')
 
-  const actionSchema = z.enum([
-    'create',
-    'patch',
-    'delete',
-    'archive',
-    'restore',
-    'list',
-    'exists',
-  ])
+  const actionSchema = z.enum(['create', 'patch', 'delete', 'archive', 'restore', 'list', 'exists'])
 
   const inputSchema = {
     action: actionSchema.describe(
@@ -71,9 +63,7 @@ export async function injectSkillManageMcpServer(
     description: z
       .string()
       .optional()
-      .describe(
-        '触发描述（create 必填）。写清 when to use；建议 ≤1024 字符，硬上限 2000'
-      ),
+      .describe('触发描述（create 必填）。写清 when to use；建议 ≤1024 字符，硬上限 2000'),
     body: z.string().optional().describe('SKILL.md 正文（Markdown，不含 frontmatter）'),
     scope: z
       .enum(['global', 'workspace'])
@@ -85,10 +75,7 @@ export async function injectSkillManageMcpServer(
       .describe('生命周期状态（create 默认 draft）'),
     pinned: z.boolean().optional().describe('钉住后 Curator 不自动变更状态'),
     version: z.string().optional().describe('semver，默认 0.1.0'),
-    recordUsage: z
-      .boolean()
-      .optional()
-      .describe('为 true 时对 slug 记一次 usage（用于验证埋点）'),
+    recordUsage: z.boolean().optional().describe('为 true 时对 slug 记一次 usage（用于验证埋点）'),
   }
 
   const server = sdk.createSdkMcpServer({
@@ -159,15 +146,9 @@ export async function injectSkillManageMcpServer(
                   scope,
                   workspaceSlug,
                   name: typeof args.name === 'string' ? args.name : undefined,
-                  description:
-                    typeof args.description === 'string' ? args.description : undefined,
+                  description: typeof args.description === 'string' ? args.description : undefined,
                   body: typeof args.body === 'string' ? args.body : undefined,
-                  status: args.status as
-                    | 'draft'
-                    | 'active'
-                    | 'stale'
-                    | 'archived'
-                    | undefined,
+                  status: args.status as 'draft' | 'active' | 'stale' | 'archived' | undefined,
                   pinned: typeof args.pinned === 'boolean' ? args.pinned : undefined,
                   version: typeof args.version === 'string' ? args.version : undefined,
                 })

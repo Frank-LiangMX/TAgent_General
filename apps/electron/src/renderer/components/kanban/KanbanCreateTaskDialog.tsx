@@ -98,8 +98,7 @@ export function KanbanCreateTaskDialog({
         goalMode: goalMode || undefined,
         acceptanceCriteria:
           goalMode && acceptanceCriteria.trim() ? acceptanceCriteria.trim() : undefined,
-        goalMaxTurns:
-          goalMode && Number.isFinite(turnsNum) && turnsNum > 0 ? turnsNum : undefined,
+        goalMaxTurns: goalMode && Number.isFinite(turnsNum) && turnsNum > 0 ? turnsNum : undefined,
       })
       toast.success(goalMode ? 'Goal 任务已创建' : '任务已创建')
       onOpenChange(false)
@@ -192,11 +191,7 @@ export function KanbanCreateTaskDialog({
                     多轮验收 + complete 闸门，防假完成
                   </p>
                 </div>
-                <Switch
-                  id="task-goal-mode"
-                  checked={goalMode}
-                  onCheckedChange={setGoalMode}
-                />
+                <Switch id="task-goal-mode" checked={goalMode} onCheckedChange={setGoalMode} />
               </div>
               {goalMode && (
                 <>

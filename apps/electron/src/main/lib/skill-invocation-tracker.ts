@@ -31,10 +31,7 @@ export function extractSkillSlug(raw: string): string | null {
  * 从 tool_use 名称 + input 推断 skill slug
  * 兼容 Skill 工具、skill_manage、以及带 skill 字段的 MCP 包装
  */
-export function extractSkillSlugFromToolUse(
-  toolName: string,
-  input: unknown
-): string | null {
+export function extractSkillSlugFromToolUse(toolName: string, input: unknown): string | null {
   const name = toolName.trim()
   const lower = name.toLowerCase()
 

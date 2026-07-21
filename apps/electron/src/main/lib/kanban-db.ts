@@ -116,9 +116,7 @@ function rowToBoard(row: KanbanBoardRow): KanbanBoard {
 
 /** 行 → 任务对象 */
 function rowToTask(row: KanbanTaskRow): KanbanTask {
-  const metadata = row.metadata
-    ? (JSON.parse(row.metadata) as KanbanTaskMetadata)
-    : undefined
+  const metadata = row.metadata ? (JSON.parse(row.metadata) as KanbanTaskMetadata) : undefined
   return {
     id: row.id,
     boardId: row.board_id,

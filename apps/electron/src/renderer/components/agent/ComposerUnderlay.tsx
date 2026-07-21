@@ -120,10 +120,7 @@ function UnderlayCell({
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className={cn(
-                  'composer-underlay-cell',
-                  open && 'composer-underlay-cell--open'
-                )}
+                className={cn('composer-underlay-cell', open && 'composer-underlay-cell--open')}
               >
                 <Icon className="composer-underlay-cell__icon" aria-hidden />
                 <span className="composer-underlay-cell__label">{label}</span>
@@ -185,13 +182,14 @@ export function ComposerUnderlay({
   const permissionLabel = TAGENT_PERMISSION_MODE_CONFIG[permissionMode].label
   const subagentLabel =
     SUBAGENT_EAGERNESS_OPTIONS.find((o) => o.value === subagentEagerness)?.label ?? '保守'
-  const displayValue = [
-    autoPreviewEnabled ? '预览' : null,
-    processGroupsKeepExpanded ? '展开' : null,
-    thinkingExpanded ? '思考' : null,
-  ]
-    .filter(Boolean)
-    .join('·') || '默认'
+  const displayValue =
+    [
+      autoPreviewEnabled ? '预览' : null,
+      processGroupsKeepExpanded ? '展开' : null,
+      thinkingExpanded ? '思考' : null,
+    ]
+      .filter(Boolean)
+      .join('·') || '默认'
 
   const setCellOpen = React.useCallback((key: string, open: boolean) => {
     setOpenKey(open ? key : null)

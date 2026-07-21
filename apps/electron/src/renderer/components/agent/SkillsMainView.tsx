@@ -98,9 +98,7 @@ export function SkillsMainView(): React.ReactElement {
 
   return (
     <Panel variant="grow" className="content-glass relative flex min-h-0 flex-col overflow-hidden">
-      <div
-        className={cn('relative shrink-0', isMac ? 'h-3' : 'h-8', isWindows && 'pr-[134px]')}
-      >
+      <div className={cn('relative shrink-0', isMac ? 'h-3' : 'h-8', isWindows && 'pr-[134px]')}>
         <div
           className="absolute inset-0 titlebar-drag-region"
           style={isWindows ? { right: 126 } : undefined}

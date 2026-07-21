@@ -15,11 +15,7 @@ import { RightRailItems } from './RightRailItems'
 import { RightSidePanel } from './RightSidePanel'
 
 import { agentSidePanelOpenAtom, agentSidePanelPlacementAtom } from '@/atoms/agent-atoms'
-import {
-  inspectorMagnifiedAtom,
-  rightRailItemAtom,
-  type RightRailItem,
-} from '@/atoms/app-mode'
+import { inspectorMagnifiedAtom, rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
 import { designFullscreenAtom } from '@/atoms/design-preview-atoms'
 import { cn } from '@/lib/utils'
 
@@ -79,9 +75,7 @@ export const RightInspectorFrame = React.memo(function RightInspectorFrame(): Re
                 className={cn('app-inspector-close', isDock && 'app-inspector-close--active')}
                 aria-pressed={isDock}
                 aria-label={
-                  isDock
-                    ? '当前占位模式，点击切换为浮层'
-                    : '当前浮层模式，点击切换为占位'
+                  isDock ? '当前占位模式，点击切换为浮层' : '当前浮层模式，点击切换为占位'
                 }
                 onClick={() => setPlacement(isDock ? 'float' : 'dock')}
               >

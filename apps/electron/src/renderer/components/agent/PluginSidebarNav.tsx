@@ -251,9 +251,7 @@ export function PluginSidebarNav({ capabilities }: PluginSidebarNavProps): React
         >
           <LayoutGrid size={12} strokeWidth={1.75} className="opacity-70" aria-hidden />
           <span>已安装</span>
-          <span className="sidebar-footer-count">
-            {capabilities ? installedCounts.total : '…'}
-          </span>
+          <span className="sidebar-footer-count">{capabilities ? installedCounts.total : '…'}</span>
         </button>
       </footer>
     </div>

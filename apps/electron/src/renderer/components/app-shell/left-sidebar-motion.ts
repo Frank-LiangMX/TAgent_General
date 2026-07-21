@@ -116,7 +116,11 @@ export function createSidebarMorphKeyframes(
 
   if (direction === 'opening') {
     return [
-      { ...morphGeometry(path.source, 0, '18px'), offset: 0, easing: 'cubic-bezier(0.16, 0.72, 0.18, 1)' },
+      {
+        ...morphGeometry(path.source, 0, '18px'),
+        offset: 0,
+        easing: 'cubic-bezier(0.16, 0.72, 0.18, 1)',
+      },
       { ...morphGeometry(path.droplet, 0.9, '18px 34px 34px 18px'), offset: 0.22 },
       { ...morphGeometry(path.stream, 0.94, '20px 38px 38px 20px'), offset: 0.46 },
       { ...morphGeometry(path.gathered, 0.98, '26px'), offset: 0.74 },

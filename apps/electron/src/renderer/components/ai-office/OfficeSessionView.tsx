@@ -6,10 +6,26 @@
  */
 
 import { useAtom, useAtomValue } from 'jotai'
-import { ChevronRight, GripVertical, MessageSquareText, MoreVertical, PanelTopOpen, RefreshCw, Users } from 'lucide-react'
+import {
+  ChevronRight,
+  GripVertical,
+  MessageSquareText,
+  MoreVertical,
+  PanelTopOpen,
+  RefreshCw,
+  Users,
+} from 'lucide-react'
 import * as React from 'react'
 
-import { Slider, Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import {
+  Slider,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@tagent/ui'
 
 import { AiOfficeContainer } from './AiOfficeContainer'
 import { projectOfficeDirector } from './officeDirectorProjection'
@@ -344,12 +360,16 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={() => setOfficeViewState((current) => ({ ...current, chatCollapsed: false }))}
+              onClick={() =>
+                setOfficeViewState((current) => ({ ...current, chatCollapsed: false }))
+              }
               className="office-session-chat-trigger absolute bottom-5 right-5 z-20 flex size-12 items-center justify-center rounded-full text-foreground transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               aria-label="展开主 Agent 沟通窗"
             >
               <MessageSquareText className="size-5" aria-hidden />
-              <span className={cn('absolute right-1 top-1 size-2 rounded-full', statusTone(status))} />
+              <span
+                className={cn('absolute right-1 top-1 size-2 rounded-full', statusTone(status))}
+              />
             </button>
           </TooltipTrigger>
           <TooltipContent>展开主 Agent 沟通窗</TooltipContent>

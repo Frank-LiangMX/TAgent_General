@@ -62,11 +62,14 @@ const passedUserTurns = new Set()
 const observedUserTurns = []
 
 function getTurnSummary(turn) {
-  return turn.dataset.turnSummary || turn.querySelector('p')?.textContent?.trim() || '上一轮用户消息'
+  return (
+    turn.dataset.turnSummary || turn.querySelector('p')?.textContent?.trim() || '上一轮用户消息'
+  )
 }
 
 function syncTurnLocator() {
-  const locatedTurn = [...observedUserTurns].reverse().find((turn) => passedUserTurns.has(turn)) || null
+  const locatedTurn =
+    [...observedUserTurns].reverse().find((turn) => passedUserTurns.has(turn)) || null
   activeLocatedTurn = locatedTurn
   const isVisible = Boolean(locatedTurn)
 
@@ -183,7 +186,10 @@ function filterMinimapMessages() {
 function syncMessageScrollThumb() {
   const scrollRange = Math.max(conversation.scrollHeight - conversation.clientHeight, 0)
   const trackHeight = messageScrollTrack.clientHeight
-  const thumbHeight = Math.max(28, Math.min(trackHeight, (conversation.clientHeight / conversation.scrollHeight) * trackHeight))
+  const thumbHeight = Math.max(
+    28,
+    Math.min(trackHeight, (conversation.clientHeight / conversation.scrollHeight) * trackHeight)
+  )
   const travel = Math.max(trackHeight - thumbHeight, 0)
   const progress = scrollRange > 0 ? conversation.scrollTop / scrollRange : 0
   messageScrollThumb.style.height = `${thumbHeight}px`
@@ -215,7 +221,8 @@ messageMinimapSearch.addEventListener('input', filterMinimapMessages)
 messageScrollTrack.addEventListener('pointerdown', (event) => {
   event.preventDefault()
   const thumbRect = messageScrollThumb.getBoundingClientRect()
-  const pointerOffset = event.target === messageScrollThumb ? event.clientY - thumbRect.top : thumbRect.height / 2
+  const pointerOffset =
+    event.target === messageScrollThumb ? event.clientY - thumbRect.top : thumbRect.height / 2
   messageScrollTrack.setPointerCapture(event.pointerId)
   messageScrollTrack.classList.add('is-dragging')
   minimapDrag = { pointerId: event.pointerId, pointerOffset }
@@ -250,7 +257,10 @@ messageScrollTrack.addEventListener('keydown', (event) => {
   }[event.key]
   if (keyScroll === undefined) return
   event.preventDefault()
-  conversation.scrollBy({ top: keyScroll, behavior: event.key.startsWith('Arrow') ? 'auto' : 'smooth' })
+  conversation.scrollBy({
+    top: keyScroll,
+    behavior: event.key.startsWith('Arrow') ? 'auto' : 'smooth',
+  })
 })
 
 new ResizeObserver(requestMessageScrollSync).observe(conversation)
@@ -772,7 +782,11 @@ async function closeSidebarToRail(sourceButton = getActiveRailSource()) {
   sidebarMorphAnimation = sidebarMorphSurface.animate(
     [
       { ...morphGeometry(path.target, 1, '22px'), easing: 'cubic-bezier(.34,0,.56,.42)' },
-      { ...morphGeometry(path.gathered, 0.97, '26px'), offset: 0.3, easing: 'cubic-bezier(.18,.72,.14,1)' },
+      {
+        ...morphGeometry(path.gathered, 0.97, '26px'),
+        offset: 0.3,
+        easing: 'cubic-bezier(.18,.72,.14,1)',
+      },
       { ...morphGeometry(path.stream, 0.94, '20px 38px 38px 20px'), offset: 0.6 },
       { ...morphGeometry(path.droplet, 0.86, '18px 34px 34px 18px'), offset: 0.82 },
       morphGeometry(path.source, 0, '18px'),
@@ -812,7 +826,8 @@ function setInspectorPanel(panel) {
     button.classList.toggle('is-active', button.dataset.panel === panel)
   })
 
-  const emptyIcon = panel === 'crew' ? 'ph-users-three' : panel === 'files' ? 'ph-files' : 'ph-sparkle'
+  const emptyIcon =
+    panel === 'crew' ? 'ph-users-three' : panel === 'files' ? 'ph-files' : 'ph-sparkle'
   inspectorBody.innerHTML = `
     <div class="canvas-toolbar">
       <button type="button">${panel === 'design' ? '分层' : '选项'}</button>
@@ -867,12 +882,14 @@ document.querySelectorAll('[data-section]').forEach((button) => {
   })
 })
 
-document.querySelectorAll('.rail-button[data-label], .rail-avatar[data-label]').forEach((button) => {
-  button.addEventListener('mouseenter', () => showRailTooltip(button))
-  button.addEventListener('mouseleave', () => hideRailTooltip(button))
-  button.addEventListener('focus', () => showRailTooltip(button))
-  button.addEventListener('blur', () => hideRailTooltip(button))
-})
+document
+  .querySelectorAll('.rail-button[data-label], .rail-avatar[data-label]')
+  .forEach((button) => {
+    button.addEventListener('mouseenter', () => showRailTooltip(button))
+    button.addEventListener('mouseleave', () => hideRailTooltip(button))
+    button.addEventListener('focus', () => showRailTooltip(button))
+    button.addEventListener('blur', () => hideRailTooltip(button))
+  })
 
 window.addEventListener('resize', () => hideRailTooltip())
 
@@ -978,12 +995,26 @@ const savedMaterial = normalizeMaterial(localStorage.getItem('tagent-spatial-the
 const savedPlatform = localStorage.getItem('tagent-spatial-theme-platform')
 const savedSpatialState = localStorage.getItem('tagent-spatial-theme-spatial-state')
 
-setTheme(THEMES.includes(requestedTheme) ? requestedTheme : THEMES.includes(savedTheme) ? savedTheme : 'default', {
-  fade: false,
-})
-setMode(requestedMode === 'dark' || requestedMode === 'light' ? requestedMode : savedMode === 'dark' || savedMode === 'light' ? savedMode : 'light', {
-  fade: false,
-})
+setTheme(
+  THEMES.includes(requestedTheme)
+    ? requestedTheme
+    : THEMES.includes(savedTheme)
+      ? savedTheme
+      : 'default',
+  {
+    fade: false,
+  }
+)
+setMode(
+  requestedMode === 'dark' || requestedMode === 'light'
+    ? requestedMode
+    : savedMode === 'dark' || savedMode === 'light'
+      ? savedMode
+      : 'light',
+  {
+    fade: false,
+  }
+)
 setMaterial(
   MATERIALS.includes(requestedMaterial)
     ? requestedMaterial
@@ -1078,13 +1109,15 @@ async function runSelftest() {
   assert(
     checks,
     'sidebar:close',
-    shell.classList.contains('is-sidebar-hidden') && !sidebarMorphSurface.classList.contains('is-active')
+    shell.classList.contains('is-sidebar-hidden') &&
+      !sidebarMorphSurface.classList.contains('is-active')
   )
   await openSidebarFromRail()
   assert(
     checks,
     'sidebar:open',
-    !shell.classList.contains('is-sidebar-hidden') && !sidebarMorphSurface.classList.contains('is-active')
+    !shell.classList.contains('is-sidebar-hidden') &&
+      !sidebarMorphSurface.classList.contains('is-active')
   )
 
   // composer 聚焦展开
@@ -1105,7 +1138,8 @@ async function runSelftest() {
   assert(
     checks,
     'locator:visible-after-scroll',
-    turnLocatorSlot.classList.contains('is-visible') && turnLocatorSummary.textContent.trim().length > 0
+    turnLocatorSlot.classList.contains('is-visible') &&
+      turnLocatorSummary.textContent.trim().length > 0
   )
   assert(
     checks,
@@ -1121,7 +1155,11 @@ async function runSelftest() {
   assert(
     checks,
     'locator:return-to-turn',
-    Boolean(locatedRect && locatedRect.bottom > conversationRect.top && locatedRect.top < conversationRect.bottom)
+    Boolean(
+      locatedRect &&
+      locatedRect.bottom > conversationRect.top &&
+      locatedRect.top < conversationRect.bottom
+    )
   )
   conversation.scrollTop = 0
   await wait(80)

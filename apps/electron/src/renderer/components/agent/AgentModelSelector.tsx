@@ -21,11 +21,7 @@ import {
   TooltipTrigger,
 } from '@tagent/ui'
 import { channelsAtom, channelsLoadedAtom } from '@/atoms/model-atoms'
-import {
-  agentChannelIdAtom,
-  agentChannelIdsAtom,
-  agentModelIdAtom,
-} from '@/atoms/agent-atoms'
+import { agentChannelIdAtom, agentChannelIdsAtom, agentModelIdAtom } from '@/atoms/agent-atoms'
 import { getModelLogo, getChannelLogo, DefaultLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 

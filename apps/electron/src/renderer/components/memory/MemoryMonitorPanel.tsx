@@ -254,9 +254,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
   }, [openLayer, surface, loadSessions])
 
   const totalMemories = stats ? LAYERS.reduce((sum, l) => sum + l.getCount(stats), 0) : 0
-  const filledLayers = stats
-    ? LAYERS.filter((l) => l.getCount(stats) > 0).length
-    : 0
+  const filledLayers = stats ? LAYERS.filter((l) => l.getCount(stats) > 0).length : 0
 
   // 统一栅格：图标列 | 正文 | 右侧指标（数字右对齐同宽）
   const rowGrid = 'grid w-full grid-cols-[36px_minmax(0,1fr)_72px] items-center gap-x-3'
@@ -294,10 +292,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
             className="inline-flex size-9 items-center justify-center rounded-full text-foreground/60 hover:text-foreground"
             aria-label="刷新"
           >
-            <RefreshCw
-              className={cn('size-3.5', loading && 'animate-spin')}
-              strokeWidth={1.75}
-            />
+            <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} strokeWidth={1.75} />
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">刷新</TooltipContent>
@@ -308,13 +303,7 @@ export function MemoryMonitorPanel(): React.ReactElement {
   return (
     <Panel variant="grow" className="content-glass relative flex min-h-0 flex-col overflow-hidden">
       {/* 仅保留拖拽安全区；操作钮跟正文同列，不挂在窗控旁 */}
-      <div
-        className={cn(
-          'relative shrink-0',
-          isMac ? 'h-3' : 'h-8',
-          isWindows && 'pr-[134px]'
-        )}
-      >
+      <div className={cn('relative shrink-0', isMac ? 'h-3' : 'h-8', isWindows && 'pr-[134px]')}>
         <div
           className="absolute inset-0 titlebar-drag-region"
           style={isWindows ? { right: 126 } : undefined}
@@ -436,7 +425,10 @@ export function MemoryMonitorPanel(): React.ReactElement {
                     const open = openLayer === layer.key
 
                     return (
-                      <li key={layer.key} className="border-b border-foreground/[0.06] last:border-b-0">
+                      <li
+                        key={layer.key}
+                        className="border-b border-foreground/[0.06] last:border-b-0"
+                      >
                         <button
                           type="button"
                           onClick={() => setOpenLayer(open ? null : layer.key)}

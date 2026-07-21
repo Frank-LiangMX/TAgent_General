@@ -178,9 +178,7 @@ export function InstalledPluginsView({
             <h2 className="md-text text-[18px] font-semibold tracking-tight">{navTitle}</h2>
             <p className="md-text-variant mt-1 text-[12px] leading-relaxed">
               点击卡片查看状态与管理
-              {!loading ? (
-                <span className="ml-1 tabular-nums">· 共 {totalCount} 项</span>
-              ) : null}
+              {!loading ? <span className="ml-1 tabular-nums">· 共 {totalCount} 项</span> : null}
             </p>
           </div>
           {toolbar}
@@ -346,8 +344,7 @@ function InstalledItemCard({
               item.skillStatus === 'draft' && 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
               item.skillStatus === 'active' &&
                 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-              item.skillStatus === 'stale' &&
-                'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+              item.skillStatus === 'stale' && 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
               item.skillStatus === 'archived' && 'bg-foreground/[0.05] md-text-faint'
             )}
           >

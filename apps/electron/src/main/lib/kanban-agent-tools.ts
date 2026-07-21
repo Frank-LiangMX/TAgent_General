@@ -29,11 +29,7 @@ import { kanbanDbService } from './kanban-db'
 import { getAgentSessionMeta, updateAgentSessionMeta } from './agent-session-manager'
 import { broadcastKanbanChanged } from './kanban-ipc'
 import { getSettings } from './settings-service'
-import {
-  buildAcceptanceText,
-  judgeGoal,
-  taskNeedsJudge,
-} from './kanban-judge-service'
+import { buildAcceptanceText, judgeGoal, taskNeedsJudge } from './kanban-judge-service'
 
 /** MCP 工具结果格式（与 automation-agent-tools 的 AutomationToolResult 一致） */
 export interface KanbanToolResult extends Record<string, unknown> {
@@ -282,8 +278,7 @@ const kanbanAddTaskSchema: Record<string, unknown> = {
     },
     acceptanceCriteria: {
       type: 'string',
-      description:
-        'goalMode=true 时强烈建议填写：可验证的验收条款（条列）。空则用 title+body',
+      description: 'goalMode=true 时强烈建议填写：可验证的验收条款（条列）。空则用 title+body',
     },
     goalMaxTurns: {
       type: 'number',
@@ -799,8 +794,7 @@ export async function injectKanbanMcpServer(
       'kanban_complete',
       '完成任务并提交摘要。goalMode 任务会经 aux judge 验收：不通过则拒绝 done，请补证据后重试或 kanban_block。',
       completeSchema,
-      async (args: Record<string, unknown>) =>
-        handleComplete(args, { sessionId: ctx.sessionId })
+      async (args: Record<string, unknown>) => handleComplete(args, { sessionId: ctx.sessionId })
     ),
     sdk.tool(
       'kanban_block',

@@ -6,24 +6,14 @@
  */
 
 import * as React from 'react'
-import {
-  Loader2,
-  RotateCw,
-  Target,
-} from 'lucide-react'
+import { Loader2, RotateCw, Target } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 
 import type { KanbanTask, SDKMessage } from '@tagent/shared'
 
-import {
-  Button,
-  Dialog,
-  Input,
-  SegmentedTabs,
-  SegmentedTabsItem,
-} from '@tagent/ui'
+import { Button, Dialog, Input, SegmentedTabs, SegmentedTabsItem } from '@tagent/ui'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
 import {
   groupIntoTurns,
@@ -74,7 +64,9 @@ function formatDateTime(timestamp: number): string {
 const mdHeading = (size: string) =>
   function MdHeading({ children }: { children?: React.ReactNode }): React.ReactElement {
     return (
-      <h3 className={cn(size, 'mb-1.5 mt-3 font-semibold tracking-tight text-foreground first:mt-0')}>
+      <h3
+        className={cn(size, 'mb-1.5 mt-3 font-semibold tracking-tight text-foreground first:mt-0')}
+      >
         {children}
       </h3>
     )
@@ -95,7 +87,9 @@ const mdCompact = {
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
   code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="rounded bg-foreground/[0.06] px-1 py-0.5 font-mono text-[11px]">{children}</code>
+    <code className="rounded bg-foreground/[0.06] px-1 py-0.5 font-mono text-[11px]">
+      {children}
+    </code>
   ),
   pre: ({ children }: { children?: React.ReactNode }) => (
     <pre className="mb-2 overflow-x-auto rounded-[10px] bg-foreground/[0.06] p-2.5 font-mono text-[11px] leading-relaxed text-foreground/80 last:mb-0">
@@ -103,10 +97,14 @@ const mdCompact = {
     </pre>
   ),
   ul: ({ children }: { children?: React.ReactNode }) => (
-    <ul className="mb-2 list-disc space-y-1 pl-4 text-[12px] leading-relaxed last:mb-0">{children}</ul>
+    <ul className="mb-2 list-disc space-y-1 pl-4 text-[12px] leading-relaxed last:mb-0">
+      {children}
+    </ul>
   ),
   ol: ({ children }: { children?: React.ReactNode }) => (
-    <ol className="mb-2 list-decimal space-y-1 pl-4 text-[12px] leading-relaxed last:mb-0">{children}</ol>
+    <ol className="mb-2 list-decimal space-y-1 pl-4 text-[12px] leading-relaxed last:mb-0">
+      {children}
+    </ol>
   ),
   li: ({ children }: { children?: React.ReactNode }) => (
     <li className="text-[12px] leading-relaxed text-foreground/85">{children}</li>
@@ -285,9 +283,7 @@ export function KanbanTaskDetailDialog({
             </div>
           }
           title={task.title}
-          description={
-            <span className="font-mono text-[11px] text-foreground/40">{task.id}</span>
-          }
+          description={<span className="font-mono text-[11px] text-foreground/40">{task.id}</span>}
           meta={
             <span
               className={cn(
@@ -408,8 +404,7 @@ function OverviewPanel({ task }: { task: KanbanTask }): React.ReactElement {
               </span>
               {task.judgeModel ? (
                 <span>
-                  Judge{' '}
-                  <span className="font-mono text-foreground">{task.judgeModel}</span>
+                  Judge <span className="font-mono text-foreground">{task.judgeModel}</span>
                 </span>
               ) : null}
             </div>
@@ -455,9 +450,7 @@ function TranscriptPanel({
     )
   }
   if (groups.length === 0) {
-    return (
-      <p className="py-16 text-center text-[13px] text-foreground/45">工人尚未产出消息</p>
-    )
+    return <p className="py-16 text-center text-[13px] text-foreground/45">工人尚未产出消息</p>
   }
   return (
     <div className="space-y-2">

@@ -513,9 +513,7 @@ export function ScrollMinimap({
             >
               <div className="message-nav-popover-header relative z-10 shrink-0 px-3 pt-2.5 pb-2">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[11px] font-medium tracking-wide">
-                    消息导航
-                  </span>
+                  <span className="text-[11px] font-medium tracking-wide">消息导航</span>
                   <span className="text-[11px] text-muted-foreground tabular-nums">
                     {visibleIds.size} / {items.length}
                   </span>
@@ -657,10 +655,7 @@ export function ScrollMinimap({
                     bar.isVisible && 'message-nav-bar-visible',
                     bar.hasStatus && !bar.isVisible && 'message-nav-bar-status',
                     bar.hasUser && !bar.isVisible && !bar.hasStatus && 'message-nav-bar-user',
-                    !bar.isVisible &&
-                      !bar.hasUser &&
-                      !bar.hasStatus &&
-                      'message-nav-bar-assistant',
+                    !bar.isVisible && !bar.hasUser && !bar.hasStatus && 'message-nav-bar-assistant',
                     focused && 'message-nav-bar-focused'
                   )}
                   style={{

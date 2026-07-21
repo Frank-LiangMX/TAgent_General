@@ -316,8 +316,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
    * opening 才撑开、closing 即收窄；禁止用 inspectorOpen（一点击 main 秒切）。
    */
   const dockReserveActive =
-    rightPanelPlacement === 'dock' &&
-    (inspectorPhase === 'open' || inspectorPhase === 'opening')
+    rightPanelPlacement === 'dock' && (inspectorPhase === 'open' || inspectorPhase === 'opening')
   const rightLayoutMotionMs =
     rightPanelPlacement === 'dock' && inspectorPhase === 'opening'
       ? INSPECTOR_OPEN_MS
@@ -353,9 +352,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     if (isInspectorMorphing) return
 
     const onPointerDown = (event: PointerEvent): void => {
-      if (
-        !shouldDismissFloatInspector(event.target, rightStackRef.current ?? islandRef.current)
-      ) {
+      if (!shouldDismissFloatInspector(event.target, rightStackRef.current ?? islandRef.current)) {
         return
       }
       setRightPanelOpen(false)

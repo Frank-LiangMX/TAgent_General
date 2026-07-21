@@ -521,9 +521,7 @@ async function runWorker(
         const board = db.getBoard(boardId)
         if (board) void notifyTaskDone(board, current)
       } else if (current.status === 'blocked') {
-        console.warn(
-          `[看板] 任务阻塞: ${task.id} (${task.title}) — ${current.blockedReason ?? ''}`
-        )
+        console.warn(`[看板] 任务阻塞: ${task.id} (${task.title}) — ${current.blockedReason ?? ''}`)
       } else if (current.status === 'failed') {
         console.warn(`[看板] 任务失败: ${task.id} (${task.title}) — ${current.error ?? ''}`)
       }

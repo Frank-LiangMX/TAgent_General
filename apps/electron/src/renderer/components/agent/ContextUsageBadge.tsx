@@ -73,12 +73,7 @@ interface UsageRingProps {
   /** 像素边长，inline 用 12 压低 token 栏高度 */
   size?: number
 }
-function UsageRing({
-  ratio,
-  isWarning,
-  isDanger,
-  size = 16,
-}: UsageRingProps): React.ReactElement {
+function UsageRing({ ratio, isWarning, isDanger, size = 16 }: UsageRingProps): React.ReactElement {
   const radius = 8
   const circumference = 2 * Math.PI * radius
   const clamped = Math.max(0, Math.min(1, ratio))
@@ -477,7 +472,9 @@ export function ContextUsageBadge({
                     size={12}
                   />
                   {effectivePercent != null ? (
-                    <span className={cn('text-[8px] tabular-nums font-medium leading-none', toneClass)}>
+                    <span
+                      className={cn('text-[8px] tabular-nums font-medium leading-none', toneClass)}
+                    >
                       {effectivePercent}%
                     </span>
                   ) : showPercentPlaceholder ? (

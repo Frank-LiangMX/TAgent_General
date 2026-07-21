@@ -940,12 +940,7 @@ function parseSkillFrontmatter(content: string, slug: string, enabled: boolean):
     }
   }
   const status = entries.status?.trim()
-  if (
-    status === 'draft' ||
-    status === 'active' ||
-    status === 'stale' ||
-    status === 'archived'
-  ) {
+  if (status === 'draft' || status === 'active' || status === 'stale' || status === 'archived') {
     meta.status = status
   }
   if (entries.pinned !== undefined) {

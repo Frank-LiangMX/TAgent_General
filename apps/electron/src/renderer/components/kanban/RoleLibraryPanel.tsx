@@ -7,15 +7,7 @@
 
 import * as React from 'react'
 import { useAtomValue } from 'jotai'
-import {
-  Check,
-  Download,
-  FileUp,
-  RotateCcw,
-  Search,
-  Store,
-  Users,
-} from 'lucide-react'
+import { Check, Download, FileUp, RotateCcw, Search, Store, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type {
@@ -90,10 +82,7 @@ export function RoleLibraryPanel(): React.ReactElement {
   return (
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center gap-3 px-5 pb-2 titlebar-no-drag">
-        <SegmentedTabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as 'mine' | 'store')}
-        >
+        <SegmentedTabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'mine' | 'store')}>
           <SegmentedTabsItem value="mine">
             <span className="flex items-center gap-1.5">
               <Users className="size-3.5" />
@@ -556,10 +545,7 @@ function StoreRoleCard({
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col gap-2.5 p-3.5">
         <div className="flex items-start gap-3">
           <div
-            className={cn(
-              'flex size-9 shrink-0 items-center justify-center rounded-[12px]',
-              wrap
-            )}
+            className={cn('flex size-9 shrink-0 items-center justify-center rounded-[12px]', wrap)}
           >
             <Icon className="size-4" strokeWidth={1.75} />
           </div>

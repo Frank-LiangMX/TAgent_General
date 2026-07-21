@@ -94,7 +94,10 @@ describe('deriveShellLayout', () => {
   })
 
   test.each([
-    ['legacy fullscreen on wrong item', { designFullscreen: true, rightRailItem: 'files' as const }],
+    [
+      'legacy fullscreen on wrong item',
+      { designFullscreen: true, rightRailItem: 'files' as const },
+    ],
     ['inspector unavailable', { activeRailItem: 'skills' as const, inspectorMagnified: true }],
   ])('does not magnify when %s', (_label, overrides) => {
     expect(derive(overrides).canvas).toBe('none')

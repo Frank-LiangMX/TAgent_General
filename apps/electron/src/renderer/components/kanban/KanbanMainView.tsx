@@ -7,14 +7,7 @@
 
 import * as React from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import {
-  Gauge,
-  Loader2,
-  MoreHorizontal,
-  Pause,
-  Play,
-  RefreshCw,
-} from 'lucide-react'
+import { Gauge, Loader2, MoreHorizontal, Pause, Play, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -103,9 +96,7 @@ function BoardChrome({
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {paused ? '继续调度' : '暂停调度'}
-            </TooltipContent>
+            <TooltipContent side="bottom">{paused ? '继续调度' : '暂停调度'}</TooltipContent>
           </Tooltip>
           <DropdownMenu>
             <Tooltip>
@@ -124,10 +115,7 @@ function BoardChrome({
               <TooltipContent side="bottom">更多</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end" className="z-[9999] min-w-[160px]">
-              <DropdownMenuItem
-                className="gap-2 text-xs"
-                onClick={() => onRefresh()}
-              >
+              <DropdownMenuItem className="gap-2 text-xs" onClick={() => onRefresh()}>
                 <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
                 刷新
               </DropdownMenuItem>
@@ -247,8 +235,8 @@ export function KanbanMainView(): React.ReactElement {
 
   const displayName = board.title ?? board.rootGoal.slice(0, 60)
   const done = tasks.filter((t) => t.status === 'done').length
-  const live = tasks.filter((t) =>
-    t.status === 'running' || t.status === 'blocked' || t.status === 'review'
+  const live = tasks.filter(
+    (t) => t.status === 'running' || t.status === 'blocked' || t.status === 'review'
   ).length
   const metaParts = [
     `${done}/${tasks.length}`,

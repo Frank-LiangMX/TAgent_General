@@ -62,7 +62,12 @@ import {
   notificationSoundsAtom,
   initializeNotifications,
 } from './atoms/notifications'
-import { tabsAtom, activeTabIdAtom, getPersistableTabState, tabsHydratedAtom } from './atoms/tab-atoms'
+import {
+  tabsAtom,
+  activeTabIdAtom,
+  getPersistableTabState,
+  tabsHydratedAtom,
+} from './atoms/tab-atoms'
 import { tagentBrandAtom, initializeTAgentBrand } from './atoms/tagent-brand'
 import {
   themeModeAtom,

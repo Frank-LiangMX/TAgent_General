@@ -5,16 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react'
-import {
-  BarChart3,
-  Bot,
-  Boxes,
-  Code2,
-  Eye,
-  FileText,
-  Search,
-  Sparkles,
-} from 'lucide-react'
+import { BarChart3, Bot, Boxes, Code2, Eye, FileText, Search, Sparkles } from 'lucide-react'
 
 import type { KanbanTaskStatus } from '@tagent/shared'
 
@@ -88,8 +79,7 @@ export function roleAvatarSpec(roleId: string | undefined): {
   wrap: string
   Icon: LucideIcon
 } {
-  const wrap =
-    'bg-foreground/[0.06] text-foreground/80 ring-1 ring-inset ring-foreground/[0.08]'
+  const wrap = 'bg-foreground/[0.06] text-foreground/80 ring-1 ring-inset ring-foreground/[0.08]'
   switch (roleId) {
     case 'coder':
       return { wrap, Icon: Code2 }

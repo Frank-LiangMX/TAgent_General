@@ -5,7 +5,12 @@
  * 门槛：重复 ≥ MIN_OCCURRENCES 且 pairwise 平均相似度 ≥ MIN_SIMILARITY。
  */
 
-import { createSkill, listSkillSlugs, skillExistsAnywhere, suggestSlugFromTitle } from './skill-manage-core'
+import {
+  createSkill,
+  listSkillSlugs,
+  skillExistsAnywhere,
+  suggestSlugFromTitle,
+} from './skill-manage-core'
 import {
   loadSkillSuggestions,
   saveSkillSuggestions,
@@ -162,11 +167,8 @@ export function detectRepeatedWorkflows(traces: SessionToolTrace[]): WorkflowPat
     if (cluster.length < MIN_OCCURRENCES) continue
     for (const idx of cluster) used.add(idx)
 
-    const avgSimilarity =
-      sims.length === 0 ? 1 : sims.reduce((s, x) => s + x, 0) / sims.length
-    const titleHint =
-      usable[cluster[0]!]?.title?.trim() ||
-      seed.tools.slice(0, 4).join(' ')
+    const avgSimilarity = sims.length === 0 ? 1 : sims.reduce((s, x) => s + x, 0) / sims.length
+    const titleHint = usable[cluster[0]!]?.title?.trim() || seed.tools.slice(0, 4).join(' ')
     const suggestedSkillName = suggestSlugFromTitle(titleHint)
     const suggestedDescription = [
       `重复工作流：${seed.tools.join(' → ')}。`,

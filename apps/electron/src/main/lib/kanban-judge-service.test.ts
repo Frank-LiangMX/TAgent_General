@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import {
-  buildAcceptanceText,
-  parseJudgeVerdict,
-  taskNeedsJudge,
-} from './kanban-judge-service'
+import { buildAcceptanceText, parseJudgeVerdict, taskNeedsJudge } from './kanban-judge-service'
 
 describe('kanban-judge-service', () => {
   it('taskNeedsJudge 仅 goalMode=true', () => {
@@ -21,9 +17,7 @@ describe('kanban-judge-service', () => {
         acceptanceCriteria: '  必须有测试  ',
       })
     ).toBe('必须有测试')
-    expect(buildAcceptanceText({ title: 'Fix login', body: 'detail' })).toBe(
-      'Fix login\n\ndetail'
-    )
+    expect(buildAcceptanceText({ title: 'Fix login', body: 'detail' })).toBe('Fix login\n\ndetail')
   })
 
   it('parseJudgeVerdict 解析 JSON', () => {

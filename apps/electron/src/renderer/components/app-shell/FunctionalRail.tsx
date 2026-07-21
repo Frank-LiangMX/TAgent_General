@@ -274,7 +274,15 @@ export function FunctionalRail(): React.ReactElement {
         }
       }
     },
-    [activeRailItem, sidebarOpen, store, setActiveRailItem, setAppMode, setSidebarOpen, topLevelMode]
+    [
+      activeRailItem,
+      sidebarOpen,
+      store,
+      setActiveRailItem,
+      setAppMode,
+      setSidebarOpen,
+      topLevelMode,
+    ]
   )
 
   const railItems = topLevelMode === 'ta' ? TA_RAIL_ITEMS : GENERAL_RAIL_ITEMS

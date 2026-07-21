@@ -132,10 +132,7 @@ export function RoleDetailDialog({
         <KanbanDetailHeader
           icon={
             <div
-              className={cn(
-                'flex size-10 items-center justify-center rounded-[12px]',
-                avatarWrap
-              )}
+              className={cn('flex size-10 items-center justify-center rounded-[12px]', avatarWrap)}
             >
               <RoleIcon className="size-4" strokeWidth={1.75} />
             </div>

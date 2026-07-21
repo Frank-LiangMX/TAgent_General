@@ -203,7 +203,7 @@ export function createSkill(input: SkillManageCreateInput): SkillManageResult {
     status: input.status ?? 'draft',
     pinned: input.pinned ?? false,
   })
-  const body = (input.body?.trim() ? input.body.trim() + '\n' : defaultBody(name, description))
+  const body = input.body?.trim() ? input.body.trim() + '\n' : defaultBody(name, description)
   const skillMd = join(dir, 'SKILL.md')
   writeFileSync(skillMd, frontmatter + body, 'utf-8')
 
@@ -325,11 +325,7 @@ export function archiveSkill(
       const content = readFileSync(skillMd, 'utf-8')
       const next = content.replace(/^status:\s*.*$/m, 'status: archived')
       if (next === content && /^---/m.test(content)) {
-        writeFileSync(
-          skillMd,
-          content.replace(/^---\s*\n/, '---\nstatus: archived\n'),
-          'utf-8'
-        )
+        writeFileSync(skillMd, content.replace(/^---\s*\n/, '---\nstatus: archived\n'), 'utf-8')
       } else {
         writeFileSync(skillMd, next, 'utf-8')
       }

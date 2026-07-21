@@ -123,8 +123,7 @@ function curateScope(
   now: number,
   result: CuratorRunResult
 ): void {
-  const root =
-    scope === 'global' ? getGlobalSkillsDir() : getWorkspaceSkillsDir(workspaceSlug!)
+  const root = scope === 'global' ? getGlobalSkillsDir() : getWorkspaceSkillsDir(workspaceSlug!)
   for (const slug of listSkillDirs(root)) {
     result.scanned++
     const skillMd = join(root, slug, 'SKILL.md')

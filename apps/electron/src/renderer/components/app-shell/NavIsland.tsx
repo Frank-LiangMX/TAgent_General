@@ -241,9 +241,7 @@ export function NavIsland({
       const active = morphAnimRef.current
       const surface = morphSurfaceRef.current
       const canReverse =
-        !!active &&
-        !!surface?.classList.contains('is-active') &&
-        active.playState === 'running'
+        !!active && !!surface?.classList.contains('is-active') && active.playState === 'running'
 
       if (canReverse && currentPhase === 'opening' && !requestedOpen) {
         const version = ++morphVersionRef.current

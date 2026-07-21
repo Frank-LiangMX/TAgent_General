@@ -19,11 +19,7 @@ import { KanbanTaskDetailDialog } from './KanbanTaskDetailDialog'
 import { taskProgressLogsAtomFamily } from '@/atoms/kanban-atoms'
 import { cn } from '@/lib/utils'
 import { useAgentRoleMap } from '@/atoms/agent-role-atoms'
-import {
-  CREW_STATUS_BADGE,
-  parseCrewBadge,
-  roleAvatarSpec,
-} from '@/lib/kanban-crew-status'
+import { CREW_STATUS_BADGE, parseCrewBadge, roleAvatarSpec } from '@/lib/kanban-crew-status'
 
 /** @deprecated */
 export const STATUS_BADGE = CREW_STATUS_BADGE
@@ -39,7 +35,9 @@ const crewMdComponents = {
     </a>
   ),
   code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="rounded bg-foreground/[0.06] px-1 py-0.5 font-mono text-[9px]">{children}</code>
+    <code className="rounded bg-foreground/[0.06] px-1 py-0.5 font-mono text-[9px]">
+      {children}
+    </code>
   ),
   pre: ({ children }: { children?: React.ReactNode }) => (
     <span className="m-0 block font-mono text-[9px]">{children}</span>
@@ -177,10 +175,7 @@ export function KanbanTaskListItem({
           <div className="flex shrink-0 items-start gap-3">
             <div className="relative shrink-0">
               <div
-                className={cn(
-                  'flex size-9 items-center justify-center rounded-[12px]',
-                  avatarWrap
-                )}
+                className={cn('flex size-9 items-center justify-center rounded-[12px]', avatarWrap)}
               >
                 <RoleIcon className="size-4" strokeWidth={1.75} />
               </div>
@@ -228,8 +223,7 @@ export function KanbanTaskListItem({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[240px]">
-                      {task.acceptanceCriteria?.trim() ||
-                        'Goal 模式：多轮验收 + complete 闸门'}
+                      {task.acceptanceCriteria?.trim() || 'Goal 模式：多轮验收 + complete 闸门'}
                     </TooltipContent>
                   </Tooltip>
                 ) : null}

@@ -73,9 +73,7 @@ export function StageQueueCard({
           <button
             type="button"
             disabled={acting !== null}
-            onClick={() =>
-              void run('accept-all', () => window.electronAPI.acceptStageAll(mode))
-            }
+            onClick={() => void run('accept-all', () => window.electronAPI.acceptStageAll(mode))}
             className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] text-emerald-600 hover:bg-emerald-500/10 disabled:opacity-40 dark:text-emerald-400"
           >
             {acting === 'accept-all' ? (
@@ -88,9 +86,7 @@ export function StageQueueCard({
           <button
             type="button"
             disabled={acting !== null}
-            onClick={() =>
-              void run('reject-all', () => window.electronAPI.rejectStageAll(mode))
-            }
+            onClick={() => void run('reject-all', () => window.electronAPI.rejectStageAll(mode))}
             className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] md-text-variant hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-40"
           >
             {acting === 'reject-all' ? (

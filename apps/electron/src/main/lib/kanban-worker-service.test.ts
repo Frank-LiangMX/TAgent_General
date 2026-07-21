@@ -81,11 +81,8 @@ vi.mock('./kanban-db', () => ({
 // Mock judge：默认 continue（goal loop 测试可覆盖）
 vi.mock('./kanban-judge-service', () => ({
   DEFAULT_GOAL_MAX_TURNS: 20,
-  buildAcceptanceText: (task: {
-    title: string
-    body?: string
-    acceptanceCriteria?: string
-  }) => task.acceptanceCriteria?.trim() || `${task.title}\n\n${task.body ?? ''}`.trim(),
+  buildAcceptanceText: (task: { title: string; body?: string; acceptanceCriteria?: string }) =>
+    task.acceptanceCriteria?.trim() || `${task.title}\n\n${task.body ?? ''}`.trim(),
   taskNeedsJudge: (task: { goalMode?: boolean }) => task.goalMode === true,
   judgeGoal: vi.fn(async () => ({
     verdict: 'continue' as const,
@@ -125,11 +122,8 @@ interface CapturedRun {
 }
 let capturedRuns: CapturedRun[] = []
 
-const {
-  runKanbanTaskHeadless,
-  resolveWorkerWorkspaceId,
-  buildGoalContinuePrompt,
-} = await import('./kanban-worker-service')
+const { runKanbanTaskHeadless, resolveWorkerWorkspaceId, buildGoalContinuePrompt } =
+  await import('./kanban-worker-service')
 const { buildKanbanAgentTools } = await import('./kanban-agent-tools')
 const agentSessionManager = await import('./agent-session-manager')
 const headlessRegistry = await import('./agent-headless-runner-registry')

@@ -6,16 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import {
-  ArrowLeft,
-  Clock,
-  Loader2,
-  MessageSquare,
-  Pause,
-  Play,
-  Plus,
-  Trash2,
-} from 'lucide-react'
+import { ArrowLeft, Clock, Loader2, MessageSquare, Pause, Play, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
@@ -227,11 +218,7 @@ export function AutomationMainView(): React.ReactElement {
               AUTOMATION
             </p>
             <h1 className="mt-0.5 truncate text-[15px] font-semibold tracking-tight text-[color:var(--spatial-ink,hsl(var(--foreground)))]">
-              {editorMode === 'create'
-                ? '新建定时任务'
-                : selected
-                  ? selected.name
-                  : '自动任务'}
+              {editorMode === 'create' ? '新建定时任务' : selected ? selected.name : '自动任务'}
             </h1>
             <p className="mt-0.5 text-[11px] text-foreground/45">
               {editorMode === 'create'
@@ -344,10 +331,7 @@ export function AutomationMainView(): React.ReactElement {
                 <Loader2 className="size-5 animate-spin text-foreground/35" />
               </div>
             ) : filtered.length === 0 ? (
-              <EmptyAutomationField
-                hasAny={automations.length > 0}
-                onCreate={handleCreate}
-              />
+              <EmptyAutomationField hasAny={automations.length > 0} onCreate={handleCreate} />
             ) : (
               <div className="kanban-crew-field grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
                 {filtered.map((item) => (
@@ -400,9 +384,7 @@ function EmptyAutomationField({
         {hasAny ? '当前筛选下没有任务' : '还没有定时任务'}
       </p>
       <p className="mt-1 max-w-[280px] text-[11px] leading-relaxed text-foreground/40">
-        {hasAny
-          ? '试试切换上方筛选，或新建一条任务'
-          : '按日程自动开 Agent 会话，跑完可通知你'}
+        {hasAny ? '试试切换上方筛选，或新建一条任务' : '按日程自动开 Agent 会话，跑完可通知你'}
       </p>
       {!hasAny ? (
         <button

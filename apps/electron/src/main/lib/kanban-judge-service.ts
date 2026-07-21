@@ -31,10 +31,9 @@ export interface JudgeGoalInput {
 /**
  * 组装验收标准文本
  */
-export function buildAcceptanceText(task: Pick<
-  KanbanTask,
-  'title' | 'body' | 'acceptanceCriteria'
->): string {
+export function buildAcceptanceText(
+  task: Pick<KanbanTask, 'title' | 'body' | 'acceptanceCriteria'>
+): string {
   if (task.acceptanceCriteria?.trim()) {
     return task.acceptanceCriteria.trim()
   }
@@ -157,8 +156,7 @@ export function isKanbanJudgeAvailable(channelId?: string): boolean {
 export async function judgeGoal(input: JudgeGoalInput): Promise<KanbanJudgeResult> {
   const summary = input.summary.trim()
   const criteria =
-    input.acceptanceCriteria?.trim() ||
-    `${input.title}\n\n${input.body ?? ''}`.trim()
+    input.acceptanceCriteria?.trim() || `${input.title}\n\n${input.body ?? ''}`.trim()
 
   if (!criteria) {
     return {
@@ -203,7 +201,8 @@ export async function judgeGoal(input: JudgeGoalInput): Promise<KanbanJudgeResul
 
   // 测试钩子：不走真实 LLM
   if (process.env.TAGENT_KANBAN_JUDGE_MOCK === '1') {
-    const pass = summary.toLowerCase().includes('pass') || /测试通过|全部通过|criteria met/i.test(summary)
+    const pass =
+      summary.toLowerCase().includes('pass') || /测试通过|全部通过|criteria met/i.test(summary)
     return {
       verdict: pass ? 'done' : 'continue',
       reason: pass ? 'mock judge: pass keyword found' : 'mock judge: pass keyword missing',
@@ -329,8 +328,7 @@ async function callJudgeLlm(params: {
         const json = JSON.parse(jsonStr) as {
           choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>
         }
-        const delta =
-          json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content ?? ''
+        const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content ?? ''
         if (delta) accumulated += delta
       } catch {
         // ignore line

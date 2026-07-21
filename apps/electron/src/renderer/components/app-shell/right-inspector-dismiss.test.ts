@@ -2,10 +2,7 @@ import { describe, expect, test } from 'vitest'
 
 import { shouldDismissFloatInspector } from './right-inspector-dismiss'
 
-function mockTarget(options: {
-  insideRoot?: boolean
-  closestMatch?: string | null
-}): {
+function mockTarget(options: { insideRoot?: boolean; closestMatch?: string | null }): {
   target: { closest: (sel: string) => unknown }
   root: { contains: (node: unknown) => boolean }
 } {

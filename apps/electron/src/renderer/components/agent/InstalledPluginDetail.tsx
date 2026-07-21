@@ -173,10 +173,7 @@ function InstalledSkillDetail({
             <MetaItem label="使用次数" value={String(skill.useCount)} />
           ) : null}
           {skill?.lastUsedAt ? (
-            <MetaItem
-              label="上次使用"
-              value={new Date(skill.lastUsedAt).toLocaleString('zh-CN')}
-            />
+            <MetaItem label="上次使用" value={new Date(skill.lastUsedAt).toLocaleString('zh-CN')} />
           ) : null}
         </dl>
       </aside>

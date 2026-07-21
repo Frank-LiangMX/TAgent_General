@@ -401,7 +401,9 @@ function MarketplaceBundleCard({
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="md-text truncate text-[13px] font-medium tracking-tight">{item.title}</h3>
+            <h3 className="md-text truncate text-[13px] font-medium tracking-tight">
+              {item.title}
+            </h3>
             {item.tier === 'recommended' ? (
               <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[9px] text-foreground/50">
                 推荐
@@ -482,7 +484,9 @@ function MarketplaceItemCard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="md-text truncate text-[13px] font-medium tracking-tight">{item.title}</h3>
+            <h3 className="md-text truncate text-[13px] font-medium tracking-tight">
+              {item.title}
+            </h3>
             {item.tier === 'recommended' ? (
               <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[9px] text-foreground/50">
                 推荐

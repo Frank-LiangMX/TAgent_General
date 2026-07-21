@@ -257,10 +257,7 @@ export function OnboardingView({ onComplete }: OnboardingViewProps): React.React
                   桌面端通用 Agent：在本地项目里对话、改代码、跑工具
                 </p>
               </div>
-              <SoftAccentButton
-                onClick={handleNextFromWelcome}
-                disabled={finishing}
-              >
+              <SoftAccentButton onClick={handleNextFromWelcome} disabled={finishing}>
                 {finishing ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : isWindows ? (

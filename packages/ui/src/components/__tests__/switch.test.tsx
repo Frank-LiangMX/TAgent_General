@@ -33,9 +33,7 @@ describe('Switch', () => {
   test('disabled 不可点击', async () => {
     const user = userEvent.setup()
     const onCheckedChange = vi.fn()
-    render(
-      <Switch disabled checked={false} onCheckedChange={onCheckedChange} aria-label="禁用" />
-    )
+    render(<Switch disabled checked={false} onCheckedChange={onCheckedChange} aria-label="禁用" />)
 
     await user.click(screen.getByRole('switch'))
     expect(onCheckedChange).not.toHaveBeenCalled()

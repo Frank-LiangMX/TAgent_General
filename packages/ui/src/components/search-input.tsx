@@ -135,8 +135,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     const iconSize = SEARCH_ICON_SIZE[resolvedSize]
     const stringValue = typeof value === 'string' ? value : undefined
     const filled = !!stringValue && stringValue.length > 0
-    const showClearButton =
-      showClear ?? (onClear !== undefined && filled)
+    const showClearButton = showClear ?? (onClear !== undefined && filled)
     const isCapsule = variant === 'capsule'
     // capsule：placeholder 改作上浮标签文案，input 用空格占位以便 :placeholder-shown 判断
     const floatLabel = isCapsule ? (placeholder ?? '') : undefined

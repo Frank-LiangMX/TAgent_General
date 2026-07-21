@@ -30,16 +30,13 @@ export function useInertElement<T extends HTMLElement>(inactive: boolean): React
 /**
  * React 18 类型尚未声明 inert；通过 DOM 属性确保隐藏区域无法被键盘或辅助技术聚焦。
  */
-export const InertRegion = React.forwardRef<HTMLDivElement, InertRegionProps>(
-  function InertRegion({ inactive, ...props }, forwardedRef) {
-    const inertRef = useInertElement<HTMLDivElement>(inactive)
+export const InertRegion = React.forwardRef<HTMLDivElement, InertRegionProps>(function InertRegion(
+  { inactive, ...props },
+  forwardedRef
+) {
+  const inertRef = useInertElement<HTMLDivElement>(inactive)
 
-    return (
-      <div
-        {...props}
-        ref={mergeRefs(inertRef, forwardedRef)}
-        aria-hidden={inactive || undefined}
-      />
-    )
-  }
-)
+  return (
+    <div {...props} ref={mergeRefs(inertRef, forwardedRef)} aria-hidden={inactive || undefined} />
+  )
+})

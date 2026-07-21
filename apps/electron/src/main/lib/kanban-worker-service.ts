@@ -321,9 +321,7 @@ function buildKanbanWorkerContext(
   )
 
   if (task.goalMode === true) {
-    const criteria =
-      task.acceptanceCriteria?.trim() ||
-      `${task.title}\n${task.body ?? ''}`.trim()
+    const criteria = task.acceptanceCriteria?.trim() || `${task.title}\n${task.body ?? ''}`.trim()
     lines.push(
       '',
       '【Goal 模式】本任务启用验收闸门。',

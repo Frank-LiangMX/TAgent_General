@@ -87,8 +87,6 @@ export function upsertSkillSuggestion(candidate: SkillSuggestionCandidate): void
     store.candidates.push(candidate)
   }
   // 只保留最近 50 条 open+created
-  store.candidates = store.candidates
-    .sort((a, b) => b.lastSeenAt - a.lastSeenAt)
-    .slice(0, 50)
+  store.candidates = store.candidates.sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, 50)
   saveSkillSuggestions(store)
 }

@@ -37,11 +37,7 @@ function transform(dx: number, dy: number, scaleX: number, scaleY: number): stri
  * scale 会把 border-radius 一起压扁。
  * 要在视觉上保持 R，CSS 半径需写成 R / scale（x/y 可不同）。
  */
-function radiusForVisual(
-  visualRadius: number,
-  scaleX: number,
-  scaleY: number
-): string {
+function radiusForVisual(visualRadius: number, scaleX: number, scaleY: number): string {
   return `${format(visualRadius / clampScale(scaleX))}px / ${format(visualRadius / clampScale(scaleY))}px`
 }
 
@@ -70,11 +66,7 @@ export function createInspectorMotionKeyframes(
   const capsulePose = transform(startDx, startDy, startScaleX, startScaleY)
   const panelPose = transform(0, 0, 1, 1)
   // 胶囊态：视觉 16px；面板态：视觉 22px
-  const capsuleRadius = radiusForVisual(
-    INSPECTOR_CAPSULE_RADIUS_PX,
-    startScaleX,
-    startScaleY
-  )
+  const capsuleRadius = radiusForVisual(INSPECTOR_CAPSULE_RADIUS_PX, startScaleX, startScaleY)
   const panelRadius = `${INSPECTOR_PANEL_RADIUS_PX}px`
 
   if (direction === 'opening') {

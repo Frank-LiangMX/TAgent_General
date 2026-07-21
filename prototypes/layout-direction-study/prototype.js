@@ -13,8 +13,7 @@ const sceneExitLabel = document.querySelector('#scene-exit-label')
 const railTooltip = document.querySelector('#rail-tooltip')
 const sidebarMorphSurface = document.querySelector('#sidebar-morph-surface')
 const sidebarMorphTether = document.querySelector('#sidebar-morph-tether')
-const prototypeMotionMode =
-  new URLSearchParams(window.location.search).get('motion') || 'full'
+const prototypeMotionMode = new URLSearchParams(window.location.search).get('motion') || 'full'
 document.body.dataset.motion = prototypeMotionMode
 
 let sidebarContentSwitchVersion = 0
@@ -213,8 +212,7 @@ function setSpatialState(state, { preserveSidebar = false } = {}) {
   }
   shell.classList.toggle('is-inspector-hidden', state !== 'standard')
   workspace.classList.remove('is-composer-expanded')
-  sceneExitLabel.textContent =
-    state === 'office' ? '返回 Spatial Workspace' : '返回对话工作区'
+  sceneExitLabel.textContent = state === 'office' ? '返回 Spatial Workspace' : '返回对话工作区'
   document.querySelectorAll('[data-spatial-state]').forEach((button) => {
     button.classList.toggle('is-active', button.dataset.spatialState === state)
   })
@@ -591,7 +589,8 @@ function setInspectorPanel(panel) {
     button.classList.toggle('is-active', button.dataset.panel === panel)
   })
 
-  const emptyIcon = panel === 'crew' ? 'ph-users-three' : panel === 'files' ? 'ph-files' : 'ph-sparkle'
+  const emptyIcon =
+    panel === 'crew' ? 'ph-users-three' : panel === 'files' ? 'ph-files' : 'ph-sparkle'
   inspectorBody.innerHTML = `
     <div class="canvas-toolbar">
       <button type="button">${panel === 'design' ? '分层' : '选项'}</button>
@@ -643,12 +642,14 @@ document.querySelectorAll('[data-section]').forEach((button) => {
   })
 })
 
-document.querySelectorAll('.rail-button[data-label], .rail-avatar[data-label]').forEach((button) => {
-  button.addEventListener('mouseenter', () => showRailTooltip(button))
-  button.addEventListener('mouseleave', () => hideRailTooltip(button))
-  button.addEventListener('focus', () => showRailTooltip(button))
-  button.addEventListener('blur', () => hideRailTooltip(button))
-})
+document
+  .querySelectorAll('.rail-button[data-label], .rail-avatar[data-label]')
+  .forEach((button) => {
+    button.addEventListener('mouseenter', () => showRailTooltip(button))
+    button.addEventListener('mouseleave', () => hideRailTooltip(button))
+    button.addEventListener('focus', () => showRailTooltip(button))
+    button.addEventListener('blur', () => hideRailTooltip(button))
+  })
 
 window.addEventListener('resize', () => hideRailTooltip())
 

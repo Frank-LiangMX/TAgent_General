@@ -6,14 +6,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import {
-  FolderOpen,
-  MessageCircle,
-  Globe2,
-  Palette,
-  Users,
-  type LucideIcon,
-} from 'lucide-react'
+import { FolderOpen, MessageCircle, Globe2, Palette, Users, type LucideIcon } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -25,11 +18,7 @@ import {
 } from '@/atoms/agent-atoms'
 import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import {
-  inspectorMagnifiedAtom,
-  rightRailItemAtom,
-  type RightRailItem,
-} from '@/atoms/app-mode'
+import { inspectorMagnifiedAtom, rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
 import { sessionCrewBoardIdAtomFamily, useKanbanBoardById } from '@/atoms/kanban-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { registerShortcut } from '@/lib/shortcut-registry'

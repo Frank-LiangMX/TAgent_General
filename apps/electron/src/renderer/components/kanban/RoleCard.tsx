@@ -44,10 +44,7 @@ export function RoleCard({
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col gap-2.5 p-3.5">
         <div className="flex items-start gap-3">
           <div
-            className={cn(
-              'flex size-9 shrink-0 items-center justify-center rounded-[12px]',
-              wrap
-            )}
+            className={cn('flex size-9 shrink-0 items-center justify-center rounded-[12px]', wrap)}
           >
             <Icon className="size-4" strokeWidth={1.75} />
           </div>

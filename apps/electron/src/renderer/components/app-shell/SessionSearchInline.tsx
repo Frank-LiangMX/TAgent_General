@@ -476,11 +476,7 @@ export function SessionSearchInline({
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <Search
-                          size={13}
-                          className="shrink-0 text-primary/70"
-                          strokeWidth={1.75}
-                        />
+                        <Search size={13} className="shrink-0 text-primary/70" strokeWidth={1.75} />
                         <span className="min-w-0 flex-1 truncate text-[12px] text-foreground/85">
                           {result.title}
                         </span>

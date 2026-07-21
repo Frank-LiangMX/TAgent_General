@@ -23,13 +23,7 @@ function formatDuration(ms: number): string {
 
 type Period = 'day' | 'week' | 'month'
 
-function StatCell({
-  value,
-  label,
-}: {
-  value: string | number
-  label: string
-}): React.ReactElement {
+function StatCell({ value, label }: { value: string | number; label: string }): React.ReactElement {
   return (
     <div className="min-w-0 text-center">
       <div className="truncate text-[13px] font-semibold tabular-nums tracking-tight text-foreground">

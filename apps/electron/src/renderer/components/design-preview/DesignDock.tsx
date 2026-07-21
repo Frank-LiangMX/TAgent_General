@@ -141,7 +141,12 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
         <span className="mx-0.5 h-4 w-px bg-border/40" />
 
         <DockTooltip label="刷新">
-          <button type="button" onClick={() => refresh()} className={dockChipClass} aria-label="刷新">
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className={dockChipClass}
+            aria-label="刷新"
+          >
             <RefreshCw className="size-3.5" />
           </button>
         </DockTooltip>
