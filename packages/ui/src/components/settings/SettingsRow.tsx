@@ -1,10 +1,5 @@
 /**
- * SettingsRow - 设置行布局
- *
- * 左侧显示标签，右侧显示操作控件。
- * 通常用于 SettingsCard 内部。
- *
- * description 默认隐藏到 ? 图标 tooltip，避免满屏文字。
+ * SettingsRow - 设置行：左 label / 右控件
  */
 
 import * as React from 'react'
@@ -14,17 +9,11 @@ import { FieldLabel } from './FieldLabel'
 import { ROW_CLASS } from './SettingsUIConstants'
 
 interface SettingsRowProps {
-  /** 行标签 */
   label: string
-  /** 标签左侧图标（可选） */
   icon?: React.ReactNode
-  /** 行描述（可选，hover ? 图标显示 tooltip） */
   description?: string
-  /** 右侧控件 */
   children?: React.ReactNode
-  /** description 下方的额外内容（如测速 badge 列） */
   bottomSlot?: React.ReactNode
-  /** 额外 className */
   className?: string
 }
 
@@ -38,11 +27,11 @@ export function SettingsRow({
 }: SettingsRowProps): React.ReactElement {
   return (
     <div className={cn(ROW_CLASS, className)}>
-      <div className="flex-1 min-w-0 mr-4">
+      <div className="settings-row-main min-w-0 flex-1">
         <FieldLabel label={label} icon={icon} description={description} />
-        {bottomSlot && <div className="flex flex-wrap gap-1 mt-1">{bottomSlot}</div>}
+        {bottomSlot ? <div className="settings-row-bottom mt-1.5 flex flex-wrap gap-1.5">{bottomSlot}</div> : null}
       </div>
-      {children && <div className="flex-shrink-0">{children}</div>}
+      {children ? <div className="settings-row-control shrink-0">{children}</div> : null}
     </div>
   )
 }

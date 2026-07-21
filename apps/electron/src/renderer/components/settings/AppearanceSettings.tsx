@@ -83,12 +83,20 @@ interface SpecialStyle {
   deco: 'cloud' | 'wave' | 'leaf' | 'star' | 'moon' | 'gem' | 'sun' | 'flame' | 'flower' | 'orb'
 }
 
+/**
+ * 命名对齐 scene 配色气质（colors.ts SCENE）：
+ * - slate：暖砂黄昏 + 冷蓝辅光
+ * - ocean：青/teal 主光
+ * - forest：叶绿主光
+ * - orange：琥珀主光 + 冷辅
+ * - purple：紫藤主光（非「兰」的蓝紫）
+ */
 const SPECIAL_STYLES: readonly SpecialStyle[] = [
-  // 第一行：亮色（按列对应：col 1 slate, col 2 ocean, col 3 forest, col 4 orange, col 5 purple）
+  // 浅色（按列：slate / ocean / forest / orange / purple）
   {
     id: 'slate-light',
-    name: '云絮悠然',
-    tag: 'Clay',
+    name: '暖砂薄暮',
+    tag: 'Slate',
     variant: 'light',
     previewClass: 'tagent-theme-cloud-dancer',
     deco: 'cloud',
@@ -96,7 +104,7 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   {
     id: 'ocean-light',
     name: '碧海晴空',
-    tag: 'Toon',
+    tag: 'Ocean',
     variant: 'light',
     previewClass: 'tagent-theme-ocean-light',
     deco: 'wave',
@@ -104,7 +112,7 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   {
     id: 'forest-light',
     name: '翠林晨光',
-    tag: 'Foliage',
+    tag: 'Forest',
     variant: 'light',
     previewClass: 'tagent-theme-forest-light',
     deco: 'leaf',
@@ -112,7 +120,7 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   {
     id: 'orange-light',
     name: '琥珀晨曦',
-    tag: 'Albedo',
+    tag: 'Amber',
     variant: 'light',
     previewClass: 'tagent-theme-terracotta-dawn',
     deco: 'sun',
@@ -120,16 +128,16 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   {
     id: 'purple-light',
     name: '紫藤晓露',
-    tag: 'Sheen',
+    tag: 'Violet',
     variant: 'light',
     previewClass: 'tagent-theme-wisteria-dawn',
     deco: 'flower',
   },
-  // 第二行：暗色（与第一行同列对应）
+  // 深色（列对齐浅色）
   {
     id: 'slate-dark',
     name: '石板暮霭',
-    tag: 'PBR',
+    tag: 'Slate',
     variant: 'dark',
     previewClass: 'tagent-theme-morandi-night',
     deco: 'gem',
@@ -137,7 +145,7 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   {
     id: 'ocean-dark',
     name: '深海夜潮',
-    tag: 'Volume',
+    tag: 'Ocean',
     variant: 'dark',
     previewClass: 'tagent-theme-ocean-dark',
     deco: 'star',
@@ -145,23 +153,23 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   {
     id: 'forest-dark',
     name: '青苔夜语',
-    tag: 'SSS',
+    tag: 'Forest',
     variant: 'dark',
     previewClass: 'tagent-theme-forest-dark',
     deco: 'moon',
   },
   {
     id: 'orange-dark',
-    name: '熔金夜韵',
-    tag: 'Burn',
+    name: '熔金余晖',
+    tag: 'Amber',
     variant: 'dark',
     previewClass: 'tagent-theme-terracotta-night',
     deco: 'flame',
   },
   {
     id: 'purple-dark',
-    name: '幽兰梦语',
-    tag: 'Velvet',
+    name: '雾紫夜语',
+    tag: 'Violet',
     variant: 'dark',
     previewClass: 'tagent-theme-wisteria-night',
     deco: 'orb',
@@ -246,23 +254,45 @@ export function AppearanceSettings(): React.ReactElement {
         <SettingsCard>
           <SettingsSegmentedControl
             label="皮肤模式"
-            description="选「风格库」即可在下方挑一套 TA 风味皮肤"
+            description="选「风格库」可浏览浅色 / 深色两套 scene 弥散皮肤"
             value={themeMode}
             onValueChange={handleThemeChange}
             options={SKIN_OPTIONS}
           />
 
           {themeMode === 'special' && (
-            <div className="px-4 pb-3.5 pt-0.5">
-              <div className="tagent-style-grid">
-                {SPECIAL_STYLES.map((style) => (
-                  <StyleCard
-                    key={style.id}
-                    style={style}
-                    isSelected={themeStyle === style.id}
-                    onSelect={() => handleStyleSelect(style.id)}
-                  />
-                ))}
+            <div className="tagent-style-library px-4 pb-4 pt-1">
+              <div className="tagent-style-group">
+                <div className="tagent-style-group-label">
+                  <span>浅色</span>
+                  <span className="tagent-style-group-hint">冷暖撞色弥散</span>
+                </div>
+                <div className="tagent-style-grid">
+                  {SPECIAL_STYLES.filter((s) => s.variant === 'light').map((style) => (
+                    <StyleCard
+                      key={style.id}
+                      style={style}
+                      isSelected={themeStyle === style.id}
+                      onSelect={() => handleStyleSelect(style.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="tagent-style-group">
+                <div className="tagent-style-group-label">
+                  <span>深色</span>
+                  <span className="tagent-style-group-hint">中暗底 + 透亮光斑</span>
+                </div>
+                <div className="tagent-style-grid">
+                  {SPECIAL_STYLES.filter((s) => s.variant === 'dark').map((style) => (
+                    <StyleCard
+                      key={style.id}
+                      style={style}
+                      isSelected={themeStyle === style.id}
+                      onSelect={() => handleStyleSelect(style.id)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -349,30 +379,44 @@ interface StyleCardProps {
   onSelect: () => void
 }
 
-/** 单个主题风格卡：轻预览 + 名称，选中用 primary 描边 */
+/** 单个主题风格卡：scene 三光斑预览 + 名称，选中抬升描边 */
 function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.ReactElement {
   return (
     <button
       type="button"
       onClick={onSelect}
       aria-pressed={isSelected}
+      aria-label={`${style.name}（${style.variant === 'light' ? '浅色' : '深色'}）`}
       data-style={style.id}
+      data-variant={style.variant}
       data-selected={isSelected || undefined}
-      className="tagent-style-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+      className="tagent-style-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
     >
       <div className="tagent-style-preview-wrap">
         <ThemePreview previewClass={style.previewClass} deco={style.deco} />
+        {/* 迷你壳层剪影：暗示侧栏 + 主区 */}
+        <div className="tagent-style-chrome" aria-hidden="true">
+          <span className="tagent-style-chrome-rail" />
+          <span className="tagent-style-chrome-panel" />
+          <span className="tagent-style-chrome-main" />
+        </div>
         {isSelected && (
           <span className="tagent-style-check" aria-hidden="true">
-            ✓
+            <svg viewBox="0 0 12 12" width="10" height="10" fill="none">
+              <path
+                d="M2.5 6.2 5 8.7 9.5 3.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </span>
         )}
       </div>
       <div className="tagent-style-card-label">
         <span className="tagent-style-card-name">{style.name}</span>
-        <span className="tagent-style-card-label-tag">
-          {style.variant === 'light' ? '亮' : '暗'}
-        </span>
+        <span className="tagent-style-card-meta">{style.tag}</span>
       </div>
     </button>
   )

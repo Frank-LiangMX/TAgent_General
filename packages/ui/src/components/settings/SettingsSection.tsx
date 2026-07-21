@@ -1,23 +1,20 @@
 /**
- * SettingsSection - 设置区块容器
+ * SettingsSection - 设置区块
  *
- * 提供区块标题、描述和可选的操作按钮插槽。
- * 用于将相关的设置项分组显示。
+ * 标题 / 描述 / 可选 action + 子内容，壳层由 settings-shell 视觉接管。
  */
 
 import * as React from 'react'
 
+import { cn } from '../../lib/utils'
 import { SECTION_TITLE_CLASS, SECTION_DESCRIPTION_CLASS } from './SettingsUIConstants'
 
 interface SettingsSectionProps {
-  /** 区块标题 */
   title: React.ReactNode
-  /** 区块描述（可选） */
   description?: string
-  /** 右侧操作按钮插槽（可选） */
   action?: React.ReactNode
-  /** 子内容 */
   children: React.ReactNode
+  className?: string
 }
 
 export function SettingsSection({
@@ -25,17 +22,18 @@ export function SettingsSection({
   description,
   action,
   children,
+  className,
 }: SettingsSectionProps): React.ReactElement {
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
+    <section className={cn('settings-block', className)}>
+      <header className="settings-block-head">
+        <div className="settings-block-copy min-w-0">
           <h4 className={SECTION_TITLE_CLASS}>{title}</h4>
-          {description && <p className={SECTION_DESCRIPTION_CLASS}>{description}</p>}
+          {description ? <p className={SECTION_DESCRIPTION_CLASS}>{description}</p> : null}
         </div>
-        {action && <div className="flex-shrink-0 ml-4">{action}</div>}
-      </div>
-      {children}
-    </div>
+        {action ? <div className="settings-block-action shrink-0">{action}</div> : null}
+      </header>
+      <div className="settings-block-body">{children}</div>
+    </section>
   )
 }

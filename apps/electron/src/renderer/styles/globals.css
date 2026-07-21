@@ -4299,21 +4299,9 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
 }
 
 .dark .nav-island-glass::after {
-  background:
-    linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.06) 20%,
-      rgba(255, 255, 255, 0.02) 50%,
-      rgba(255, 255, 255, 0) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.06) 20%,
-      rgba(255, 255, 255, 0.02) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
+  /* 深色关掉 L 形白边高光，避免右栏/浮岛像浅色残留 */
+  opacity: 0;
+  background: none;
 }
 
 .nav-island-rail {
@@ -6092,19 +6080,27 @@ html:not(.dark) .rail-island-btn--active:hover {
   background: hsl(var(--foreground) / 0.1);
 }
 
-/* 深色选中：浅色实心圆 + 深色图标 */
+/*
+ * 深色选中：抬升亮面 + primary 图标/细 rim
+ * （app-shell spatial 会再覆盖一层，保持同语义）
+ */
 .dark .rail-island-btn--active {
-  color: hsl(var(--background));
-  background: hsl(var(--foreground) / 0.94);
+  color: hsl(var(--primary));
+  background: color-mix(in srgb, hsl(var(--foreground)) 18%, hsl(var(--card)));
   border: none;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.25),
-    0 8px 20px -6px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 0 0 1px hsl(var(--primary) / 0.38),
+    0 8px 18px rgb(0 0 0 / 0.38);
 }
 
 .dark .rail-island-btn--active:hover {
-  color: hsl(var(--background));
-  background: hsl(var(--foreground) / 0.9);
+  color: hsl(var(--primary));
+  background: color-mix(in srgb, hsl(var(--foreground)) 24%, hsl(var(--card)));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 0 0 1px hsl(var(--primary) / 0.48),
+    0 8px 18px rgb(0 0 0 / 0.4);
 }
 
 /* 用户头像按钮：圆形 + 主题渐变（对齐参考图底栏 avatar） */

@@ -171,7 +171,7 @@ export function GeneralSettings(): React.ReactElement {
     <div className="space-y-6">
       {/* 用户档案 */}
       <SettingsSection title="用户档案" description="头像与昵称，用于会话中显示你的身份。">
-        <div className="settings-card settings-profile-card flex items-center gap-4 p-4">
+        <div className="settings-card settings-card-surface settings-profile-card flex items-center gap-4 p-4">
           <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
             <PopoverTrigger asChild>
               <div className="settings-profile-avatar relative group/avatar cursor-pointer shrink-0">

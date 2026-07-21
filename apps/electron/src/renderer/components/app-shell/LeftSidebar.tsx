@@ -17,7 +17,6 @@ import {
   Plus,
   Trash2,
   Pencil,
-  ChevronDown,
   ChevronRight,
   Search,
   Archive,
@@ -27,7 +26,6 @@ import {
   CheckSquare,
   Square,
   FolderOpen,
-  Folder,
   Hourglass,
   Settings,
   GripVertical,
@@ -2017,6 +2015,7 @@ const ConversationItem = React.memo(function ConversationItem({
           ref={preview.setAnchorRef}
           role="button"
           tabIndex={0}
+          data-actions-open={menuOpen ? '' : undefined}
           onClick={() => onSelect(conversation.id, conversation.title)}
           onMouseEnter={preview.handleMouseEnter}
           onMouseLeave={preview.handleMouseLeave}
@@ -2062,7 +2061,7 @@ const ConversationItem = React.memo(function ConversationItem({
           {/* 三点菜单按钮（hover 时可见，始终占位避免跳动） */}
           {!editing && (
             <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu onOpenChange={setMenuOpen}>
+              <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
@@ -2262,6 +2261,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
         <div
           ref={preview.setAnchorRef}
           data-session-list-id={session.id}
+          data-actions-open={menuOpen ? '' : undefined}
           role="button"
           tabIndex={0}
           onClick={() => {
@@ -2320,7 +2320,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
             ) : (
               <div
                 className={cn(
-                  'min-w-0 transition-[padding] duration-150',
+                  'session-row-actions-pad min-w-0 transition-[padding] duration-150',
                   !isBatchMode && 'group-hover:pr-4'
                 )}
               >
@@ -2360,10 +2360,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           </div>
           {!editing && !isBatchMode && (
             <div
-              className="absolute right-0 top-1/2 -translate-y-1/2"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
               onClick={(e) => e.stopPropagation()}
             >
-              <DropdownMenu onOpenChange={setMenuOpen}>
+              <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
@@ -2476,6 +2476,8 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   const isCurrent = group.workspace.id === currentWorkspaceId
   const [renaming, setRenaming] = React.useState(false)
   const [editName, setEditName] = React.useState('')
+  /** 三点菜单打开时保持行 hover 布局，避免操作按钮与内容重叠 */
+  const [menuOpen, setMenuOpen] = React.useState(false)
   const editRef = React.useRef<HTMLInputElement>(null)
   const justStartedRef = React.useRef(false)
 
@@ -2564,6 +2566,8 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
     : 0
   const dropPosition =
     projectDropIndicator?.id === group.workspace.id ? projectDropIndicator.position : null
+  // 菜单打开时等同 hover：左右让位 + 手柄/加号/三点保持可见
+  const projectActionsActive = menuOpen
 
   return (
     <section
@@ -2579,14 +2583,20 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
       {dropPosition === 'before' && (
         <div className="absolute -top-0.5 left-3 right-3 h-0.5 rounded-full bg-primary z-10" />
       )}
-      <div className="app-sidebar-project-heading group/project relative flex items-center">
+      <div
+        className="app-sidebar-project-heading group/project relative flex items-center"
+        data-actions-open={projectActionsActive ? '' : undefined}
+      >
         {/* 拖拽手柄：hover 显示，draggable 触发排序（选择模式下隐藏） */}
         {!isBatchMode && (
           <span
             draggable
             onDragStart={(e) => onProjectDragStart(e, group.workspace.id)}
             title="拖拽排序"
-            className="absolute -left-0.5 top-1/2 z-10 flex size-[18px] -translate-y-1/2 cursor-grab items-center justify-center text-foreground/20 opacity-0 transition-opacity group-hover/project:opacity-100 active:cursor-grabbing"
+            className={cn(
+              'absolute -left-0.5 top-1/2 z-10 flex size-[18px] -translate-y-1/2 cursor-grab items-center justify-center text-foreground/20 opacity-0 transition-opacity group-hover/project:opacity-100 active:cursor-grabbing',
+              projectActionsActive && 'opacity-100'
+            )}
             aria-hidden="true"
           >
             <GripVertical size={12} />
@@ -2595,15 +2605,18 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
         {renaming ? (
           <div
             className={cn(
-              'relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11',
+              'app-sidebar-project-rename relative flex-1 min-w-0 flex items-center gap-1 px-1 py-1 rounded-md text-left titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-12',
               isCurrent ? 'text-foreground' : 'text-foreground/65'
             )}
           >
-            {!collapsed ? (
-              <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
-            ) : (
-              <Folder size={13} className="flex-shrink-0 text-foreground/40" />
-            )}
+            <ChevronRight
+              size={12}
+              className={cn(
+                'flex-shrink-0 text-foreground/40 transition-transform duration-150',
+                !collapsed && 'rotate-90'
+              )}
+              aria-hidden
+            />
             <input
               ref={editRef}
               value={editName}
@@ -2624,28 +2637,22 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                 onSelectProject(group.workspace.id)
               }}
               className={cn(
-                'app-sidebar-project-button relative flex-1 min-w-0 flex items-center gap-1 text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-11',
+                'app-sidebar-project-button relative flex-1 min-w-0 flex items-center gap-1 text-left transition-[padding,color,background-color] titlebar-no-drag group-hover/project:pl-4 group-hover/project:pr-12',
                 isCurrent ? 'text-foreground' : 'text-foreground/65 hover:text-foreground/88'
               )}
             >
-              {!collapsed ? (
-                <FolderOpen size={13} className="flex-shrink-0 text-foreground/40" />
-              ) : (
-                <Folder size={13} className="flex-shrink-0 text-foreground/40" />
-              )}
+              <ChevronRight
+                size={12}
+                className={cn(
+                  'flex-shrink-0 transition-transform duration-150',
+                  hasActiveSession ? 'text-foreground/25' : 'text-foreground/40',
+                  !collapsed && 'rotate-90'
+                )}
+              />
               <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
                 {group.workspace.name}
               </span>
               <span className="app-sidebar-project-count">{group.sessions.length}</span>
-              {!hasActiveSession && (
-                <ChevronRight
-                  size={12}
-                  className={cn(
-                    'flex-shrink-0 text-foreground/30 transition-transform duration-150',
-                    collapsed ? '-rotate-90' : 'rotate-90'
-                  )}
-                />
-              )}
             </button>
           )
         )}
@@ -2660,7 +2667,10 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   e.stopPropagation()
                   onNewSession(group.workspace.id)
                 }}
-                className="absolute right-5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag"
+                className={cn(
+                  'absolute right-7 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag',
+                  projectActionsActive && 'opacity-100'
+                )}
               >
                 <Plus size={13} />
               </button>
@@ -2717,12 +2727,16 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
             </button>
           </div>
         ) : (
-          <DropdownMenu>
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label="项目菜单"
-                className="absolute right-0 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/60 group-hover/project:opacity-100 data-[state=open]:opacity-100 titlebar-no-drag"
+                className={cn(
+                  'absolute right-1.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/60 group-hover/project:opacity-100 titlebar-no-drag',
+                  'data-[state=open]:bg-foreground/[0.055] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100',
+                  projectActionsActive && 'opacity-100'
+                )}
               >
                 <MoreVertical size={13} />
               </button>

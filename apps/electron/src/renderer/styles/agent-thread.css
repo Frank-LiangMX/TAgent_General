@@ -106,9 +106,15 @@
 
 .dark .app-shell-scene .tagent-agent-thread,
 .app-shell-scene.dark .tagent-agent-thread {
-  --agent-process-bg: color-mix(in srgb, rgb(255 255 255) 4.5%, transparent);
+  /* 用 glass-rgb 而不是纯白 wash，避免深色里过程卡发灰白 */
+  --agent-process-bg: color-mix(in srgb, rgb(var(--glass-rgb, 50 52 56)) 42%, transparent);
   --agent-process-border: var(--spatial-line, rgb(202 213 230 / 10%));
-  --agent-process-shadow: inset 0 1px 0 rgb(255 255 255 / 5%);
+  --agent-process-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.dark .tagent-agent-thread .agent-turn-title {
+  background: color-mix(in srgb, rgb(var(--glass-rgb, 50 52 56)) 55%, transparent);
+  border-color: rgb(255 255 255 / 0.1);
 }
 
 /* ===== Turn：过程 / 回答脱钩 ===== */
@@ -137,11 +143,6 @@
   user-select: none;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-}
-
-.dark .tagent-agent-thread .agent-turn-title {
-  border-color: color-mix(in srgb, hsl(var(--foreground)) 12%, transparent);
-  background: color-mix(in srgb, hsl(var(--card)) 48%, transparent);
 }
 
 /* 过程区：极轻 well，只暗示分组，不抢回答正文 */

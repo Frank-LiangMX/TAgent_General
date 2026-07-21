@@ -1,29 +1,26 @@
 /**
  * SettingsUIConstants - 设置界面统一样式 token
  *
- * 集中管理设置组件中使用的 Tailwind class，
- * 确保所有设置页面保持一致的视觉语言。
+ * 与主壳 spatial 对齐：语义类由 settings-shell.css 接管视觉。
  */
 
 /** 标签样式 */
-export const LABEL_CLASS = 'text-sm font-medium text-foreground'
+export const LABEL_CLASS = 'settings-field-label'
 
 /** 描述文字样式 */
-export const DESCRIPTION_CLASS = 'text-sm text-muted-foreground'
+export const DESCRIPTION_CLASS = 'settings-field-description'
 
 /** 区块标题样式 */
-export const SECTION_TITLE_CLASS = 'text-base font-semibold text-foreground'
+export const SECTION_TITLE_CLASS = 'settings-block-title'
 
 /** 区块描述样式 */
-export const SECTION_DESCRIPTION_CLASS = 'text-sm text-muted-foreground mt-1'
+export const SECTION_DESCRIPTION_CLASS = 'settings-block-desc'
 
-/** 卡片容器样式 - 圆角卡片
- * 圆角引用 glass-modal token（20px），与模态框/浮层保持一致的"饱满"观感。
- */
-export const CARD_CLASS = 'rounded-glass-modal overflow-hidden settings-card'
+/** 卡片容器 */
+export const CARD_CLASS = 'settings-card settings-card-surface'
 
-/** 卡片内行样式 */
-export const ROW_CLASS = 'flex items-center justify-between px-4 py-3'
+/** 卡片内行 */
+export const ROW_CLASS = 'settings-row'
 
-/** 卡片内分隔线样式 */
-export const DIVIDER_CLASS = 'border-border/50'
+/** 卡片内分隔线 */
+export const DIVIDER_CLASS = 'settings-card-divider'

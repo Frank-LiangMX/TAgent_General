@@ -1,20 +1,11 @@
 /**
- * SettingsPanel - 设置面板
+ * SettingsPanel - 设置主面板
  *
- * 与主界面同源：复用 nav-island-glass 浮岛范式
- * - 同主题 token（hsl(var(--background)) / var(--foreground)）
- * - 同圆角、阴影、1px 弱边
- * - 左导航 + 右内容，两块浮岛并排
- *
- * 布局：
- * ┌─────────────┬─────────────────────┐
- * │ Settings    │ TabBar / Header     │
- * │  Rail+List  │  (与主区同壳)        │
- * │  (浮岛 1)   │  (浮岛 2)            │
- * └─────────────┴─────────────────────┘
+ * 顶栏 + 左导航 + 右内容；选项全集保留。
+ * 视觉 / 动效由 settings-shell.css 统一。
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import {
   Settings,
   Radio,
@@ -40,7 +31,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  ScrollArea,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -58,6 +48,8 @@ import { ShortcutSettings } from './ShortcutSettings'
 import { VoiceInputSettings } from './VoiceInputSettings'
 import { AgentPreferencesSettings } from './AgentBehaviorSettings'
 
+import './settings-shell.css'
+
 import type { SettingsTab } from '@/atoms/settings-tab'
 
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
@@ -69,10 +61,10 @@ import {
 import { hasUpdateAtom } from '@/atoms/updater'
 import { cn } from '@/lib/utils'
 
-/** 设置 Tab 定义 */
 interface TabItem {
   id: SettingsTab
   label: string
+  description: string
   icon: React.ReactNode
   group: 'core' | 'integration' | 'advanced'
 }
@@ -84,17 +76,83 @@ const TAB_GROUPS: Array<{ key: TabItem['group']; label: string }> = [
 ]
 
 const ALL_TABS: TabItem[] = [
-  { id: 'general', label: '通用', icon: <Settings size={15} />, group: 'core' },
-  { id: 'channels', label: 'AI 渠道', icon: <Radio size={15} />, group: 'core' },
-  { id: 'prompts', label: '提示词', icon: <BookOpen size={15} />, group: 'core' },
-  { id: 'agent-preferences', label: 'Agent 偏好', icon: <Wand2 size={15} />, group: 'core' },
-  { id: 'bots', label: '远程', icon: <Bot size={15} />, group: 'integration' },
-  { id: 'voice-input', label: '语音', icon: <Mic size={15} />, group: 'integration' },
-  { id: 'proxy', label: '代理', icon: <Globe size={15} />, group: 'integration' },
-  { id: 'shortcuts', label: '快捷键', icon: <Keyboard size={15} />, group: 'advanced' },
-  { id: 'insights', label: '数据', icon: <BarChart3 size={15} />, group: 'advanced' },
-  { id: 'appearance', label: '外观', icon: <Palette size={15} />, group: 'advanced' },
-  { id: 'about', label: '关于', icon: <Info size={15} />, group: 'advanced' },
+  {
+    id: 'general',
+    label: '通用',
+    description: '档案、语言、归档与通知等基础偏好',
+    icon: <Settings size={15} strokeWidth={1.75} />,
+    group: 'core',
+  },
+  {
+    id: 'channels',
+    label: 'AI 渠道',
+    description: '模型供应商、密钥、连通与默认模型',
+    icon: <Radio size={15} strokeWidth={1.75} />,
+    group: 'core',
+  },
+  {
+    id: 'prompts',
+    label: '提示词',
+    description: '系统提示与可复用模板',
+    icon: <BookOpen size={15} strokeWidth={1.75} />,
+    group: 'core',
+  },
+  {
+    id: 'agent-preferences',
+    label: 'Agent 偏好',
+    description: '权限、委派与执行习惯',
+    icon: <Wand2 size={15} strokeWidth={1.75} />,
+    group: 'core',
+  },
+  {
+    id: 'bots',
+    label: '远程',
+    description: '飞书 / 钉钉 / 微信等远程入口',
+    icon: <Bot size={15} strokeWidth={1.75} />,
+    group: 'integration',
+  },
+  {
+    id: 'voice-input',
+    label: '语音',
+    description: '语音输入与听写相关选项',
+    icon: <Mic size={15} strokeWidth={1.75} />,
+    group: 'integration',
+  },
+  {
+    id: 'proxy',
+    label: '代理',
+    description: '网络代理与出站配置',
+    icon: <Globe size={15} strokeWidth={1.75} />,
+    group: 'integration',
+  },
+  {
+    id: 'shortcuts',
+    label: '快捷键',
+    description: '全局与编辑器快捷键',
+    icon: <Keyboard size={15} strokeWidth={1.75} />,
+    group: 'advanced',
+  },
+  {
+    id: 'insights',
+    label: '数据',
+    description: '用量统计与洞察',
+    icon: <BarChart3 size={15} strokeWidth={1.75} />,
+    group: 'advanced',
+  },
+  {
+    id: 'appearance',
+    label: '外观',
+    description: '主题、风格库、字号与材质',
+    icon: <Palette size={15} strokeWidth={1.75} />,
+    group: 'advanced',
+  },
+  {
+    id: 'about',
+    label: '关于',
+    description: '版本、更新与环境信息',
+    icon: <Info size={15} strokeWidth={1.75} />,
+    group: 'advanced',
+  },
 ]
 
 function renderTabContent(tab: SettingsTab): React.ReactElement {
@@ -122,65 +180,11 @@ function renderTabContent(tab: SettingsTab): React.ReactElement {
     case 'insights':
       return <InsightsSettings />
     case 'agent':
-      return <GeneralSettings />
     case 'tutorial':
       return <GeneralSettings />
     default:
       return <GeneralSettings />
   }
-}
-
-// ============================================================
-// TabGroup：选中态 / 过渡与会话列表一致（session-list-row + active）
-// ============================================================
-
-interface TabGroupProps {
-  groupLabel: string
-  tabs: TabItem[]
-  activeTab: SettingsTab
-  onTabChange: (tabId: SettingsTab) => void
-  hasUpdate: boolean
-  hasEnvironmentIssues: boolean
-}
-
-function TabGroup({
-  groupLabel,
-  tabs,
-  activeTab,
-  onTabChange,
-  hasUpdate,
-  hasEnvironmentIssues,
-}: TabGroupProps): React.ReactElement {
-  return (
-    <div className="settings-nav-group-card">
-      <div className="settings-nav-group-label">{groupLabel}</div>
-      <div className="flex flex-col gap-0.5">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              data-tab-id={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={cn(
-                'settings-nav-item session-list-row w-full flex items-center gap-2 px-2.5 py-2 text-[13px] font-medium cursor-pointer text-left',
-                isActive
-                  ? 'session-list-item-active settings-nav-item--active'
-                  : 'text-muted-foreground'
-              )}
-            >
-              <span className="shrink-0">{tab.icon}</span>
-              <span className="truncate flex-1">{tab.label}</span>
-              {tab.id === 'about' && (hasUpdate || hasEnvironmentIssues) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 interface SettingsPanelProps {
@@ -194,17 +198,26 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
   const hasUpdate = useAtomValue(hasUpdateAtom)
   const hasEnvironmentIssues = useAtomValue(hasEnvironmentIssuesAtom)
 
-  const [highlightItemId, setHighlightItemId] = React.useState<string | null>(null)
   const contentRef = React.useRef<HTMLDivElement>(null)
+  const [paneKey, setPaneKey] = React.useState(0)
 
   type PendingAction = { type: 'tab'; tabId: SettingsTab } | { type: 'close' } | null
   const [pendingAction, setPendingAction] = React.useState<PendingAction>(null)
   const showNavDialog = pendingAction !== null
 
+  const activeTabItem = ALL_TABS.find((t) => t.id === activeTab) ?? ALL_TABS[0]!
+  const activeGroupLabel =
+    TAB_GROUPS.find((g) => g.key === activeTabItem.group)?.label ?? activeTabItem.group
+
+  const bumpPane = React.useCallback(() => {
+    setPaneKey((k) => k + 1)
+  }, [])
+
   const executePendingAction = (): void => {
     if (!pendingAction) return
     if (pendingAction.type === 'tab') {
       setActiveTab(pendingAction.tabId)
+      bumpPane()
     } else {
       onClose?.()
     }
@@ -222,7 +235,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
       return
     }
     setActiveTab(tabId)
-    setHighlightItemId(null)
+    bumpPane()
   }
 
   const handleClose = (): void => {
@@ -237,28 +250,27 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
     if (tab !== activeTab) {
       if (activeTab === 'channels' && channelFormDirty) {
         setPendingAction({ type: 'tab', tabId: tab })
-        setHighlightItemId(itemId ?? null)
         return
       }
       setActiveTab(tab)
+      bumpPane()
     }
     if (itemId) {
-      setTimeout(() => {
+      window.setTimeout(() => {
         const el = contentRef.current?.querySelector(`[data-search-id="${itemId}"]`)
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          el.classList.add('ring-2', 'ring-primary/50', 'ring-offset-2', 'ring-offset-background')
-          setTimeout(() => {
+          el.classList.add('ring-2', 'ring-primary/40', 'ring-offset-2', 'ring-offset-background')
+          window.setTimeout(() => {
             el.classList.remove(
               'ring-2',
-              'ring-primary/50',
+              'ring-primary/40',
               'ring-offset-2',
               'ring-offset-background'
             )
           }, 2000)
         }
-        setHighlightItemId(itemId)
-      }, 100)
+      }, 140)
     }
   }
 
@@ -269,83 +281,94 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
     }
   }, [closeRequested, activeTab, setCloseRequested])
 
-  const activeTabItem = ALL_TABS.find((t) => t.id === activeTab)
-
   return (
-    // 与主界面 shell-glass 同套：p-2 留底板边距，左浮岛 + 右开放区
-    <div className="shell-glass h-full w-full flex overflow-hidden">
-      <div className="flex-1 min-w-0 p-2 flex gap-2 min-h-0">
-        {/* 左侧浮岛 - 导航（settings-glass 玻璃态） */}
-        <aside
-          className="settings-glass relative flex flex-col overflow-hidden flex-shrink-0"
-          style={{ width: 232 }}
-        >
-          {/* 浮岛顶部：极简标题 + 关闭按钮 */}
-          <div className="flex items-center justify-between px-3 h-9 shrink-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <Settings className="size-3.5 text-muted-foreground shrink-0" />
-              <span className="text-[13px] font-semibold tracking-tight truncate">设置</span>
+    <div className="settings-shell">
+      {/* 全宽顶栏 */}
+      <header className="settings-shell-topbar">
+        <div className="settings-shell-topbar-brand">
+          <span className="settings-shell-topbar-mark" aria-hidden>
+            S
+          </span>
+          <div className="settings-shell-topbar-copy">
+            <span className="settings-shell-kicker">PREFERENCES</span>
+            <span className="settings-shell-title">设置</span>
+          </div>
+        </div>
+        <div className="settings-shell-topbar-actions">
+          <SettingsSearch onNavigate={handleSearchNavigate} />
+          {onClose ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="settings-shell-close titlebar-no-drag"
+                  aria-label="关闭设置"
+                >
+                  <X size={15} strokeWidth={2} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>关闭</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="settings-shell-body">
+        <aside className="settings-shell-nav">
+          <nav className="settings-shell-nav-scroll" aria-label="设置分类">
+            {TAB_GROUPS.map((group) => {
+              const groupTabs = ALL_TABS.filter((t) => t.group === group.key)
+              if (groupTabs.length === 0) return null
+              return (
+                <div key={group.key} className="settings-shell-group">
+                  <div className="settings-shell-group-label">{group.label}</div>
+                  {groupTabs.map((tab) => {
+                    const isActive = activeTab === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        data-tab-id={tab.id}
+                        data-active={isActive || undefined}
+                        onClick={() => handleTabChange(tab.id)}
+                        className="settings-shell-nav-item"
+                      >
+                        <span className="settings-shell-nav-item-icon">{tab.icon}</span>
+                        <span className="settings-shell-nav-item-label">{tab.label}</span>
+                        {tab.id === 'about' && (hasUpdate || hasEnvironmentIssues) ? (
+                          <span className="settings-shell-nav-dot" aria-label="有更新或环境问题" />
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </nav>
+        </aside>
+
+        <section className="settings-shell-main">
+          <div className="settings-shell-pagehead">
+            <div className="min-w-0">
+              <span className="settings-shell-pagehead-kicker">{activeGroupLabel}</span>
+              <h2 className="settings-shell-pagehead-title">{activeTabItem.label}</h2>
+              <p className="settings-shell-pagehead-desc">{activeTabItem.description}</p>
             </div>
           </div>
 
-          {/* 列表 */}
-          <ScrollArea className="flex-1 min-h-0">
-            <nav className="px-2 py-1.5 space-y-3.5">
-              {TAB_GROUPS.map((group) => {
-                const groupTabs = ALL_TABS.filter((t) => t.group === group.key)
-                if (groupTabs.length === 0) return null
-                return (
-                  <TabGroup
-                    key={group.key}
-                    groupLabel={group.label}
-                    tabs={groupTabs}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    hasUpdate={hasUpdate}
-                    hasEnvironmentIssues={hasEnvironmentIssues}
-                  />
-                )
-              })}
-            </nav>
-          </ScrollArea>
-        </aside>
-
-        {/* 右侧 - 开放页面（玻璃感内容区） */}
-        <section className="settings-content-glass relative flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
-          {/* 顶部栏：右对齐搜索胶囊 + 关闭圆钮（对齐 glass-studio 原型） */}
-          <div className="flex items-center justify-end gap-2.5 h-9 px-4 shrink-0">
-            <SettingsSearch onNavigate={handleSearchNavigate} />
-            {onClose && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="settings-top-close titlebar-no-drag"
-                    aria-label="关闭设置"
-                  >
-                    <X size={12} strokeWidth={2} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>关闭</TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-
-          {/* 内容区 */}
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="settings-shell-scroll">
             <div
               ref={contentRef}
-              key={activeTab}
-              className="px-6 py-4 max-w-2xl mx-auto animate-settings-content-in"
+              key={`${activeTab}-${paneKey}`}
+              className={cn('settings-shell-content', 'settings-shell-pane')}
             >
               {renderTabContent(activeTab)}
             </div>
-          </ScrollArea>
+          </div>
         </section>
       </div>
 
-      {/* 退出拦截弹窗 */}
       <AlertDialog
         open={showNavDialog}
         onOpenChange={(open) => {

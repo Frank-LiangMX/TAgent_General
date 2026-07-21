@@ -107,6 +107,7 @@ function KanbanBoardItem({
     <div
       role="button"
       tabIndex={0}
+      data-actions-open={menuOpen ? '' : undefined}
       className={cn(
         'session-list-row session-row-shell app-sidebar-session-row group relative w-full min-w-0 titlebar-no-drag text-left',
         selected && 'session-list-item-active',
@@ -123,7 +124,7 @@ function KanbanBoardItem({
       <div className="min-w-0 flex-1">
         <div
           className={cn(
-            'min-w-0 transition-[padding] duration-150',
+            'session-row-actions-pad min-w-0 transition-[padding] duration-150',
             'group-hover:pr-4'
           )}
         >
@@ -151,10 +152,10 @@ function KanbanBoardItem({
         </div>
       </div>
       <div
-        className="absolute right-0 top-1/2 -translate-y-1/2"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2"
         onClick={(e) => e.stopPropagation()}
       >
-        <DropdownMenu onOpenChange={setMenuOpen}>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
@@ -162,8 +163,7 @@ function KanbanBoardItem({
                 'rounded-md p-1 text-foreground/30 transition-colors hover:bg-foreground/[0.08] hover:text-foreground/60',
                 'pointer-events-none opacity-0',
                 'group-hover:pointer-events-auto group-hover:opacity-100',
-                'data-[state=open]:pointer-events-auto data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100',
-                menuOpen && 'pointer-events-auto opacity-100'
+                'data-[state=open]:pointer-events-auto data-[state=open]:bg-foreground/[0.08] data-[state=open]:text-foreground/60 data-[state=open]:opacity-100'
               )}
             >
               <MoreVertical size={14} />

@@ -1,8 +1,7 @@
 /**
- * SettingsCard - 设置卡片容器
+ * SettingsCard - 设置卡片
  *
- * 圆角卡片，自动在子元素间插入分隔线。
- * 用于包裹 SettingsRow 或其他控件。
+ * 抬升表面 + 行间分隔；视觉由 settings-card-surface 统一。
  */
 
 import * as React from 'react'
@@ -12,11 +11,8 @@ import { cn } from '../../lib/utils'
 import { CARD_CLASS, DIVIDER_CLASS } from './SettingsUIConstants'
 
 interface SettingsCardProps {
-  /** 子内容 */
   children: React.ReactNode
-  /** 额外 className */
   className?: string
-  /** 是否自动在子元素间插入分隔线（默认 true） */
   divided?: boolean
 }
 
@@ -33,7 +29,9 @@ export function SettingsCard({
         ? childArray.map((child, index) => (
             <React.Fragment key={index}>
               {child}
-              {index < childArray.length - 1 && <Separator className={DIVIDER_CLASS} />}
+              {index < childArray.length - 1 && (
+                <Separator className={cn(DIVIDER_CLASS, 'settings-card-sep')} />
+              )}
             </React.Fragment>
           ))
         : children}

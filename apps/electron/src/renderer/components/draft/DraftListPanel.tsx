@@ -158,6 +158,7 @@ const DraftItem = React.memo(function DraftItem({
       <ContextMenuTrigger asChild>
         <div
           data-draft-list-id={draft.id}
+          data-actions-open={menuOpen ? '' : undefined}
           role="button"
           tabIndex={0}
           onClick={() => onSelect(draft)}
@@ -185,7 +186,7 @@ const DraftItem = React.memo(function DraftItem({
             ) : (
               <div
                 className={cn(
-                  'truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
+                  'session-row-actions-pad truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
                   'group-hover:pr-4',
                   !active && 'text-foreground/80'
                 )}
@@ -208,10 +209,10 @@ const DraftItem = React.memo(function DraftItem({
           {/* 三点菜单：绝对定位，不占标题横向空间（与会话行一致） */}
           {!editing && (
             <div
-              className="absolute right-0 top-1/2 -translate-y-1/2"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
               onClick={(e) => e.stopPropagation()}
             >
-              <DropdownMenu onOpenChange={setMenuOpen}>
+              <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
