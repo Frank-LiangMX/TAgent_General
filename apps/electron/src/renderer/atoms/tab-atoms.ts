@@ -17,20 +17,23 @@ import {
 
 import type { SessionIndicatorStatus } from './agent-atoms'
 import type { PreviewFile } from './preview-atoms'
-import type { TopLevelMode } from '@/atoms/app-mode'
+import type { RightRailItem, TopLevelMode } from '@/atoms/app-mode'
 
 import { topLevelModeAtom } from '@/atoms/app-mode'
 
 // ===== 类型定义 =====
 
-/** 标签页类型（Settings 不作为 Tab，保留独立视图） */
-export type TabType = 'agent' | 'draft' | 'preview'
+/** 标签页类型（Settings 不作为 Tab，保留独立视图；rail = 右栏功能晋升的主区标签） */
+export type TabType = 'agent' | 'draft' | 'preview' | 'rail'
 
 /** Draft Tab 的 ID 前缀 */
 export const DRAFT_TAB_PREFIX = '__draft__:'
 
 /** 会话预览 Tab 的 ID 前缀：运行时临时入口，不参与持久化 */
 const PREVIEW_TAB_PREFIX = '__preview__:'
+
+/** 右栏功能晋升 Tab 的 ID 前缀：运行时临时入口，不参与持久化 */
+const RAIL_TAB_PREFIX = '__rail__:'
 
 /**
  * Tab 数量上限。超过后新开 tab 自动 LRU 淘汰最久未使用的非激活 tab。
@@ -61,6 +64,8 @@ export interface TabItem {
   sessionId: string
   /** 标签页显示标题 */
   title: string
+  /** rail 标签对应的右栏分页；仅 type='rail' 时存在 */
+  railItem?: RightRailItem
   /**
    * 顶层模式标记（仅 agent/draft/preview 类型有意义）。
    * - 'general'：通用模式会话，TA 模式 TabBar 不显示
@@ -104,18 +109,20 @@ export interface OpenTabRestore {
 
 // ===== 核心 Atoms =====
 
-/** 顶部入口列表（写入时自动清理孤儿 preview tab） */
+/** 顶部入口列表（写入时自动清理孤儿 preview / rail tab） */
 export const tabsAtom = atom<TabItem[], [TabItem[] | ((prev: TabItem[]) => TabItem[])], void>(
   (get) => get(rawTabsAtom),
   (get, set, updater: TabItem[] | ((prev: TabItem[]) => TabItem[])) => {
     const prev = get(rawTabsAtom)
     const newTabs = typeof updater === 'function' ? updater(prev) : updater
 
-    // Invariant: preview tab 必须有对应的 agent tab
+    // Invariant: preview / rail 附属标签必须有对应的 agent 父标签
     const agentSessionIds = new Set(
       newTabs.filter((t) => t.type === 'agent').map((t) => t.sessionId)
     )
-    const cleaned = newTabs.filter((t) => t.type !== 'preview' || agentSessionIds.has(t.sessionId))
+    const cleaned = newTabs.filter(
+      (t) => (t.type !== 'preview' && t.type !== 'rail') || agentSessionIds.has(t.sessionId)
+    )
     set(rawTabsAtom, cleaned)
   }
 )
@@ -286,6 +293,38 @@ export function isPreviewTab(tab: TabItem): boolean {
   return tab.type === 'preview' || tab.id.startsWith(PREVIEW_TAB_PREFIX)
 }
 
+// ===== 右栏功能晋升 Tab（全屏模式） =====
+
+/** rail tab 的 ID 格式：__rail__:<sessionId>:<railItem> */
+export function createRailTabId(sessionId: string, item: RightRailItem): string {
+  return `${RAIL_TAB_PREFIX}${sessionId}:${item}`
+}
+
+export function isRailTab(tab: TabItem): boolean {
+  return tab.type === 'rail' || tab.id.startsWith(RAIL_TAB_PREFIX)
+}
+
+/** 从 rail tab 取回对应的右栏功能项 */
+export function getRailItemFromTab(tab: TabItem): RightRailItem | null {
+  if (!isRailTab(tab)) return null
+  return tab.railItem ?? null
+}
+
+/**
+ * 各会话已晋升为主区标签的右栏功能项。
+ * 只隐藏当前会话内对应入口，不影响其他会话使用同一分页。
+ */
+export const promotedRailItemsBySessionAtom = atom<Map<string, Set<RightRailItem>>>((get) => {
+  const map = new Map<string, Set<RightRailItem>>()
+  for (const tab of get(rawTabsAtom)) {
+    if (!isRailTab(tab) || !tab.railItem) continue
+    const set = map.get(tab.sessionId) ?? new Set<RightRailItem>()
+    set.add(tab.railItem)
+    map.set(tab.sessionId, set)
+  }
+  return map
+})
+
 export function isTabVisibleInMode(tab: TabItem, mode: TopLevelMode): boolean {
   return tab.type === 'draft' || (tab.mode ?? 'general') === mode
 }
@@ -313,7 +352,7 @@ function isSessionTab(tab: TabItem): boolean {
 }
 
 function getPersistentTabs(tabs: TabItem[]): TabItem[] {
-  return tabs.filter((tab) => !isDraftTab(tab) && !isPreviewTab(tab))
+  return tabs.filter((tab) => !isDraftTab(tab) && !isPreviewTab(tab) && !isRailTab(tab))
 }
 
 export function getPersistableTabState(
@@ -323,7 +362,7 @@ export function getPersistableTabState(
   const persistentTabs = getPersistentTabs(tabs)
   const activeTab = activeTabId ? tabs.find((tab) => tab.id === activeTabId) : null
   const persistentActiveTabId =
-    activeTab && isPreviewTab(activeTab)
+    activeTab && (isPreviewTab(activeTab) || isRailTab(activeTab))
       ? (persistentTabs.find((tab) => tab.sessionId === activeTab.sessionId && tab.type === 'agent')
           ?.id ??
         persistentTabs.at(-1)?.id ??
@@ -344,19 +383,38 @@ export function getPersistableTabState(
  * 保留 preview tab（附属视图，不算独立 tab 占用）。
  */
 function evictIfOverflow(tabs: TabItem[], activeTabId: string): TabItem[] {
-  if (tabs.length <= MAX_TABS) return tabs
-  // 候选：非激活、非 preview 的 tab
-  const candidates = tabs.filter((t) => t.id !== activeTabId && t.type !== 'preview')
+  const primaryTabs = tabs.filter((t) => t.type !== 'preview' && t.type !== 'rail')
+  if (primaryTabs.length <= MAX_TABS) return tabs
+  // 候选：非激活的主标签；附属标签不单独占配额，也不单独淘汰
+  const activeTab = tabs.find((tab) => tab.id === activeTabId)
+  const protectedSessionId =
+    activeTab && (activeTab.type === 'preview' || activeTab.type === 'rail')
+      ? activeTab.sessionId
+      : null
+  const candidates = primaryTabs.filter(
+    (t) => t.id !== activeTabId && t.sessionId !== protectedSessionId
+  )
   if (candidates.length === 0) return tabs
   // 按 lastUsedAt 升序（最旧的在前，未设的用 0）
   candidates.sort((a, b) => (a.lastUsedAt ?? 0) - (b.lastUsedAt ?? 0))
   const evictId = candidates[0]!.id
-  return tabs.filter((t) => t.id !== evictId)
+  const evicted = tabs.find((t) => t.id === evictId)
+  return evicted?.type === 'agent'
+    ? tabs.filter((t) => t.sessionId !== evicted.sessionId)
+    : tabs.filter((t) => t.id !== evictId)
+}
+
+interface OpenTabItem {
+  type: TabType
+  sessionId: string
+  title: string
+  mode?: 'general' | 'ta'
+  railItem?: RightRailItem
 }
 
 export function openTab(
   tabs: TabItem[],
-  item: { type: TabType; sessionId: string; title: string; mode?: 'general' | 'ta' },
+  item: OpenTabItem,
   restore?: OpenTabRestore
 ): { tabs: TabItem[]; activeTabId: string } {
   if (item.type === 'draft') {
@@ -381,6 +439,46 @@ export function openTab(
     return { tabs: newTabs, activeTabId: draftTabId }
   }
 
+  // rail tab：绑定所属会话，紧跟父会话及其已有 rail 子标签之后
+  if (item.type === 'rail') {
+    if (!item.railItem) {
+      throw new Error('打开 rail 标签必须提供 railItem')
+    }
+    const ownerIndex = tabs.findIndex(
+      (tab) => tab.type === 'agent' && tab.sessionId === item.sessionId
+    )
+    if (ownerIndex === -1) {
+      throw new Error(`rail 标签缺少父会话：${item.sessionId}`)
+    }
+    const railTabId = createRailTabId(item.sessionId, item.railItem)
+    const existingIndex = tabs.findIndex((t) => t.id === railTabId)
+    if (existingIndex !== -1) {
+      const newTabs = [...tabs]
+      newTabs[existingIndex] = { ...tabs[existingIndex]!, lastUsedAt: Date.now() }
+      return { tabs: newTabs, activeTabId: railTabId }
+    }
+    const railTab: TabItem = {
+      id: railTabId,
+      type: 'rail',
+      sessionId: item.sessionId,
+      title: item.title,
+      railItem: item.railItem,
+      mode: item.mode ?? 'general',
+      lastUsedAt: Date.now(),
+    }
+    const newTabs = [...tabs]
+    let insertIndex = ownerIndex + 1
+    while (
+      insertIndex < newTabs.length &&
+      newTabs[insertIndex]?.type === 'rail' &&
+      newTabs[insertIndex]?.sessionId === item.sessionId
+    ) {
+      insertIndex += 1
+    }
+    newTabs.splice(insertIndex, 0, railTab)
+    return { tabs: evictIfOverflow(newTabs, railTabId), activeTabId: railTabId }
+  }
+
   if (item.type === 'preview') {
     const ownerAgentTabIndex = tabs.findIndex(
       (t) => t.type === 'agent' && t.sessionId === item.sessionId
@@ -401,16 +499,23 @@ export function openTab(
       sessionId: item.sessionId,
       title: item.title,
     }
-    const previewIndex = tabs.findIndex((t) => t.id === previewTab.id)
     // 重建：移除旧预览 tab，保留 owner agent tab 原位
     const otherTabs = tabs.filter((t) => t.id !== previewTab.id)
     if (ownerAgentTabIndex === -1) {
       otherTabs.push(ownerAgentTab)
     }
-    // 预览 tab 追加到 owner 之后
-    const insertAfter = otherTabs.findIndex((t) => t.id === ownerAgentTab.id)
-    if (insertAfter !== -1) {
-      otherTabs.splice(insertAfter + 1, 0, previewTab)
+    // 预览 tab 放在 owner 的 rail 附属组之后，保持「父会话 → 锁 → rail 子标签」连续
+    const ownerIndexAfter = otherTabs.findIndex((t) => t.id === ownerAgentTab.id)
+    if (ownerIndexAfter !== -1) {
+      let insertIndex = ownerIndexAfter + 1
+      while (
+        insertIndex < otherTabs.length &&
+        otherTabs[insertIndex]?.type === 'rail' &&
+        otherTabs[insertIndex]?.sessionId === item.sessionId
+      ) {
+        insertIndex += 1
+      }
+      otherTabs.splice(insertIndex, 0, previewTab)
     } else {
       otherTabs.push(previewTab)
     }
@@ -449,7 +554,16 @@ export function openTab(
     } else {
       otherTabs.push(sessionTab)
     }
-    otherTabs.push(previewTab)
+    const ownerIndex = otherTabs.findIndex((t) => t.id === sessionTab.id)
+    let insertIndex = ownerIndex + 1
+    while (
+      insertIndex < otherTabs.length &&
+      otherTabs[insertIndex]?.type === 'rail' &&
+      otherTabs[insertIndex]?.sessionId === item.sessionId
+    ) {
+      insertIndex += 1
+    }
+    otherTabs.splice(insertIndex, 0, previewTab)
     const activeId = restore.lastView === 'preview' ? previewTab.id : sessionTab.id
     return {
       tabs: evictIfOverflow(otherTabs, activeId),
@@ -503,13 +617,23 @@ export function closeTab(
   const tabIndex = tabs.findIndex((t) => t.id === tabId)
   if (tabIndex === -1) return { tabs, activeTabId }
   const closingTab = tabs[tabIndex]!
-  const boundPreviewId = isSessionTab(closingTab) ? createPreviewTabId(closingTab.sessionId) : null
-
-  const newTabs = tabs.filter((t) => t.id !== tabId && (!boundPreviewId || t.id !== boundPreviewId))
+  const closesSessionGroup = isSessionTab(closingTab)
+  const removedIds = new Set(
+    tabs
+      .filter(
+        (tab) => tab.id === tabId || (closesSessionGroup && tab.sessionId === closingTab.sessionId)
+      )
+      .map((tab) => tab.id)
+  )
+  const newTabs = tabs.filter((tab) => !removedIds.has(tab.id))
 
   let newActiveTabId = activeTabId
-  if (activeTabId === tabId || (boundPreviewId !== null && activeTabId === boundPreviewId)) {
-    if (newTabs.length > 0) {
+  if (activeTabId !== null && removedIds.has(activeTabId)) {
+    if (isRailTab(closingTab)) {
+      newActiveTabId =
+        newTabs.find((tab) => tab.type === 'agent' && tab.sessionId === closingTab.sessionId)?.id ??
+        null
+    } else if (newTabs.length > 0) {
       const approxIndex = Math.min(tabIndex, newTabs.length - 1)
       newActiveTabId = newTabs[findNearestNonPreviewTab(newTabs, approxIndex)]!.id
     } else {

@@ -2,7 +2,7 @@
  * AboutSettings - 关于页面
  *
  * 三段式布局：
- * 1. Hero Section - 品牌 Logo + 版本信息 + 快捷操作（教程/更新）
+ * 1. Identity Band - 品牌 Logo + 版本信息 + 快捷操作（教程/更新）
  * 2. Update Section - 紧凑的更新状态卡片
  * 3. Environment Section - 状态网格 + 一键检测
  * 4. Footer - 开源协议和仓库链接
@@ -43,6 +43,7 @@ import tagentLogoPurpleDark from '../../../../resources/tagent-logo-proposals-v2
 
 import { SettingsCard } from './primitives'
 import { ReleaseNotesViewer } from './ReleaseNotesViewer'
+import { SettingsPage } from './SettingsPage'
 
 import { environmentCheckResultAtom, hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import {
@@ -55,7 +56,6 @@ import {
 import { themeLogoKeyAtom } from '@/atoms/theme'
 import { EnvironmentCheckCard } from '@/components/environment/EnvironmentCheckCard'
 import { formatBytes } from '@/lib/format-bytes'
-import { cn } from '@/lib/utils'
 
 /** 主题 logo key → 资源 映射表，随 themeLogoKeyAtom 切换 */
 const THEME_LOGOS: Record<string, string> = {
@@ -81,8 +81,8 @@ const GITHUB_RELEASES_URL = 'https://github.com/Frank-LiangMX/TAgent_General/rel
 
 export function AboutSettings(): React.ReactElement {
   return (
-    <div className="space-y-6">
-      {/* ===== Hero Section ===== */}
+    <SettingsPage>
+      {/* ===== Identity Band ===== */}
       <HeroSection />
 
       {/* ===== Update Section ===== */}
@@ -93,7 +93,7 @@ export function AboutSettings(): React.ReactElement {
 
       {/* ===== Footer ===== */}
       <FooterLinks />
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -148,94 +148,70 @@ function HeroSection(): React.ReactElement {
   }
 
   return (
-    <div className="relative rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 overflow-hidden">
-      {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent opacity-50" />
+    <div className="settings-card settings-card-surface settings-identity-band settings-identity-band--compact">
+      <div className="size-14 overflow-hidden rounded-[var(--app-shell-composer-radius,16px)]">
+        <img
+          src={themedLogo}
+          alt=""
+          width={56}
+          height={56}
+          className="h-full w-full object-cover"
+          draggable={false}
+        />
+      </div>
 
-      <div className="relative flex flex-col items-center py-8 px-6">
-        {/* Logo 区域 */}
-        <div className="mb-4 h-16 w-16 rounded-2xl overflow-hidden about-logo-glow">
-          <img
-            src={themedLogo}
-            alt=""
-            width={64}
-            height={64}
-            className="h-full w-full object-cover"
-            draggable={false}
-          />
-        </div>
-
-        {/* 品牌名 */}
-        <h1 className="text-2xl font-bold text-foreground mb-1">TAgent</h1>
-        <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed">
-          集成通用 AI Agent 的下一代人工智能软件
-        </p>
-
-        {/* 版本信息 */}
-        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground/60">
+      <div className="settings-identity-copy">
+        <h1 className="settings-identity-name">TAgent</h1>
+        <p className="settings-identity-meta">集成通用 AI Agent 的下一代人工智能软件</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="font-mono">v{APP_VERSION}</span>
           {isPortable ? (
-            <>
-              <span>·</span>
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-                Portable
-              </Badge>
-            </>
+            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+              Portable
+            </Badge>
           ) : (
-            <>
-              <span>·</span>
-              <span>Electron + React</span>
-            </>
+            <span>Electron + React</span>
           )}
-        </div>
-
-        {/* 最新版本提示 */}
-        {loadingLatest ? (
-          <div className="mt-2 text-xs text-muted-foreground/50">正在检查最新版本...</div>
-        ) : hasNewVersion ? (
-          <div className="mt-2 flex items-center gap-1.5 text-xs">
-            <Badge variant="default" className="text-xs gap-1">
+          {loadingLatest ? (
+            <span>正在检查最新版本...</span>
+          ) : hasNewVersion ? (
+            <Badge variant="default" className="gap-1 text-xs">
               <ExternalLink size={10} />
               新版本 v{latestVersion} 可用
             </Badge>
-            {isPortable && (
-              <span className="text-muted-foreground/70">请下载 Portable 包手动替换</span>
-            )}
-          </div>
-        ) : latestRelease ? (
-          <div className="mt-2 text-xs text-muted-foreground/50">当前已是最新版本</div>
-        ) : null}
-
-        {/* 快捷操作按钮 */}
-        <div className="flex items-center gap-3 mt-5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={handleOpenTutorial}
-            disabled={openingTutorial}
-          >
-            <BookOpen size={14} />
-            {openingTutorial ? '正在打开…' : '打开教程'}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => window.electronAPI.openDataDir()}
-          >
-            <FolderOpen size={14} />
-            打开数据目录
-          </Button>
-          <CheckUpdateButton />
+          ) : latestRelease ? (
+            <span>当前已是最新版本</span>
+          ) : null}
+          {isPortable && hasNewVersion ? <span>请下载 Portable 包手动替换</span> : null}
         </div>
-
-        {/* 教程打开错误 */}
-        {tutorialError && (
-          <p className="mt-3 text-xs text-destructive bg-destructive/10 px-3 py-1.5 rounded-md">
+        {tutorialError ? (
+          <p className="mt-2 rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             教程打开失败：{tutorialError}
           </p>
-        )}
+        ) : null}
+      </div>
+
+      <div className="settings-identity-actions">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={handleOpenTutorial}
+          disabled={openingTutorial}
+        >
+          <BookOpen size={14} />
+          {openingTutorial ? '正在打开…' : '教程'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => window.electronAPI.openDataDir()}
+        >
+          <FolderOpen size={14} />
+          数据目录
+        </Button>
+        <CheckUpdateButton />
       </div>
     </div>
   )

@@ -1,33 +1,38 @@
 /**
- * RightSidePanel — 右侧边栏容器
+ * RightSidePanel — 右侧检查器内容路由
  *
- * 在 Agent 模式下显示文件面板或 btw 面板，样式与 LeftSidebar 一致。
- * 从全局 atom 读取当前会话 ID 和路径。
  * 根据 rightRailItemAtom 切换显示内容（镜像左侧 LeftSidebar 机制）。
+ * 宽度由外层 island 统一管理，标题 chrome 由 RightInspectorFrame 提供，
+ * 本层只做纯路由，不再透传 width / 包壳。
+ *
+ * RailItemContent 是纯内容路由，可被两处复用：
+ * - 右栏检查器（本组件）
+ * - 主区标签页（rail tab 晋升全屏模式，见 TabContent）
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
+
+import type { RightRailItem } from '@/atoms/app-mode'
 
 import {
   currentAgentSessionIdAtom,
   agentSessionPathMapAtom,
   agentDiffPanelTabAtom,
 } from '@/atoms/agent-atoms'
-import { appModeAtom, rightRailItemAtom } from '@/atoms/app-mode'
+import { rightRailItemAtom } from '@/atoms/app-mode'
 import { SidePanel } from '@/components/agent/SidePanel'
-import { BtwPanel } from '@/components/agent/BtwPanel' // 重新使用 BtwPanel（样式已适配）
+import { BtwPanel } from '@/components/agent/BtwPanel'
+import { BrowserPanel } from '@/components/agent/BrowserPanel'
 import { DesignPreviewPanel } from '@/components/design-preview/DesignPreviewPanel'
-import { WpsBrowserPanel } from '@/components/agent/WpsBrowserPanel'
 import { KanbanCrewPanel } from '@/components/kanban/KanbanCrewPanel'
 
-export function RightSidePanel({ width }: { width?: number }): React.ReactElement | null {
-  const appMode = useAtomValue(appModeAtom)
+/** 按功能项渲染右栏内容（不带壳，铺满父容器） */
+export function RailItemContent({ item }: { item: RightRailItem }): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const sessionPathMap = useAtomValue(agentSessionPathMapAtom)
   const diffPanelTabMap = useAtomValue(agentDiffPanelTabAtom)
   const setDiffPanelTabMap = useSetAtom(agentDiffPanelTabAtom)
-  const rightRailItem = useAtomValue(rightRailItemAtom)
 
   const setActiveTab = React.useCallback(
     (tab: 'project' | 'activity' | 'changes') => {
@@ -46,21 +51,20 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
     ? (diffPanelTabMap.get(currentSessionId) ?? 'project')
     : 'project'
 
-  // 根据 rightRailItem 切换显示内容
-  if (rightRailItem === 'btw') {
-    return <BtwPanel width={width} />
+  if (item === 'btw') {
+    return <BtwPanel />
   }
 
-  if (rightRailItem === 'browser') {
-    return <WpsBrowserPanel width={width} />
+  if (item === 'browser') {
+    return <BrowserPanel />
   }
 
-  if (rightRailItem === 'design') {
-    return <DesignPreviewPanel width={width} />
+  if (item === 'design') {
+    return <DesignPreviewPanel />
   }
 
-  if (rightRailItem === 'crew') {
-    return <KanbanCrewPanel width={width} />
+  if (item === 'crew') {
+    return <KanbanCrewPanel />
   }
 
   // 默认显示文件面板
@@ -70,7 +74,11 @@ export function RightSidePanel({ width }: { width?: number }): React.ReactElemen
       sessionPath={sessionPath}
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      width={width}
     />
   )
+}
+
+export function RightSidePanel(): React.ReactElement | null {
+  const rightRailItem = useAtomValue(rightRailItemAtom)
+  return <RailItemContent item={rightRailItem} />
 }

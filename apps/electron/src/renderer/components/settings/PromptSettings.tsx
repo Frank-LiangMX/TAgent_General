@@ -14,6 +14,8 @@ import type { SystemPrompt, SystemPromptCreateInput, SystemPromptUpdateInput } f
 
 import { Button, Input, Textarea, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { SettingsSection, SettingsCard, SettingsToggle } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 import {
   promptConfigAtom,
   selectedPromptIdAtom,
@@ -156,11 +158,13 @@ export function PromptSettings(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-6">
+    <SettingsPage>
+      <SettingsPageIntro title="提示词" description="系统提示与可复用模板" />
+
       {/* 提示词列表 */}
       <SettingsSection
         title="系统提示词"
-        description="管理 Chat 模式的系统提示词"
+        description="管理系统提示词模板"
         action={
           <Button size="sm" onClick={handleCreate}>
             <Plus className="size-4 mr-1" />
@@ -168,8 +172,8 @@ export function PromptSettings(): React.ReactElement {
           </Button>
         }
       >
-        <SettingsCard divided={false} className="p-0">
-          <div className="divide-y divide-border/50">
+        <SettingsCard divided={false} className="p-1.5">
+          <div className="flex flex-col gap-0.5">
             {config.prompts.map((prompt) => (
               <PromptListItem
                 key={prompt.id}
@@ -229,7 +233,7 @@ export function PromptSettings(): React.ReactElement {
           />
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -258,8 +262,10 @@ function PromptListItem({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 px-4 py-2.5 cursor-pointer transition-colors',
-        isSelected ? 'bg-accent/50' : 'hover:bg-muted/50'
+        'flex items-center gap-2 rounded-glass-popover border border-transparent px-3 py-2.5 cursor-pointer transition-colors',
+        isSelected
+          ? 'border-[color:var(--spatial-accent-line)] bg-[var(--spatial-accent-soft)]'
+          : 'hover:border-[color:var(--spatial-line)] hover:bg-[var(--spatial-accent-soft)]'
       )}
       onClick={() => onSelect(prompt.id)}
       onMouseEnter={() => onHoverChange(prompt.id)}

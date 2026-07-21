@@ -17,6 +17,8 @@ import { ChevronRight } from 'lucide-react'
 import type { AutoCheckLanguage, LanguageHookConfig } from '@tagent/shared'
 import { Badge, Switch, Input } from '@tagent/ui'
 import { SettingsSection, SettingsCard, SettingsToggle, SettingsSelect } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 import { SoulSettings } from './SoulSettings'
 import type { SubagentEagerness } from '@/atoms/agent-atoms'
 import { subagentEagernessAtom } from '@/atoms/agent-atoms'
@@ -265,11 +267,18 @@ export function AgentPreferencesSettings(): React.ReactElement {
   }
 
   if (!loaded) {
-    return <div className="p-6 text-sm text-muted-foreground">加载中...</div>
+    return (
+      <SettingsPage>
+        <SettingsPageIntro title="Agent 偏好" description="权限、委派与执行习惯" />
+        <div className="p-6 text-sm text-muted-foreground">加载中...</div>
+      </SettingsPage>
+    )
   }
 
   return (
-    <div className="space-y-6">
+    <SettingsPage>
+      <SettingsPageIntro title="Agent 偏好" description="权限、委派与执行习惯" />
+
       {/* 人格定义（SOUL.md） */}
       <SoulSettings />
 
@@ -430,6 +439,6 @@ export function AgentPreferencesSettings(): React.ReactElement {
           />
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }

@@ -13,7 +13,6 @@ import { normalizeAnthropicProviderUrl } from '@tagent/core'
 import { PROVIDER_DEFAULT_URLS, PROVIDER_LABELS, isAgentCompatibleProvider } from '@tagent/shared'
 import { useSetAtom } from 'jotai'
 import {
-  ArrowLeft,
   Eye,
   EyeOff,
   Plus,
@@ -62,6 +61,8 @@ import {
   SettingsSelect,
   SettingsToggle,
 } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsSubpageChrome } from './SettingsSubpageChrome'
 import { channelFormDirtyAtom } from '@/atoms/settings-tab'
 import { getProviderLogo } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
@@ -599,27 +600,23 @@ export function ChannelForm({
   }, [models, modelFilter])
 
   return (
-    <div className="space-y-6">
-      {/* 标题栏 */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleBack}>
-          <ArrowLeft size={18} />
-        </Button>
-        <h3 className="text-lg font-medium text-foreground flex-1">
-          {isEdit ? '编辑模型配置' : '添加模型配置'}
-        </h3>
-        {/* 新建模式：创建按钮 */}
-        {!isEdit && (
-          <Button
-            size="sm"
-            onClick={handleCreate}
-            disabled={saving || !name.trim() || !apiKey.trim()}
-          >
-            {saving && <Loader2 size={14} className="animate-spin" />}
-            <span>创建</span>
-          </Button>
-        )}
-      </div>
+    <SettingsPage>
+      <SettingsSubpageChrome
+        title={isEdit ? '编辑模型配置' : '添加模型配置'}
+        onBack={handleBack}
+        action={
+          !isEdit ? (
+            <Button
+              size="sm"
+              onClick={handleCreate}
+              disabled={saving || !name.trim() || !apiKey.trim()}
+            >
+              {saving && <Loader2 size={14} className="animate-spin" />}
+              <span>创建</span>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* 基本信息卡片 */}
       <SettingsSection title="基本信息">
@@ -1013,6 +1010,6 @@ export function ChannelForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SettingsPage>
   )
 }

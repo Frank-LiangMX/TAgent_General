@@ -1,10 +1,7 @@
 /**
  * GeneralSettings - 通用设置页
  *
- * TAgent 风格设计：
- * - 顶部：用户档案（紧凑卡片）
- * - 中部：设置网格布局（2列）
- * - 信息密度更高，去除冗余描述
+ * 档案卡片 + SettingsSection / Card / Row 标准栈。
  */
 
 import data from '@emoji-mart/data'
@@ -32,8 +29,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Switch,
 } from '@tagent/ui'
+import { UserAvatar } from '../shared/UserAvatar'
 import {
   SettingsCard,
   SettingsRow,
@@ -41,7 +38,8 @@ import {
   SettingsSelect,
   SettingsToggle,
 } from './primitives'
-import { UserAvatar } from '../shared/UserAvatar'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 
 import type {
   NotificationSoundId,
@@ -168,104 +166,104 @@ export function GeneralSettings(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-6">
-      {/* 用户档案 */}
-      <SettingsSection title="用户档案" description="头像与昵称，用于会话中显示你的身份。">
-        <div className="settings-card settings-card-surface settings-profile-card flex items-center gap-4 p-4">
-          <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-            <PopoverTrigger asChild>
-              <div className="settings-profile-avatar relative group/avatar cursor-pointer shrink-0">
-                <UserAvatar avatar={userProfile.avatar} size={48} />
-                <div className="absolute inset-0 rounded-[20%] flex items-center justify-center bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
-                  <Camera className="size-4 text-white" />
-                </div>
-              </div>
-            </PopoverTrigger>
-            <PopoverContent
-              side="right"
-              align="start"
-              sideOffset={8}
-              className="settings-profile-popover w-auto p-0 border-none shadow-xl overflow-hidden"
-              onWheel={(e) => e.stopPropagation()}
-            >
-              <Picker
-                data={data}
-                onEmojiSelect={(emoji: EmojiMartEmoji) => handleAvatarChange(emoji.native)}
-                locale="zh"
-                theme={isDarkMode ? 'dark' : 'light'}
-                previewPosition="none"
-                skinTonePosition="none"
-                perLine={8}
-                maxFrequentRows={2}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="settings-profile-upload-btn w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <ImagePlus className="size-3.5" />
-                上传图片
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-            </PopoverContent>
-          </Popover>
+    <SettingsPage>
+      <SettingsPageIntro title="通用" description="档案、语言、归档与通知偏好" />
 
-          <div className="flex-1 min-w-0">
-            {isEditingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveName()
-                    if (e.key === 'Escape') {
-                      setNameInput(userProfile.userName)
-                      setIsEditingName(false)
-                    }
-                  }}
-                  maxLength={30}
-                  autoFocus
-                  className="settings-profile-name-input w-[176px] text-base font-medium outline-none"
-                />
-                <button
-                  onClick={handleSaveName}
-                  className="settings-profile-action-btn settings-profile-action-btn--confirm"
-                >
-                  <Check className="size-3.5 text-primary" />
-                </button>
-                <button
-                  onClick={() => {
+      <div className="settings-card settings-card-surface settings-identity-band">
+        <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+          <PopoverTrigger asChild>
+            <div className="settings-profile-avatar group/avatar relative shrink-0 cursor-pointer">
+              <UserAvatar avatar={userProfile.avatar} size={48} />
+              <div className="absolute inset-0 flex items-center justify-center rounded-[20%] bg-black/40 opacity-0 transition-opacity group-hover/avatar:opacity-100">
+                <Camera className="size-4 text-white" />
+              </div>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent
+            side="right"
+            align="start"
+            sideOffset={8}
+            className="settings-profile-popover w-auto overflow-hidden border-none p-0 shadow-xl"
+            onWheel={(e) => e.stopPropagation()}
+          >
+            <Picker
+              data={data}
+              onEmojiSelect={(emoji: EmojiMartEmoji) => handleAvatarChange(emoji.native)}
+              locale="zh"
+              theme={isDarkMode ? 'dark' : 'light'}
+              previewPosition="none"
+              skinTonePosition="none"
+              perLine={8}
+              maxFrequentRows={2}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="settings-profile-upload-btn flex w-full items-center justify-center gap-1.5 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            >
+              <ImagePlus className="size-3.5" />
+              上传图片
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+          </PopoverContent>
+        </Popover>
+
+        <div className="settings-identity-copy">
+          {isEditingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveName()
+                  if (e.key === 'Escape') {
                     setNameInput(userProfile.userName)
                     setIsEditingName(false)
-                  }}
-                  className="settings-profile-action-btn"
-                >
-                  <X className="size-3.5 text-muted-foreground" />
-                </button>
-              </div>
-            ) : (
+                  }
+                }}
+                maxLength={30}
+                autoFocus
+                className="settings-profile-name-input w-[176px] text-base font-medium outline-none"
+              />
+              <button
+                onClick={handleSaveName}
+                className="settings-profile-action-btn settings-profile-action-btn--confirm"
+              >
+                <Check className="size-3.5 text-primary" />
+              </button>
               <button
                 onClick={() => {
                   setNameInput(userProfile.userName)
-                  setIsEditingName(true)
+                  setIsEditingName(false)
                 }}
-                className="settings-profile-name-button text-base font-medium text-foreground transition-colors"
+                className="settings-profile-action-btn"
               >
-                {userProfile.userName}
+                <X className="size-3.5 text-muted-foreground" />
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setNameInput(userProfile.userName)
+                setIsEditingName(true)
+              }}
+              className="settings-identity-name settings-profile-name-button transition-colors"
+            >
+              {userProfile.userName}
+            </button>
+          )}
+          <p className="settings-identity-meta">点击头像或昵称，更新你的会话身份</p>
         </div>
-      </SettingsSection>
+        <div className="settings-identity-actions" aria-hidden="true" />
+      </div>
 
-      {/* 通用设置 */}
-      <SettingsSection title="通用" description="语言、归档、通知等基础偏好。">
+      <SettingsSection title="偏好">
         <SettingsCard>
           <SettingsRow label="语言" icon={<Globe className="size-4" />}>
             <span className="text-xs text-muted-foreground">简体中文</span>
@@ -314,16 +312,7 @@ export function GeneralSettings(): React.ReactElement {
         </SettingsCard>
       </SettingsSection>
 
-      {/* 通知提示音 */}
-      <SettingsSection
-        title={
-          <span className="flex items-center gap-2">
-            <Volume2 className="size-4" />
-            通知提示音
-          </span>
-        }
-        description="为不同事件选择提示音，点击喇叭试听。"
-      >
+      <SettingsSection title="提示音" description="为不同事件选择提示音，点击喇叭试听。">
         <SettingsCard>
           <SettingsToggle
             label="启用提示音"
@@ -335,8 +324,6 @@ export function GeneralSettings(): React.ReactElement {
             }}
             disabled={!notificationsEnabled}
           />
-        </SettingsCard>
-        <SettingsCard>
           <SoundRow
             label="任务完成"
             type="taskComplete"
@@ -369,7 +356,7 @@ export function GeneralSettings(): React.ReactElement {
           />
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -393,19 +380,13 @@ function SoundRow({
   const currentId = sounds[type] ?? DEFAULT_NOTIFICATION_SOUNDS[type]
 
   return (
-    <div
-      className={cn(
-        'flex items-center justify-between px-4 py-3',
-        disabled && 'opacity-50 pointer-events-none'
-      )}
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
+    <SettingsRow label={label} className={cn(disabled && 'opacity-50 pointer-events-none')}>
       <div className="flex items-center gap-1.5">
         <Select
           value={currentId}
           onValueChange={(v) => onSoundChange(type, v as NotificationSoundId)}
         >
-          <SelectTrigger className="w-[120px] h-8 rounded-[14px] text-xs bg-transparent border-border/50">
+          <SelectTrigger className="h-8 w-[120px] rounded-glass-popover border-border/50 bg-transparent text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -426,6 +407,6 @@ function SoundRow({
           <Volume2 className="size-3.5 text-muted-foreground" />
         </button>
       </div>
-    </div>
+    </SettingsRow>
   )
 }

@@ -36,6 +36,32 @@
 - **glass**：最轻 scale，无粘土 inset
 - 选中态（`session-list-item-active` 等）不施加 press 阴影
 
+### 胶囊 Switch（全局唯一）
+
+权威实现：`packages/ui/src/components/switch.tsx` + `packages/ui/styles/switch.css`。  
+视觉：Uiverse [average-monkey-56](https://uiverse.io/Shoh2008/average-monkey-56) 笑脸滑块；**开态渐变跟 `--primary` 主题色**，关态轨道 / 拇指 / 脸用语义 token。材质（glass/soft）只微调阴影，不改结构。
+
+```tsx
+import { Switch, SettingsToggle } from '@tagent/ui'
+
+// 设置 / 表单（--size 24px）
+<Switch checked={on} onCheckedChange={setOn} />
+
+// 工具栏 / 紧凑浮层（--size 20px）
+<Switch size="sm" checked={on} onCheckedChange={setOn} />
+
+// 设置行（左 label + 右 Switch）
+<SettingsToggle label="启用" checked={on} onCheckedChange={setOn} />
+```
+
+| 规则 | 说明 |
+|------|------|
+| ✅ 必须 | `import { Switch } from '@tagent/ui'` |
+| ✅ 尺寸 | 只用 `size="default" \| "sm"`，改 `--ui-switch-size` |
+| ✅ 主题色 | 开态 `--ui-switch-on-from/to` 绑 primary，勿写死粉紫 |
+| ❌ 禁止 | 业务侧写 `h-4 w-7` / 自绘 track+thumb / 液态 GSAP 复刻 |
+| ❌ 禁止 | 新增本地 `*Toggle` 复刻胶囊（日夜 `tagent-daynight-toggle` 除外） |
+
 ---
 
 ## Token 清单
@@ -99,7 +125,7 @@
 
 ---
 
-## 组件清单（29 个）
+## 组件清单（30 个）
 
 所有组件从 `@tagent/ui` import：
 
@@ -107,14 +133,15 @@
 import { Button, Dialog, Tooltip, Popover } from '@tagent/ui'
 ```
 
-### 表单输入（7 个）
+### 表单输入（8 个）
 | 组件 | 用途 |
 |---|---|
 | `Button` | 按钮，支持 variant（default/outline/ghost/destructive/link）+ size |
 | `Input` | 单行输入框 |
-| `SearchInput` | 统一搜索框（`rounded-glass-rail` · 图标 + 输入 + 可选清空/加载/尾部插槽） |
+| `SearchInput` | 统一搜索框；`variant`: default / muted / glass / plain / **capsule**（侧栏玻璃外形 + Uiverse clever-panda-6 Nebula focus） |
 | `Textarea` | 多行输入框 |
-| `Switch` | 开关，自动适配材质(frosted标准/glass液态融合/soft拟态) |
+| `Switch` | **全局唯一**主题色笑脸胶囊（Uiverse average-monkey-56）：`size="default"\|"sm"`。业务禁止本地造 track/thumb |
+| `PlayPauseToggle` | Play / Pause 图标切换（Uiverse wet-rabbit-81 适配，受控/非受控） |
 | `Slider` | 滑块 |
 | `Label` | 表单标签 |
 
@@ -128,14 +155,29 @@ import { Button, Dialog, Tooltip, Popover } from '@tagent/ui'
 | `Sheet` | 侧滑抽屉 |
 | `DropdownMenu` | 右键/下拉菜单 |
 
-### 反馈（5 个）
+### 反馈（6 个）
 | 组件 | 用途 |
 |---|---|
 | `Alert` + `AlertTitle` + `AlertDescription` | 内联警示信息 |
 | `Badge` | 徽章/标签 |
-| `Spinner` | 加载旋转图标 |
-| `LoadingIndicator` | 加载指示器 |
+| `Spinner` | 默认轻量加载（3×3 点阵） |
+| `LoadingIndicator` | 带标签/计时的加载指示器 |
+| `AddonLoader` | **附加动画**（Uiverse bright-lizard-8）：旋转光环 + 逐字跳动，强视觉占位；非默认 Spinner |
 | `Toaster`（薄包装在 `@/components/ui/sonner`） | toast 通知容器，theme 自动注入 |
+
+#### 附加动画 vs 默认加载
+
+| 类型 | 组件 | 何时用 |
+|------|------|--------|
+| 默认 | `Spinner` / `LoadingIndicator` / `ThreePetalSpiral` | 按钮内、列表、行内、常规等待 |
+| **附加动画** | `AddonLoader` | 全屏/大卡片「生成中」、首次初始化等需要更强视觉时 |
+
+```tsx
+import { AddonLoader } from '@tagent/ui'
+
+// 附加动画：主题色光环 + 逐字跳动
+<AddonLoader text="生成中" size={160} className="text-foreground" />
+```
 
 ### 导航（4 个）
 | 组件 | 用途 |

@@ -1,12 +1,15 @@
 /**
  * settings-shell.css
  *
- * 设置浮层完整视觉语言 —— 壳层 + 导航 + 区块 + 卡片 + 行 + 搜索
- * 对齐主界面 spatial：panel / rail active / 平滑缓动
+ * 设置浮层视觉语言 —— 与 AppShell spatial / surface-role 对齐。
+ * 卡片表面权威在 packages/ui/styles/glass.css `.settings-card`，此处不再覆盖。
+ *
+ * 注意：SettingsDialog 经 Portal 挂到 body，不在 `.app-shell-scene` 内，
+ * 必须在本壳上复刻 spatial token 别名，否则会退回旧色兜底。
  */
 
 :root {
-  --settings-motion: cubic-bezier(0.16, 1, 0.3, 1);
+  --settings-motion: var(--app-shell-motion, cubic-bezier(0.16, 1, 0.3, 1));
   --settings-duration: 300ms;
   --settings-duration-fast: 180ms;
   --settings-duration-content: 340ms;
@@ -14,17 +17,23 @@
 }
 
 /* ==========================================================================
- * Dialog 外壳
+ * Dialog 外壳（modal elevated）
  * ========================================================================== */
 
+/*
+ * 遮罩：轻纱不压场。重黑 + 大 blur 会把背后主界面糊掉，
+ * 面板的玻璃 blur 就没有内容可透 → 弹窗要透感，遮罩必须轻。
+ */
 .settings-dialog-overlay {
-  background: color-mix(in srgb, hsl(var(--background)) 38%, rgb(0 0 0 / 0.32));
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  backdrop-filter: blur(14px) saturate(1.1);
+  background: rgb(23 30 40 / 0.1);
+  -webkit-backdrop-filter: blur(2px) saturate(1.04);
+  backdrop-filter: blur(2px) saturate(1.04);
 }
 
 .dark .settings-dialog-overlay {
-  background: color-mix(in srgb, hsl(var(--background)) 28%, rgb(0 0 0 / 0.58));
+  background: rgb(0 0 0 / 0.24);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
 
 @keyframes settings-shell-in {
@@ -50,29 +59,84 @@
 }
 
 .settings-dialog-shell {
+  /* 与 .app-shell-scene 同源的 spatial 别名（Portal 外必需） */
+  --app-shell-control-radius: 11px;
+  --app-shell-composer-radius: 16px;
+  --app-shell-drawer-radius: 22px;
+  --app-shell-chrome-xs: 8px;
+  --app-shell-motion: cubic-bezier(0.16, 1, 0.3, 1);
+  --spatial-ink: hsl(var(--foreground) / 0.9);
+  --spatial-muted: hsl(var(--muted-foreground) / 0.88);
+  --spatial-faint: hsl(var(--muted-foreground) / 0.62);
+  --spatial-line: rgb(68 78 94 / 12%);
+  --spatial-line-strong: rgb(68 78 94 / 19%);
+  --spatial-accent: hsl(var(--primary));
+  --spatial-accent-soft: hsl(var(--primary) / 0.13);
+  --spatial-accent-line: hsl(var(--primary) / 0.3);
+  /*
+   * 主题玻璃底：hover / 控件填充统一走 glass-rgb，不再写死纯白。
+   * 浅色 glass-rgb 本身近白 → alpha 必须压低，否则选项全是白块。
+   */
+  --settings-hover-fill: rgb(var(--glass-rgb, 248 250 253) / 0.3);
+  --settings-chip-fill: rgb(var(--glass-rgb, 248 250 253) / 0.18);
+  --spatial-panel-fill: var(--surface-role-panel-fill);
+  --spatial-panel-rim: var(--surface-role-panel-rim);
+  --spatial-panel-shadow: var(--surface-role-panel-shadow);
+
+  /*
+   * 透感关键（弹窗局部覆盖，不动全局 token）：
+   * panel-fill 公式在「使用处」解析 --surface-opacity，
+   * 0.56 的全局档在大面板上等于实板 → 压到 0.34 变薄纱。
+   */
+  --surface-opacity: 0.34;
+
   width: min(1120px, calc(100vw - 40px));
   height: min(800px, calc(100vh - 40px));
   overflow: hidden;
-  border: 1px solid var(--spatial-panel-rim, hsl(var(--border) / 0.45));
-  border-radius: var(--app-shell-drawer-radius, 22px);
-  background: var(--spatial-panel-fill, var(--surface-role-panel-fill, hsl(var(--card))));
+  border: 1px solid var(--surface-rim, var(--spatial-panel-rim));
+  border-radius: var(--app-shell-drawer-radius);
+  /*
+   * 透感面板：与主壳侧栏同款 scene 着色玻璃（panel role），
+   * 不用 --surface-bg-dialog（近实色 MD 板）。
+   * scene-a/b + glass-rgb 全部来自主题 token → 换主题自动跟色。
+   */
+  background: var(--surface-role-panel-fill);
+  /*
+   * 抬升只靠 --surface-shadow-elevated（与其他 elevated 表面同一语言）。
+   * 不要再叠 0 32px 80px 级别的重投影：遮罩很轻（14% 暗度），
+   * 大黑影贴边会糊成一圈深色模糊晕（用户反馈过）。
+   */
   box-shadow:
-    0 28px 72px -24px rgb(23 30 40 / 0.32),
-    0 10px 28px -14px rgb(23 30 40 / 0.18);
-  -webkit-backdrop-filter: blur(var(--surface-role-panel-blur, 22px))
-    saturate(var(--surface-saturate, 1.1));
-  backdrop-filter: blur(var(--surface-role-panel-blur, 22px))
-    saturate(var(--surface-saturate, 1.1));
+    var(--surface-shadow-elevated),
+    0 20px 50px -32px rgb(23 30 40 / 0.2);
+  /*
+   * blur 也是「不透」的帮凶：26px 把背后内容糊成均匀雾，
+   * 玻璃再薄也看不出透。16px 保留背后轮廓，透感才成立。
+   */
+  -webkit-backdrop-filter: blur(16px) saturate(var(--surface-saturate, 1.1))
+    brightness(var(--surface-brightness, 1));
+  backdrop-filter: blur(16px) saturate(var(--surface-saturate, 1.1))
+    brightness(var(--surface-brightness, 1));
   color: hsl(var(--dialog-foreground, var(--foreground)));
   transform: translate(-50%, -50%);
   transform-origin: center center;
 }
 
 .dark .settings-dialog-shell {
-  border-color: rgb(255 255 255 / 0.07);
+  --spatial-ink: hsl(var(--foreground) / 0.94);
+  --spatial-muted: hsl(var(--muted-foreground) / 0.9);
+  --spatial-faint: hsl(var(--muted-foreground) / 0.64);
+  --spatial-line: rgb(202 213 230 / 10%);
+  --spatial-line-strong: rgb(202 213 230 / 17%);
+  --spatial-accent-soft: hsl(var(--primary) / 0.16);
+  --spatial-accent-line: hsl(var(--primary) / 0.28);
+  --settings-hover-fill: rgb(var(--glass-rgb, 50 52 56) / 0.5);
+  --settings-chip-fill: rgb(var(--glass-rgb, 50 52 56) / 0.34);
+  /* 深色全局档 0.84 近实板 → 弹窗压到 0.52，保住可读的同时透出场景 */
+  --surface-opacity: 0.52;
   box-shadow:
-    0 32px 80px -20px rgb(0 0 0 / 0.58),
-    0 12px 32px -14px rgb(0 0 0 / 0.42);
+    var(--surface-shadow-elevated),
+    0 24px 56px -32px rgb(0 0 0 / 0.4);
 }
 
 .settings-dialog-shell[data-state='open'] {
@@ -94,6 +158,7 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  color: var(--spatial-ink);
 }
 
 .settings-shell-topbar {
@@ -101,15 +166,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 56px;
+  min-height: 52px;
   padding: 10px 16px 10px 18px;
-  border-bottom: 1px solid color-mix(in srgb, hsl(var(--border)) 50%, transparent);
-  background: color-mix(in srgb, hsl(var(--background)) 22%, transparent);
-}
-
-.dark .settings-shell-topbar {
-  border-bottom-color: rgb(255 255 255 / 0.06);
-  background: color-mix(in srgb, rgb(0 0 0) 16%, transparent);
+  border-bottom: 1px solid var(--spatial-line);
+  background: transparent;
 }
 
 .settings-shell-topbar-brand {
@@ -119,32 +179,24 @@
   gap: 12px;
 }
 
+/* 对齐 .rail-avatar-btn：primary 渐变，跟随主题色 */
 .settings-shell-topbar-mark {
   display: grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   place-items: center;
   border-radius: 10px;
   color: hsl(var(--primary-foreground));
   background: linear-gradient(
     145deg,
-    color-mix(in srgb, hsl(var(--primary)) 78%, white),
-    hsl(var(--primary))
+    var(--rail-avatar-a, color-mix(in srgb, hsl(var(--primary)) 55%, white)),
+    var(--rail-avatar-b, color-mix(in srgb, hsl(var(--primary)) 40%, hsl(var(--secondary))))
   );
-  box-shadow: 0 6px 14px hsl(var(--primary) / 0.28);
-  font-size: 13px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 24%);
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.04em;
-}
-
-.dark .settings-shell-topbar-mark {
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, hsl(var(--primary)) 70%, hsl(var(--card))),
-    hsl(var(--primary))
-  );
-  box-shadow: 0 6px 16px hsl(var(--primary) / 0.36);
 }
 
 .settings-shell-topbar-copy {
@@ -153,20 +205,21 @@
 
 .settings-shell-kicker {
   display: block;
-  color: var(--spatial-faint, hsl(var(--muted-foreground) / 0.7));
-  font-size: 9px;
-  font-weight: 700;
+  color: var(--spatial-faint);
+  font-size: var(--app-shell-chrome-xs, 8px);
+  font-weight: 750;
   letter-spacing: 0.14em;
   line-height: 1.2;
+  padding-inline-start: 0.08em;
 }
 
 .settings-shell-title {
   display: block;
-  color: var(--spatial-ink, hsl(var(--foreground)));
-  font-size: 15px;
+  color: var(--spatial-ink);
+  font-size: 13px;
   font-weight: 650;
   letter-spacing: -0.02em;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .settings-shell-topbar-actions {
@@ -176,26 +229,27 @@
   gap: 8px;
 }
 
+/* 对齐 .app-inspector-close */
 .settings-shell-close {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   place-items: center;
   border: 0;
-  border-radius: 11px;
-  color: var(--spatial-muted, hsl(var(--muted-foreground)));
-  background: color-mix(in srgb, hsl(var(--foreground)) 4%, transparent);
+  border-radius: 10px;
+  color: var(--spatial-muted);
+  background: transparent;
   cursor: pointer;
   transition:
     color var(--settings-duration-fast) var(--settings-motion),
     background-color var(--settings-duration-fast) var(--settings-motion),
-    transform var(--settings-duration-fast) var(--settings-motion),
-    box-shadow var(--settings-duration-fast) var(--settings-motion);
+    transform var(--settings-duration-fast) var(--settings-motion);
 }
 
 .settings-shell-close:hover {
-  color: var(--spatial-ink, hsl(var(--foreground)));
-  background: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  color: var(--spatial-ink);
+  background: var(--settings-hover-fill);
 }
 
 .settings-shell-close:active {
@@ -209,19 +263,14 @@
   overflow: hidden;
 }
 
-/* ---------- 左导航 ---------- */
+/* ---------- 左导航：well / 透明，不叠第二块 panel ---------- */
 
 .settings-shell-nav {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  border-right: 1px solid color-mix(in srgb, hsl(var(--border)) 48%, transparent);
-  background: color-mix(in srgb, hsl(var(--background)) 35%, transparent);
-}
-
-.dark .settings-shell-nav {
-  border-right-color: rgb(255 255 255 / 0.06);
-  background: color-mix(in srgb, rgb(0 0 0) 14%, transparent);
+  border-right: 1px solid var(--spatial-line);
+  background: transparent;
 }
 
 .settings-shell-nav-scroll {
@@ -239,11 +288,13 @@
 
 .settings-shell-group-label {
   padding: 0 10px 8px;
-  color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.72));
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.1em;
+  color: var(--spatial-faint);
+  font-size: var(--app-shell-chrome-xs, 8px);
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  line-height: 1.3;
   text-transform: uppercase;
+  padding-inline-start: calc(10px + 0.08em);
 }
 
 .settings-shell-nav-item {
@@ -252,13 +303,13 @@
   width: 100%;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
+  min-height: 38px;
   margin: 0;
   padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius-glass-popover, 12px);
   background: transparent;
-  color: var(--spatial-muted, hsl(var(--muted-foreground)));
+  color: var(--spatial-muted);
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -273,63 +324,77 @@
 }
 
 .settings-shell-nav-item + .settings-shell-nav-item {
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .settings-shell-nav-item:hover {
-  color: var(--spatial-ink, hsl(var(--foreground) / 0.92));
-  background: var(--hover-fill, color-mix(in srgb, hsl(var(--foreground)) 6%, transparent));
+  color: var(--spatial-ink);
+  border-color: rgb(255 255 255 / 20%);
+  background: var(--settings-hover-fill);
+  transform: translateX(2px);
+}
+
+.dark .settings-shell-nav-item:hover {
+  border-color: rgb(255 255 255 / 0.08);
 }
 
 .settings-shell-nav-item:active {
   transform: scale(0.985);
 }
 
+/* 对齐侧栏 session-list-item-active：accent 为主、玻璃为辅，白色只做一层薄纱 */
 .settings-shell-nav-item[data-active='true'] {
-  color: hsl(var(--primary));
-  background: color-mix(
-    in srgb,
-    hsl(var(--foreground)) 7%,
-    rgb(var(--glass-rgb, 248 250 253) / 0.7)
-  );
-  border-color: color-mix(in srgb, hsl(var(--primary)) 20%, transparent);
+  color: var(--spatial-ink);
+  border-color: var(--spatial-accent-line);
+  background:
+    linear-gradient(
+      135deg,
+      rgb(var(--glass-rgb, 248 250 253) / 0.3),
+      rgb(var(--glass-rgb, 248 250 253) / 0.12)
+    ),
+    var(--spatial-accent-soft);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 8px 18px -12px color-mix(in srgb, hsl(var(--primary)) 40%, transparent);
+    inset 0 1px 0 rgb(255 255 255 / 40%),
+    0 5px 14px rgb(72 91 128 / 7%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.12);
+  backdrop-filter: blur(12px) saturate(1.12);
   font-weight: 600;
+  transform: none;
 }
 
 .dark .settings-shell-nav-item[data-active='true'] {
-  background: color-mix(in srgb, hsl(var(--foreground)) 14%, rgb(var(--glass-rgb, 50 52 56)));
-  border-color: color-mix(in srgb, hsl(var(--primary)) 34%, transparent);
+  color: var(--spatial-ink);
+  border-color: var(--spatial-accent-line);
+  background:
+    linear-gradient(
+      135deg,
+      rgb(var(--glass-rgb, 50 52 56) / 0.72),
+      rgb(var(--glass-rgb, 50 52 56) / 0.46)
+    ),
+    var(--spatial-accent-soft);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 16%, transparent),
-    0 10px 18px -12px rgb(0 0 0 / 0.45);
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 5px 14px rgb(0 0 0 / 0.28);
 }
 
 .settings-shell-nav-item-icon {
   display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
   place-items: center;
   border-radius: 8px;
-  background: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+  background: transparent;
   color: inherit;
-  opacity: 0.92;
+  opacity: 0.9;
   transition:
     background-color var(--settings-duration-fast) var(--settings-motion),
-    opacity var(--settings-duration-fast) var(--settings-motion),
-    transform var(--settings-duration-fast) var(--settings-motion);
-}
-
-.settings-shell-nav-item:hover .settings-shell-nav-item-icon {
-  background: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+    opacity var(--settings-duration-fast) var(--settings-motion);
 }
 
 .settings-shell-nav-item[data-active='true'] .settings-shell-nav-item-icon {
-  background: color-mix(in srgb, hsl(var(--primary)) 14%, transparent);
+  background: var(--spatial-accent-soft);
+  color: var(--spatial-accent);
   opacity: 1;
 }
 
@@ -363,7 +428,7 @@
   }
 }
 
-/* ---------- 主内容 ---------- */
+/* ---------- 主内容：pagehead 对齐 inspector 字阶 ---------- */
 
 .settings-shell-main {
   display: flex;
@@ -377,33 +442,34 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 24px 12px;
+  padding: 16px 24px 10px;
 }
 
 .settings-shell-pagehead-kicker {
   display: block;
   margin-bottom: 4px;
-  color: var(--spatial-faint, hsl(var(--muted-foreground) / 0.72));
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--spatial-faint);
+  font-size: var(--app-shell-chrome-xs, 8px);
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  padding-inline-start: 0.08em;
 }
 
 .settings-shell-pagehead-title {
   margin: 0;
-  color: var(--spatial-ink, hsl(var(--foreground)));
-  font-size: 22px;
+  color: var(--spatial-ink);
+  font-size: 16px;
   font-weight: 650;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.025em;
   line-height: 1.15;
 }
 
 .settings-shell-pagehead-desc {
   margin: 6px 0 0;
   max-width: 36rem;
-  color: var(--md-on-surface-variant, hsl(var(--muted-foreground)));
-  font-size: 12.5px;
+  color: var(--spatial-muted);
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -415,16 +481,17 @@
   scrollbar-width: thin;
 }
 
+/* 内容区加宽；左栏已承担导航，不再叠一套大 pagehead */
 .settings-shell-content {
-  width: min(760px, 100%);
+  width: min(880px, 100%);
   margin: 0 auto;
-  padding: 4px 24px 36px;
+  padding: 20px 28px 40px;
 }
 
 @keyframes settings-pane-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -436,15 +503,493 @@
   animation: settings-pane-in var(--settings-duration-content) var(--settings-motion) both;
 }
 
-.settings-shell-pane > .space-y-4,
-.settings-shell-pane > .space-y-6 {
+/* ---------- 新版式原语 ---------- */
+
+.settings-page {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-page-dense {
+  gap: 1.15rem;
+}
+
+.settings-page-dashboard {
   gap: 1.35rem;
 }
 
+.settings-page-fill {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* 页内标题：轻量，替代旧 pagehead */
+.settings-page-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 2px;
+}
+
+.settings-page-intro-copy {
+  min-width: 0;
+}
+
+.settings-page-intro-title {
+  margin: 0;
+  color: var(--spatial-ink);
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.settings-page-intro-desc {
+  margin: 6px 0 0;
+  max-width: 40rem;
+  color: var(--spatial-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.settings-page-intro-action {
+  flex-shrink: 0;
+}
+
+/* 身份带：通用 / 关于 */
+.settings-identity-band {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+}
+
+.settings-identity-band--compact {
+  padding: 16px 18px;
+}
+
+.settings-identity-copy {
+  min-width: 0;
+}
+
+.settings-identity-name {
+  margin: 0;
+  color: var(--spatial-ink);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.settings-identity-meta {
+  margin: 4px 0 0;
+  color: var(--spatial-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settings-identity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* 双栏：外观预览 | 控件 */
+.settings-split {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.25fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.settings-split-preview {
+  position: sticky;
+  top: 0;
+  padding: 14px;
+}
+
+.settings-split-preview-frame {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 8px;
+  height: 168px;
+  padding: 10px;
+  border-radius: calc(var(--app-shell-composer-radius, 16px) - 2px);
+  border: 1px solid var(--spatial-line);
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 22%), transparent 50%),
+    var(--surface-bg-well, var(--settings-chip-fill));
+  overflow: hidden;
+}
+
+.dark .settings-split-preview-frame {
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.04), transparent 50%),
+    var(--surface-bg-well, var(--settings-chip-fill));
+}
+
+.settings-split-preview-rail {
+  border-radius: 10px;
+  background: var(--spatial-accent-soft);
+  border: 1px solid var(--spatial-accent-line);
+}
+
+.settings-split-preview-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-split-preview-chrome {
+  height: 22px;
+  border-radius: 8px;
+  background: var(--settings-hover-fill);
+  border: 1px solid var(--spatial-line);
+}
+
+.settings-split-preview-body {
+  flex: 1;
+  border-radius: 10px;
+  background: var(--settings-chip-fill);
+  border: 1px solid var(--spatial-line);
+}
+
+.settings-split-preview-caption {
+  margin: 10px 2px 0;
+  color: var(--spatial-faint);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.settings-split-controls {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+/* 远程：平台切换轨 + 详情 */
+.settings-platform-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: var(--radius-glass-popover, 12px);
+  border: 1px solid var(--spatial-line);
+  background: var(--settings-chip-fill);
+}
+
+.settings-platform-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px 0 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--spatial-muted);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    color var(--settings-duration-fast) var(--settings-motion),
+    background-color var(--settings-duration-fast) var(--settings-motion),
+    border-color var(--settings-duration-fast) var(--settings-motion),
+    box-shadow var(--settings-duration-fast) var(--settings-motion);
+}
+
+.settings-platform-chip:hover {
+  color: var(--spatial-ink);
+  background: var(--settings-hover-fill);
+}
+
+.settings-platform-chip[data-active='true'] {
+  color: var(--spatial-ink);
+  border-color: var(--spatial-accent-line);
+  background:
+    linear-gradient(
+      135deg,
+      rgb(var(--glass-rgb, 248 250 253) / 0.3),
+      rgb(var(--glass-rgb, 248 250 253) / 0.12)
+    ),
+    var(--spatial-accent-soft);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%);
+  font-weight: 600;
+}
+
+.dark .settings-platform-chip[data-active='true'] {
+  background:
+    linear-gradient(
+      135deg,
+      rgb(var(--glass-rgb, 50 52 56) / 0.72),
+      rgb(var(--glass-rgb, 50 52 56) / 0.46)
+    ),
+    var(--spatial-accent-soft);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.settings-platform-chip-icon {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 7px;
+}
+
+.settings-platform-chip-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.settings-platform-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  margin-left: 2px;
+}
+
+.settings-platform-panel {
+  min-height: 420px;
+}
+
+/* 渠道列表：工具条 + 大行 */
+.settings-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-toolbar-title {
+  margin: 0;
+  color: var(--spatial-ink);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.settings-toolbar-meta {
+  margin: 3px 0 0;
+  color: var(--spatial-faint);
+  font-size: 11.5px;
+}
+
+.settings-channel-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 14px 16px;
+  transition: background-color var(--settings-duration-fast) var(--settings-motion);
+}
+
+.settings-channel-row:hover {
+  background: color-mix(in srgb, hsl(var(--foreground)) 2.5%, transparent);
+}
+
+.settings-channel-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: inset 0 0 0 1px var(--spatial-line);
+}
+
+.settings-channel-name {
+  color: var(--spatial-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.settings-channel-desc {
+  margin-top: 3px;
+  color: var(--spatial-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settings-channel-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.settings-channel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 数据页：指标条 */
+.settings-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.settings-metric-cell {
+  min-width: 0;
+  padding: 4px 2px;
+}
+
+.settings-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--spatial-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.settings-metric-value {
+  margin-top: 6px;
+  color: var(--spatial-ink);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-metric-sub {
+  margin-top: 4px;
+  color: var(--spatial-muted);
+  font-size: 11.5px;
+}
+
+@media (max-width: 900px) {
+  .settings-split {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-split-preview {
+    position: static;
+  }
+
+  .settings-metric-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-identity-band {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .settings-identity-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* 子页（渠道表单等）：返回 + 标题 */
+.settings-subpage-chrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.25rem;
+}
+
+.settings-subpage-title {
+  margin: 0;
+  color: var(--spatial-ink);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.settings-subpage-back {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: var(--spatial-muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color var(--settings-duration-fast) var(--settings-motion),
+    background-color var(--settings-duration-fast) var(--settings-motion);
+}
+
+.settings-subpage-back:hover {
+  color: var(--spatial-ink);
+  background: var(--settings-hover-fill);
+}
+
+/*
+ * 卡片在透感面板内减负（场景级例外，卡片表面权威仍在 glass.css）：
+ * 面板整体已做 backdrop blur，卡片再各自 blur 只会叠 GPU 开销；
+ * 同时降低卡片填充不透明度，避免「面板透了、内容区还是实板」。
+ *
+ * 选择器带 :root:not(...) / [data-material] 前缀是为了压过
+ * globals.css 的 frosted 旧规则（(0,3,0) 的不透明 md-surface 白板）。
+ */
+:root:not([data-material]) .settings-dialog-shell .settings-card,
+[data-material] .settings-dialog-shell .settings-card,
+.settings-dialog-shell .settings-card,
+.settings-dialog-shell .settings-card-surface {
+  background: rgb(var(--glass-rgb, 248 250 253) / 0.26);
+  border: 1px solid rgb(255 255 255 / 0.34);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    0 8px 24px rgb(48 59 76 / 0.06);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root.dark:not([data-material]) .settings-dialog-shell .settings-card,
+.dark[data-material] .settings-dialog-shell .settings-card,
+.dark .settings-dialog-shell .settings-card,
+.dark .settings-dialog-shell .settings-card-surface {
+  background: rgb(var(--glass-rgb, 50 52 56) / 0.4);
+  border: 1px solid rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 8px 24px rgb(0 0 0 / 0.2);
+}
+
+/* 搜索框同理：压过 globals.css frosted 的不透明 md-surface 底 */
+:root:not([data-material]) .settings-dialog-shell .settings-search-shell,
+[data-material] .settings-dialog-shell .settings-search-shell,
+.settings-dialog-shell .settings-search-shell {
+  background: var(--settings-hover-fill);
+  border: 1px solid var(--spatial-line);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.32);
+}
+
+:root.dark:not([data-material]) .settings-dialog-shell .settings-search-shell,
+.dark[data-material] .settings-dialog-shell .settings-search-shell,
+.dark .settings-dialog-shell .settings-search-shell {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+/* 兼容旧 space-y 根节点 */
+.settings-shell-pane > .space-y-4,
+.settings-shell-pane > .space-y-6,
+.settings-shell-pane > .space-y-8 {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 /* ==========================================================================
- * 内容原语：Section / Card / Row / Field
+ * 内容原语：Section / Row / Field
+ * （`.settings-card` 表面由 glass.css 独占，此处只做分隔与行交互）
  * ========================================================================== */
 
 .settings-block {
@@ -463,7 +1008,7 @@
 
 .settings-block-title {
   margin: 0;
-  color: var(--spatial-ink, hsl(var(--foreground)));
+  color: var(--spatial-ink);
   font-size: 13px;
   font-weight: 650;
   letter-spacing: -0.015em;
@@ -472,7 +1017,7 @@
 
 .settings-block-desc {
   margin: 3px 0 0;
-  color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.88));
+  color: var(--spatial-faint);
   font-size: 11.5px;
   line-height: 1.45;
 }
@@ -481,65 +1026,15 @@
   min-width: 0;
 }
 
-/* 卡片表面 */
-.settings-card,
-.settings-card-surface {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, hsl(var(--border)) 58%, transparent);
-  border-radius: 16px;
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, hsl(var(--foreground)) 3.5%, transparent),
-      transparent 42%
-    ),
-    color-mix(in srgb, hsl(var(--card)) 88%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.28),
-    0 8px 22px -16px rgb(23 30 40 / 0.18);
-  transition:
-    border-color var(--settings-duration-fast) var(--settings-motion),
-    box-shadow var(--settings-duration-fast) var(--settings-motion),
-    background-color var(--settings-duration-fast) var(--settings-motion),
-    transform var(--settings-duration-fast) var(--settings-motion);
-}
-
-.dark .settings-card,
-.dark .settings-card-surface {
-  border-color: rgb(255 255 255 / 0.08);
-  background:
-    linear-gradient(165deg, rgb(255 255 255 / 0.035), transparent 46%),
-    color-mix(in srgb, rgb(var(--glass-rgb, 50 52 56)) 55%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 10px 24px -16px rgb(0 0 0 / 0.4);
-}
-
-.settings-card:hover,
-.settings-card-surface:hover {
-  border-color: color-mix(in srgb, hsl(var(--border)) 85%, transparent);
-}
-
-.dark .settings-card:hover,
-.dark .settings-card-surface:hover {
-  border-color: rgb(255 255 255 / 0.12);
-}
-
+/* 仅分隔线语义；不覆盖 glass.css 卡片底 */
 .settings-card-sep,
 .settings-card-divider,
 .settings-card .border-border\/50 {
   margin: 0 !important;
-  border-color: color-mix(in srgb, hsl(var(--border)) 55%, transparent) !important;
+  border-color: var(--spatial-line) !important;
   opacity: 1;
 }
 
-.dark .settings-card-sep,
-.dark .settings-card-divider {
-  border-color: rgb(255 255 255 / 0.06) !important;
-}
-
-/* 行 */
 .settings-row {
   display: flex;
   align-items: center;
@@ -570,7 +1065,6 @@
   gap: 8px;
 }
 
-/* Field */
 .settings-field {
   display: flex;
   min-width: 0;
@@ -585,20 +1079,20 @@
   flex: 0 0 30px;
   place-items: center;
   border-radius: 9px;
-  color: var(--spatial-muted, hsl(var(--muted-foreground)));
-  background: color-mix(in srgb, hsl(var(--foreground)) 5.5%, transparent);
+  color: var(--spatial-muted);
+  background: transparent;
   transition:
     color var(--settings-duration-fast) var(--settings-motion),
     background-color var(--settings-duration-fast) var(--settings-motion);
 }
 
 .settings-row:hover .settings-field-icon {
-  color: var(--spatial-ink, hsl(var(--foreground) / 0.88));
-  background: color-mix(in srgb, hsl(var(--primary)) 10%, transparent);
+  color: var(--spatial-ink);
+  background: var(--spatial-accent-soft);
 }
 
 .settings-field-label {
-  color: var(--spatial-ink, hsl(var(--foreground)));
+  color: var(--spatial-ink);
   font-size: 13px;
   font-weight: 550;
   letter-spacing: -0.01em;
@@ -606,22 +1100,21 @@
 }
 
 .settings-field-description {
-  color: var(--md-on-surface-variant, hsl(var(--muted-foreground)));
+  color: var(--spatial-muted);
   font-size: 12px;
 }
 
 .settings-inline-help {
   display: grid;
   place-items: center;
-  color: hsl(var(--muted-foreground) / 0.55);
+  color: var(--spatial-faint);
   transition: color var(--settings-duration-fast) var(--settings-motion);
 }
 
 .settings-inline-help:hover {
-  color: hsl(var(--muted-foreground));
+  color: var(--spatial-muted);
 }
 
-/* 分段控件在设置内 */
 .settings-segmented.ui-segmented-tabs,
 .settings-shell .ui-segmented-tabs {
   transition:
@@ -637,7 +1130,6 @@
     transform var(--settings-duration-fast) var(--settings-motion);
 }
 
-/* 输入 / 选择 / 开关统一过渡 */
 .settings-shell input,
 .settings-shell textarea,
 .settings-shell select,
@@ -659,7 +1151,7 @@
   outline: none;
   box-shadow:
     0 0 0 2px hsl(var(--primary) / 0.14),
-    0 0 0 1px hsl(var(--primary) / 0.35);
+    0 0 0 1px var(--spatial-accent-line);
 }
 
 /* 档案卡 */
@@ -669,8 +1161,8 @@
 }
 
 .settings-profile-avatar {
-  border-radius: 16px;
-  box-shadow: 0 8px 18px -12px rgb(0 0 0 / 0.28);
+  border-radius: var(--app-shell-composer-radius, 16px);
+  box-shadow: var(--surface-role-control-shadow, none);
   transition: transform var(--settings-duration-fast) var(--settings-motion);
 }
 
@@ -679,11 +1171,11 @@
 }
 
 .settings-profile-name-button:hover {
-  color: hsl(var(--primary));
+  color: var(--spatial-accent);
 }
 
 .settings-profile-name-input {
-  border-bottom: 1px solid hsl(var(--primary) / 0.45);
+  border-bottom: 1px solid var(--spatial-accent-line);
   background: transparent;
   transition: border-color var(--settings-duration-fast) var(--settings-motion);
 }
@@ -694,29 +1186,29 @@
   height: 28px;
   place-items: center;
   border-radius: 8px;
-  background: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+  background: transparent;
   transition:
     background-color var(--settings-duration-fast) var(--settings-motion),
     transform var(--settings-duration-fast) var(--settings-motion);
 }
 
 .settings-profile-action-btn:hover {
-  background: color-mix(in srgb, hsl(var(--foreground)) 9%, transparent);
+  background: var(--settings-hover-fill);
 }
 
 .settings-profile-action-btn:active {
   transform: scale(0.94);
 }
 
-/* 搜索 */
+/* 搜索：对齐 sidebar-search-trigger */
 .settings-shell .settings-search-shell {
   min-width: 200px;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid color-mix(in srgb, hsl(var(--border)) 60%, transparent);
-  border-radius: 11px;
-  background: color-mix(in srgb, hsl(var(--background)) 55%, transparent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  border: 1px solid var(--spatial-line);
+  border-radius: var(--app-shell-control-radius, 11px);
+  background: var(--settings-hover-fill);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 32%);
   transition:
     min-width var(--settings-duration) var(--settings-motion),
     border-color var(--settings-duration-fast) var(--settings-motion),
@@ -725,17 +1217,29 @@
 }
 
 .dark .settings-shell .settings-search-shell {
-  border-color: rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.04);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
 .settings-shell .settings-search-shell:focus-within {
   min-width: 260px;
-  border-color: color-mix(in srgb, hsl(var(--primary)) 40%, transparent);
+  border-color: var(--spatial-accent-line);
   box-shadow:
     0 0 0 3px hsl(var(--primary) / 0.12),
     inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+.dark .settings-shell .settings-search-shell:focus-within {
+  background: rgb(var(--glass-rgb, 50 52 56) / 0.58);
+}
+
+/* About / Insights 等页内 hero：中性卡，不再用 primary 营销渐变 */
+.settings-hero-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-hero-card > .settings-hero-body {
+  position: relative;
 }
 
 /* ==========================================================================

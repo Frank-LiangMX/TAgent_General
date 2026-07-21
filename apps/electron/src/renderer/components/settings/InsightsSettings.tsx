@@ -3,7 +3,7 @@
  *
  * 设计思路（结合 ui-ux-pro-max + minimalist-ui + gpt-taste 原则）：
  * - Bento Grid 4 列响应式，grid-flow-dense 零空隙
- * - Glassmorphism 玻璃拟态（`session-glass-surface`）
+ * - 卡片走 `settings-card`（与主壳 surface token 对齐）
  * - Editorial typography：紧凑追踪、大字号巨字
  * - 暖色单色配色 + 5 色微妙色板用于分类
  * - 无 cheap meta-labels（无 "SECTION 01"）
@@ -64,6 +64,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@tagent/ui'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 
@@ -300,74 +302,64 @@ export function InsightsSettings(): React.ReactElement {
   const maxModelCost = Math.max(...sortedModelStats.map((m) => m.totalCostUsd), 0)
 
   return (
-    <div className="space-y-6">
-      {/* ===== Hero: 总览巨字 + 时间范围切换 ===== */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-primary/[0.06] via-transparent to-transparent">
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/[0.08] blur-3xl pointer-events-none" />
-        <div className="relative px-6 py-5">
-          {/* 顶部：标题 + 时间范围切换 */}
-          <div className="flex items-center justify-between gap-4 mb-5">
-            <div className="flex items-center gap-2">
-              <BarChart3 size={14} className="text-muted-foreground" />
-              <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
-                Insights
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <SegmentedTabs
-                className="w-auto shrink-0"
-                value={activeTimeRange}
-                onValueChange={(range) => setActiveTimeRange(range as typeof activeTimeRange)}
-              >
-                {(['today', 'week', 'month', 'all'] as const).map((range) => (
-                  <SegmentedTabsItem key={range} value={range} className="px-2.5">
-                    {TIME_RANGE_LABELS[range]}
-                  </SegmentedTabsItem>
-                ))}
-              </SegmentedTabs>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={handleRefresh}
-                disabled={isLoading}
-              >
-                <RefreshCw size={12} className={cn(isLoading && 'animate-spin')} />
-              </Button>
-            </div>
+    <SettingsPage variant="dashboard">
+      <SettingsPageIntro
+        title="数据"
+        description="用量统计与洞察"
+        action={
+          <div className="flex items-center gap-1.5">
+            <SegmentedTabs
+              className="w-auto shrink-0"
+              value={activeTimeRange}
+              onValueChange={(range) => setActiveTimeRange(range as typeof activeTimeRange)}
+            >
+              {(['today', 'week', 'month', 'all'] as const).map((range) => (
+                <SegmentedTabsItem key={range} value={range} className="px-2.5">
+                  {TIME_RANGE_LABELS[range]}
+                </SegmentedTabsItem>
+              ))}
+            </SegmentedTabs>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw size={12} className={cn(isLoading && 'animate-spin')} />
+            </Button>
           </div>
+        }
+      />
 
-          {/* 巨字统计 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-            <HeroMetric
-              icon={<Zap size={14} />}
-              label="Token 总数"
-              value={
-                timeRangeStats
-                  ? formatTokens(timeRangeStats.totalInputTokens + timeRangeStats.totalOutputTokens)
-                  : '—'
-              }
-              sub={timeRangeStats ? `${timeRangeStats.sessions} 个会话` : ''}
-            />
-            <HeroMetric
-              icon={<Coins size={14} />}
-              label="累计费用"
-              value={timeRangeStats ? formatCost(timeRangeStats.totalCostUsd) : '—'}
-              sub={
-                stats?.totalCacheReadTokens
-                  ? `节省 ${formatTokens(stats.totalCacheReadTokens)} 缓存`
-                  : '无缓存命中'
-              }
-              subHighlight={!!stats?.totalCacheReadTokens}
-            />
-            <HeroMetric
-              icon={<HardDrive size={14} />}
-              label="存储用量"
-              value={storage ? formatBytes(storage.totalBytes) : '—'}
-              sub={hasOrphans ? `${formatBytes(totalOrphanBytes)} 可清理` : '数据整洁'}
-            />
-          </div>
-        </div>
+      <div className="settings-card settings-card-surface settings-metric-strip">
+        <HeroMetric
+          icon={<Zap size={14} />}
+          label="Token 总数"
+          value={
+            timeRangeStats
+              ? formatTokens(timeRangeStats.totalInputTokens + timeRangeStats.totalOutputTokens)
+              : '—'
+          }
+          sub={timeRangeStats ? `${timeRangeStats.sessions} 个会话` : ''}
+        />
+        <HeroMetric
+          icon={<Coins size={14} />}
+          label="累计费用"
+          value={timeRangeStats ? formatCost(timeRangeStats.totalCostUsd) : '—'}
+          sub={
+            stats?.totalCacheReadTokens
+              ? `节省 ${formatTokens(stats.totalCacheReadTokens)} 缓存`
+              : '无缓存命中'
+          }
+          subHighlight={!!stats?.totalCacheReadTokens}
+        />
+        <HeroMetric
+          icon={<HardDrive size={14} />}
+          label="存储用量"
+          value={storage ? formatBytes(storage.totalBytes) : '—'}
+          sub={hasOrphans ? `${formatBytes(totalOrphanBytes)} 可清理` : '数据整洁'}
+        />
       </div>
 
       {/* ===== Bento Grid: 详细数据 ===== */}
@@ -503,7 +495,7 @@ export function InsightsSettings(): React.ReactElement {
 
       {/* 清理结果提示 */}
       {lastResult && (
-        <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-2.5 text-xs flex items-center gap-2">
+        <div className="settings-card settings-card-surface flex items-center gap-2 px-4 py-2.5 text-xs">
           {lastResult.freedBytes > 0 ? (
             <>
               <CheckCircle />
@@ -520,7 +512,7 @@ export function InsightsSettings(): React.ReactElement {
           )}
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -540,19 +532,17 @@ function HeroMetric({
   subHighlight?: boolean
 }): React.ReactElement {
   return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+    <div className="settings-metric-cell">
+      <div className="settings-metric-label">
         {icon}
-        <span className="text-[10px] uppercase tracking-[0.15em] font-medium">{label}</span>
+        <span>{label}</span>
       </div>
-      <div className="text-[32px] leading-none font-semibold tabular-nums tracking-tight text-foreground">
-        {value}
-      </div>
+      <div className="settings-metric-value">{value}</div>
       {sub && (
         <div
           className={cn(
-            'text-[11px] mt-1.5 flex items-center gap-1',
-            subHighlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/60'
+            'settings-metric-sub flex items-center gap-1',
+            subHighlight && 'text-emerald-600 dark:text-emerald-400'
           )}
         >
           {subHighlight && <span className="inline-block w-1 h-1 rounded-full bg-emerald-500" />}
@@ -581,8 +571,7 @@ function BentoCard({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-border/40 bg-card/60 p-4 flex flex-col',
-        'hover:border-border/70 transition-colors',
+        'settings-card settings-card-surface flex flex-col p-4',
         scrollable && 'max-h-64',
         className
       )}

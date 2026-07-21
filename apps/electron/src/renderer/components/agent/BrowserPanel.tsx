@@ -66,17 +66,11 @@ function formatAddressInput(url: string): string {
 interface BrowserPanelProps {
   /** 初始 URL（可选，外部传入） */
   initialUrl?: string | null
-  /** 面板宽度 */
-  width?: number
   /** 关闭面板回调 */
   onCollapse?: () => void
 }
 
-export function BrowserPanel({
-  initialUrl,
-  width = 400,
-  onCollapse,
-}: BrowserPanelProps): ReactElement {
+export function BrowserPanel({ initialUrl, onCollapse }: BrowserPanelProps): ReactElement {
   const webviewRef = useRef<DevWebviewTag | null>(null)
   const [activeUrl, setActiveUrl] = useState<string | null>(initialUrl ?? null)
   const [draftUrl, setDraftUrl] = useState(() => (initialUrl ? formatAddressInput(initialUrl) : ''))
@@ -221,13 +215,13 @@ export function BrowserPanel({
 
   return (
     <div
-      className="flex flex-col h-full bg-background"
-      style={{ width }}
+      // 透明底：跟随 inspector 玻璃面板；宽度由外层 island 统一管理
+      className="browser-panel-root flex h-full w-full flex-col bg-transparent"
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
     >
       {/* 顶部工具栏 */}
-      <div className="flex items-center gap-1 px-2 h-10 border-b border-border shrink-0">
+      <div className="flex items-center gap-1 px-2 h-10 shrink-0">
         {/* 返回 */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -337,8 +331,8 @@ export function BrowserPanel({
         </div>
       )}
 
-      {/* webview 区域 */}
-      <div className="flex-1 min-h-0 relative bg-white dark:bg-neutral-900">
+      {/* webview 区域：透明底，贴合 inspector 圆角玻璃，不自带直角实色板 */}
+      <div className="browser-panel-stage relative min-h-0 flex-1 overflow-hidden bg-transparent">
         {activeUrl ? (
           <webview
             ref={webviewRef as React.RefObject<HTMLElement>}
@@ -347,10 +341,10 @@ export function BrowserPanel({
             partition="persist:browser-preview"
             // eslint-disable-next-line react/no-unknown-property
             webpreferences="contextIsolation=yes,nodeIntegration=no,sandbox=yes"
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 h-full w-full"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
+          <div className="flex h-full flex-col items-center justify-center px-4 text-sm text-muted-foreground">
             <FileCode size={32} className="mb-2 opacity-40" />
             <p>输入网址或拖入 HTML 文件预览</p>
           </div>
@@ -359,6 +353,3 @@ export function BrowserPanel({
     </div>
   )
 }
-
-// 保持旧名称兼容
-export const WpsBrowserPanel = BrowserPanel

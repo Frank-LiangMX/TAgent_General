@@ -67,7 +67,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@tagent/ui'
-import { SearchDialog } from './SearchDialog'
+import { SessionSearchInline } from './SessionSearchInline'
 import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
 
 import type { ActiveView } from '@/atoms/active-view'
@@ -135,7 +135,7 @@ import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import { draftsAtom, draftSearchOpenAtom } from '@/atoms/draft-atoms'
 import { hasEnvironmentIssuesAtom } from '@/atoms/environment'
 import { previewPanelOpenMapAtom, previewFileMapAtom } from '@/atoms/preview-atoms'
-import { searchDialogOpenAtom } from '@/atoms/search-atoms'
+
 import { settingsTabAtom, settingsOpenAtom } from '@/atoms/settings-tab'
 // sidebarViewModeAtom 已不再使用：归档会话由底部 Popover 展示，不再切换整页视图
 import {
@@ -173,7 +173,7 @@ import {
   sortAgentSessionsByUpdatedAtDesc,
 } from '@/lib/agent-session-list'
 import { detectIsMac } from '@/lib/platform'
-import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
+
 import {
   getAgentSessionVisualState,
   type SessionLeftAccent,
@@ -400,8 +400,7 @@ export function LeftSidebar({
   const syncActiveTabSideEffects = useSyncActiveTabSideEffects()
   const store = useStore()
 
-  // 搜索状态（归档会话已从主列表分离，由底部 Popover 独立展示）
-  const setSearchDialogOpen = useSetAtom(searchDialogOpenAtom)
+  // 归档会话已从主列表分离，由底部 Popover 独立展示
   const setNavigationSidebarOpen = useSetAtom(navigationSidebarOpenAtom)
 
   // 选中会话变化时，自动滚动侧栏使对应项可见
@@ -1543,86 +1542,80 @@ export function LeftSidebar({
             </div>
           </div>
 
-          <button
-            type="button"
-            className="sidebar-search-trigger titlebar-no-drag"
-            onClick={() => setSearchDialogOpen(true)}
-            aria-label="搜索会话与项目"
-          >
-            <Search size={14} strokeWidth={1.5} aria-hidden="true" />
-            <span>搜索会话与项目</span>
-            <kbd>{getAcceleratorDisplay(getActiveAccelerator('global-search'))}</kbd>
-          </button>
-
-          <div key={activeRailItem} className="flex min-h-0 flex-1 flex-col">
-            {renderRailContent()}
-          </div>
-
-          {mode === 'agent' && archivedAgentSessionCount > 0 && (
-            <footer className="sidebar-footer">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="sidebar-footer-btn titlebar-no-drag"
-                    aria-label={`已归档 ${archivedAgentSessionCount}`}
-                  >
-                    <Archive size={12} strokeWidth={1.75} className="opacity-70" aria-hidden />
-                    <span>已归档</span>
-                    <span className="sidebar-footer-count">{archivedAgentSessionCount}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  side="top"
-                  align="start"
-                  sideOffset={6}
-                  className="w-72 p-0 overflow-hidden"
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                >
-                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/40">
-                    <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
-                      已归档会话 · {archivedAgentSessionCount}
-                    </span>
-                  </div>
-                  <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
-                    {archivedAgentSessionsList.length === 0 ? (
-                      <div className="py-3 text-center text-[12px] text-foreground/40">
-                        暂无已归档会话
+          <SessionSearchInline
+            listSlot={
+              <div key={activeRailItem} className="flex min-h-0 flex-1 flex-col">
+                {renderRailContent()}
+              </div>
+            }
+            footerSlot={
+              mode === 'agent' && archivedAgentSessionCount > 0 ? (
+                <footer className="sidebar-footer">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="sidebar-footer-btn titlebar-no-drag"
+                        aria-label={`已归档 ${archivedAgentSessionCount}`}
+                      >
+                        <Archive size={12} strokeWidth={1.75} className="opacity-70" aria-hidden />
+                        <span>已归档</span>
+                        <span className="sidebar-footer-count">{archivedAgentSessionCount}</span>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="top"
+                      align="start"
+                      sideOffset={6}
+                      className="w-72 p-0 overflow-hidden"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
+                      <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-border/40">
+                        <span className="text-[11px] font-medium text-foreground/50 uppercase tracking-wide">
+                          已归档会话 · {archivedAgentSessionCount}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="flex flex-col gap-0.5">
-                        {archivedAgentSessionsList.map((session) => (
-                          <AgentSessionItem
-                            key={session.id}
-                            session={session}
-                            active={session.id === activeSessionId}
-                            indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
-                            leftAccent={getSessionLeftAccent(
-                              agentIndicatorMap.get(session.id) ?? 'idle',
-                              session.id === activeSessionId,
-                              session.manualWorking
-                            )}
-                            workspaceName={
-                              session.workspaceId
-                                ? workspaceNameMap.get(session.workspaceId)
-                                : undefined
-                            }
-                            onSelect={handleSelectAgentSession}
-                            onRequestDelete={handleRequestDelete}
-                            onRename={handleAgentRename}
-                            onTogglePin={handleTogglePinAgent}
-                            onToggleArchive={handleToggleArchiveAgent}
-                            disableMiniMap
-                            surface="compact"
-                          />
-                        ))}
+                      <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
+                        {archivedAgentSessionsList.length === 0 ? (
+                          <div className="py-3 text-center text-[12px] text-foreground/40">
+                            暂无已归档会话
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            {archivedAgentSessionsList.map((session) => (
+                              <AgentSessionItem
+                                key={session.id}
+                                session={session}
+                                active={session.id === activeSessionId}
+                                indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                                leftAccent={getSessionLeftAccent(
+                                  agentIndicatorMap.get(session.id) ?? 'idle',
+                                  session.id === activeSessionId,
+                                  session.manualWorking
+                                )}
+                                workspaceName={
+                                  session.workspaceId
+                                    ? workspaceNameMap.get(session.workspaceId)
+                                    : undefined
+                                }
+                                onSelect={handleSelectAgentSession}
+                                onRequestDelete={handleRequestDelete}
+                                onRename={handleAgentRename}
+                                onTogglePin={handleTogglePinAgent}
+                                onToggleArchive={handleToggleArchiveAgent}
+                                disableMiniMap
+                                surface="compact"
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </footer>
-          )}
+                    </PopoverContent>
+                  </Popover>
+                </footer>
+              ) : null
+            }
+          />
         </div>
       ) : activeRailItem === 'draft' ? (
         <div className="sidebar-inner">
@@ -1679,7 +1672,6 @@ export function LeftSidebar({
       {deleteDialog}
       {projectDeleteDialog}
       {batchDeleteDialog}
-      <SearchDialog />
       <DraftSearchDialog />
     </div>
   )

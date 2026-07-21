@@ -790,7 +790,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                   data-presence={shellLayout.inspector}
                   inactive={!inspectorOpen}
                 >
-                  <RightInspectorFrame width={clampedRightPanelWidth} />
+                  <RightInspectorFrame />
                 </InertRegion>
               )}
 

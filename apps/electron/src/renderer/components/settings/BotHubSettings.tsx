@@ -1,14 +1,11 @@
 /**
  * BotHubSettings - 远程平台集成 Hub
  *
- * 采用卡片网格布局设计：
- * - 顶部：标题 + 已连接状态
- * - 中部：平台状态卡片网格（点击切换）
- * - 底部：选中平台的详细配置内容
+ * SettingsPage + 平台 Section（网格选择）+ 下方平台详情面板。
  */
 
 import { useAtomValue } from 'jotai'
-import { Bot, Cable, Settings } from 'lucide-react'
+import { Bot, Settings } from 'lucide-react'
 import * as React from 'react'
 
 import { BotDefaultSettings } from './BotDefaultSettings'
@@ -16,6 +13,8 @@ import { DingTalkSettings } from './DingTalkSettings'
 import { FeishuSettings } from './FeishuSettings'
 import { WeChatSettings } from './WeChatSettings'
 import { WpsSettings } from './WpsSettings'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 
 import dingtalkLogo from '@/assets/bots/dingding.png'
 import feishuLogo from '@/assets/bots/feishu.png'
@@ -115,80 +114,6 @@ function getPlatformStatus(states: Record<string, { status: string }>): string {
   return 'disconnected'
 }
 
-// ===== 子组件 =====
-
-/** 平台状态卡片 */
-function PlatformCard({
-  platform,
-  status,
-  onClick,
-  isActive,
-}: {
-  platform: PlatformDef
-  status?: string
-  onClick: () => void
-  isActive: boolean
-}): React.ReactElement {
-  const statusConfig = status
-    ? (STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.disconnected)
-    : null
-  const isConnected = status === 'connected'
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 text-center cursor-pointer',
-        'border border-transparent',
-        isActive
-          ? 'bg-muted/60 border-border/50 shadow-sm'
-          : 'bg-muted/30 hover:bg-muted/50 hover:border-border/30'
-      )}
-    >
-      {/* 状态指示点（仅平台卡片） */}
-      {statusConfig && (
-        <div className="absolute top-2.5 right-2.5">
-          <span className={cn('w-2 h-2 rounded-full block', statusConfig.dotClass)} />
-        </div>
-      )}
-
-      {/* 图标 */}
-      <div
-        className={cn(
-          'flex items-center justify-center w-11 h-11 rounded-xl mb-2.5',
-          platform.iconBgClass
-        )}
-      >
-        {platform.iconSrc ? (
-          <img
-            src={platform.iconSrc}
-            alt={platform.name}
-            className="w-7 h-7 object-contain rounded-md"
-          />
-        ) : platform.Icon ? (
-          <platform.Icon className="w-5 h-5 text-muted-foreground" />
-        ) : (
-          <Bot className="w-5 h-5 text-muted-foreground" />
-        )}
-      </div>
-
-      {/* 平台名称 */}
-      <div className="text-sm font-medium text-foreground">{platform.name}</div>
-
-      {/* 描述或状态 */}
-      <div
-        className={cn(
-          'text-xs mt-0.5',
-          isConnected ? platform.accentColor : 'text-muted-foreground'
-        )}
-      >
-        {statusConfig ? statusConfig.label : platform.description}
-      </div>
-    </button>
-  )
-}
-
 /** 根据平台 ID 渲染对应设置组件 */
 function renderPlatformPanel(id: PlatformId): React.ReactElement {
   switch (id) {
@@ -227,54 +152,66 @@ export function BotHubSettings(): React.ReactElement {
   )
 
   const connectedCount = Object.values(platformStatuses).filter((s) => s === 'connected').length
+  const switcherItems = [...PLATFORMS, ...OTHER_CARDS]
 
   return (
-    <div className="space-y-6 -mx-6 -my-4 px-6 py-4">
-      {/* 标题区 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Cable className="w-5 h-5" />
-            远程平台
-          </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            连接第三方平台，在飞书、微信、钉钉中使用 TAgent
-          </p>
-        </div>
-        {connectedCount > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            {connectedCount} 个平台已连接
-          </div>
-        )}
+    <SettingsPage>
+      <SettingsPageIntro
+        title="远程"
+        description="连接飞书、微信、钉钉与 WPS，让 TAgent 在协作平台中保持在线。"
+        action={
+          connectedCount > 0 ? (
+            <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {connectedCount} 个平台已连接
+            </div>
+          ) : undefined
+        }
+      />
+
+      <div className="settings-platform-switcher" role="tablist" aria-label="远程平台">
+        {switcherItems.map((platform) => {
+          const status =
+            platform.id === 'defaults'
+              ? undefined
+              : platformStatuses[platform.id as keyof typeof platformStatuses]
+          const statusConfig = status
+            ? (STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.disconnected)
+            : null
+          const PlatformIcon = platform.Icon ?? Bot
+
+          return (
+            <button
+              key={platform.id}
+              type="button"
+              role="tab"
+              aria-selected={selectedPlatform === platform.id}
+              data-active={selectedPlatform === platform.id}
+              onClick={() => setSelectedPlatform(platform.id)}
+              className="settings-platform-chip"
+            >
+              <span
+                className={cn('grid size-6 place-items-center rounded-md', platform.iconBgClass)}
+              >
+                {platform.iconSrc ? (
+                  <img src={platform.iconSrc} alt="" className="size-4 rounded object-contain" />
+                ) : (
+                  <PlatformIcon className="size-3.5" />
+                )}
+              </span>
+              <span>{platform.name}</span>
+              {statusConfig ? (
+                <span
+                  className={cn('settings-platform-chip-dot', statusConfig.dotClass)}
+                  title={statusConfig.label}
+                />
+              ) : null}
+            </button>
+          )
+        })}
       </div>
 
-      {/* 平台卡片网格 */}
-      <div className="grid grid-cols-5 gap-3">
-        {PLATFORMS.map((platform) => (
-          <PlatformCard
-            key={platform.id}
-            platform={platform}
-            status={platformStatuses[platform.id as 'feishu' | 'dingtalk' | 'wechat' | 'wps']}
-            onClick={() => setSelectedPlatform(platform.id)}
-            isActive={selectedPlatform === platform.id}
-          />
-        ))}
-        {OTHER_CARDS.map((card) => (
-          <PlatformCard
-            key={card.id}
-            platform={card}
-            onClick={() => setSelectedPlatform(card.id)}
-            isActive={selectedPlatform === card.id}
-          />
-        ))}
-      </div>
-
-      {/* 分隔线 */}
-      <div className="border-t border-border/50" />
-
-      {/* 内容面板 */}
-      <div className="min-h-[400px]">{renderPlatformPanel(selectedPlatform)}</div>
-    </div>
+      <div className="settings-platform-panel">{renderPlatformPanel(selectedPlatform)}</div>
+    </SettingsPage>
   )
 }

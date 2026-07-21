@@ -27,7 +27,9 @@ import {
 } from '@tagent/ui'
 import { ChannelForm } from './ChannelForm'
 import { KsccChannelForm } from './KsccChannelForm'
-import { SettingsSection, SettingsCard, SettingsRow } from './primitives'
+import { SettingsSection, SettingsCard } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 
 import { SpeedTestBadge } from './SpeedTestBadge'
 import { SpeedTestPopover } from './SpeedTestPopover'
@@ -249,7 +251,25 @@ export function ChannelSettings(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-8">
+    <SettingsPage>
+      <SettingsPageIntro
+        title="AI 渠道"
+        description="模型供应商、密钥、连通与默认模型"
+        action={
+          <div className="flex items-center gap-1">
+            {otherChannels.length > 0 ? <SpeedTestPopover channels={otherChannels} /> : null}
+            <Button
+              size="sm"
+              className="h-9 gap-1.5 rounded-xl"
+              onClick={() => setViewMode('create')}
+            >
+              <Plus size={16} />
+              添加配置
+            </Button>
+          </div>
+        }
+      />
+
       <SettingsSection
         title="金山云内网"
         description="公司内网 Agent 渠道，由 kscc CLI 提供认证与模型能力"
@@ -276,21 +296,8 @@ export function ChannelSettings(): React.ReactElement {
       </SettingsSection>
 
       <SettingsSection
-        title="模型配置"
+        title="外部供应商"
         description="管理外部 AI 供应商连接，配置 API Key 和可用模型"
-        action={
-          <div className="flex items-center gap-1">
-            {otherChannels.length > 0 ? <SpeedTestPopover channels={otherChannels} /> : null}
-            <Button
-              size="sm"
-              className="h-9 rounded-xl gap-1.5"
-              onClick={() => setViewMode('create')}
-            >
-              <Plus size={16} />
-              添加配置
-            </Button>
-          </div>
-        }
       >
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center">加载中...</div>
@@ -346,7 +353,7 @@ export function ChannelSettings(): React.ReactElement {
           if (installed) loadChannels()
         }}
       />
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -372,24 +379,24 @@ function KsccChannelRow({
   ].join(' · ')
 
   return (
-    <SettingsRow
-      label={channel.name}
-      icon={<img src={getChannelLogo(channel)} alt="" className="w-8 h-8 rounded" />}
-      description={description}
-      className="group"
-      bottomSlot={
-        enabledCount > 0
-          ? enabledModels.map((m) => (
+    <div className="settings-channel-row group">
+      <img src={getChannelLogo(channel)} alt="" className="settings-channel-logo" />
+      <div className="min-w-0">
+        <div className="settings-channel-name">{channel.name}</div>
+        <div className="settings-channel-desc">{description}</div>
+        {enabledCount > 0 ? (
+          <div className="settings-channel-badges">
+            {enabledModels.map((m) => (
               <SpeedTestBadge
                 key={`${channel.id}:${m.id}`}
                 modelId={m.id}
                 result={speedTestResults[`${channel.id}:${m.id}`]}
               />
-            ))
-          : undefined
-      }
-    >
-      <div className="flex items-center gap-2">
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="settings-channel-actions">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -403,7 +410,7 @@ function KsccChannelRow({
         </Tooltip>
         <Switch checked={channel.enabled} onCheckedChange={onToggle} />
       </div>
-    </SettingsRow>
+    </div>
   )
 }
 
@@ -434,24 +441,24 @@ function ChannelRow({
     .join(' · ')
 
   return (
-    <SettingsRow
-      label={channel.name}
-      icon={<img src={getChannelLogo(channel)} alt="" className="w-8 h-8 rounded" />}
-      description={description}
-      className="group"
-      bottomSlot={
-        enabledCount > 0
-          ? enabledModels.map((m) => (
+    <div className="settings-channel-row group">
+      <img src={getChannelLogo(channel)} alt="" className="settings-channel-logo" />
+      <div className="min-w-0">
+        <div className="settings-channel-name">{channel.name}</div>
+        <div className="settings-channel-desc">{description}</div>
+        {enabledCount > 0 ? (
+          <div className="settings-channel-badges">
+            {enabledModels.map((m) => (
               <SpeedTestBadge
                 key={`${channel.id}:${m.id}`}
                 modelId={m.id}
                 result={speedTestResults[`${channel.id}:${m.id}`]}
               />
-            ))
-          : undefined
-      }
-    >
-      <div className="flex items-center gap-2">
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="settings-channel-actions">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -476,6 +483,6 @@ function ChannelRow({
         </Tooltip>
         <Switch checked={channel.enabled} onCheckedChange={onToggle} />
       </div>
-    </SettingsRow>
+    </div>
   )
 }

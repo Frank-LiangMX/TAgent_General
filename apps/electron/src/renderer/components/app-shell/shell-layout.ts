@@ -38,12 +38,7 @@ export interface RailSelectionState {
   sidebarOpen: boolean
 }
 
-const GENERAL_SIDEBAR_ITEMS = new Set<RailItem>([
-  'sessions',
-  'skills',
-  'draft',
-  'kanban',
-])
+const GENERAL_SIDEBAR_ITEMS = new Set<RailItem>(['sessions', 'skills', 'draft', 'kanban'])
 
 /** 仅 rail + main 的功能页（不占左侧 sidebar） */
 const GENERAL_RAIL_ONLY_ITEMS = new Set<RailItem>(['automation', 'memory'])
@@ -112,9 +107,15 @@ export function deriveShellLayout(input: ShellLayoutInput): ShellLayout {
       ? 'open'
       : 'collapsed'
 
+  // 会话父标签及其 preview / rail 附属标签共享同一会话上下文，
+  // 因此切到附属标签后仍保留 RightRail / RightSidebar。
+  const activeTabHasSessionContext =
+    input.activeTabType === 'agent' ||
+    input.activeTabType === 'preview' ||
+    input.activeTabType === 'rail'
   const inspectorAvailable =
     input.appMode === 'agent' &&
-    input.activeTabType === 'agent' &&
+    activeTabHasSessionContext &&
     input.hasCurrentSession &&
     input.activeRailItem === 'sessions'
 

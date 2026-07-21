@@ -113,6 +113,14 @@ describe('deriveShellLayout', () => {
     expect(derive({ rightPanelRequestedOpen: false }).inspector).toBe('collapsed')
   })
 
+  test.each(['preview', 'rail'] as const)(
+    'keeps inspector available for session-bound %s tabs',
+    (activeTabType) => {
+      expect(derive({ activeTabType, rightPanelRequestedOpen: true }).inspector).toBe('open')
+      expect(derive({ activeTabType, rightPanelRequestedOpen: false }).inspector).toBe('collapsed')
+    }
+  )
+
   test.each([
     ['general', 'skills'],
     ['general', 'draft'],
@@ -123,10 +131,13 @@ describe('deriveShellLayout', () => {
     expect(derive({ topLevelMode, activeRailItem }).sidebar).toBe('open')
   })
 
-  test.each(['automation', 'memory'] as const)('%s is rail-only in general (no sidebar)', (item) => {
-    expect(railItemSupportsSidebar('general', item)).toBe(false)
-    expect(derive({ activeRailItem: item, sidebarRequestedOpen: true }).sidebar).toBe('collapsed')
-  })
+  test.each(['automation', 'memory'] as const)(
+    '%s is rail-only in general (no sidebar)',
+    (item) => {
+      expect(railItemSupportsSidebar('general', item)).toBe(false)
+      expect(derive({ activeRailItem: item, sidebarRequestedOpen: true }).sidebar).toBe('collapsed')
+    }
+  )
 
   test('memory is rail-only in TA mode (no sidebar)', () => {
     expect(railItemSupportsSidebar('ta', 'memory')).toBe(false)

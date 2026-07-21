@@ -30,12 +30,7 @@ import {
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { cn } from '@/lib/utils'
 
-interface BtwPanelProps {
-  /** 面板宽度（从 RightSidePanel 传入） */
-  width?: number
-}
-
-export function BtwPanel({ width }: BtwPanelProps): React.ReactElement {
+export function BtwPanel(): React.ReactElement {
   const [messages, setMessages] = useAtom(btwMessagesAtom)
   const [streaming, setStreaming] = useAtom(btwStreamingAtom)
   const [error, setError] = useAtom(btwErrorAtom)
@@ -159,22 +154,8 @@ export function BtwPanel({ width }: BtwPanelProps): React.ReactElement {
   }
 
   return (
-    <div className="btw-panel h-full flex flex-col overflow-hidden" style={{ width }}>
-      {/* Header */}
-      <div className="btw-panel-header flex items-center justify-between pl-4 pr-3 pt-3 pb-2.5 shrink-0 border-b border-border/30">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center justify-center size-7 rounded-lg bg-foreground/10 text-foreground shrink-0">
-            <MessageCircle size={14} />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-medium text-sm leading-tight text-foreground">旁注</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">
-              不进入主对话历史
-            </span>
-          </div>
-        </div>
-      </div>
-
+    <div className="btw-panel h-full flex flex-col overflow-hidden">
+      {/* 标题 chrome 由 RightInspectorFrame 统一提供 */}
       {/* Messages */}
       <div
         className={cn(

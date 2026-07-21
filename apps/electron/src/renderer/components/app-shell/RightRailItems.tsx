@@ -5,8 +5,16 @@
  * 展开态：顶栏 tabs（inspector 顶部，对齐 layout-direction-study）
  */
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { FolderOpen, MessageCircle, Globe2, Palette, Users, type LucideIcon } from 'lucide-react'
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+import {
+  FolderOpen,
+  Maximize2,
+  MessageCircle,
+  Globe2,
+  Palette,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -19,6 +27,17 @@ import {
 import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
+import { topLevelModeAtom } from '@/atoms/app-mode'
+import {
+  activeTabIdAtom,
+  createRailTabId,
+  openTab,
+  promotedRailItemsBySessionAtom,
+  syncedTabsAtom,
+  tabsAtom,
+} from '@/atoms/tab-atoms'
+import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
+import { flyRailGhost } from '@/lib/rail-tab-flight'
 import { sessionCrewBoardIdAtomFamily, useKanbanBoardById } from '@/atoms/kanban-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { registerShortcut } from '@/lib/shortcut-registry'
@@ -88,8 +107,22 @@ export function RightRailItems({
     return ch?.enabled && ch.models.some((m) => m.enabled)
   }, [channels, channelId])
 
+  const store = useStore()
+  const syncSideEffects = useSyncActiveTabSideEffects()
+
   const activateOrCollapse = React.useCallback(
     (item: RightRailItem, prepare?: () => void) => {
+      // 已晋升为主区标签的项（快捷键等入口仍可触达）：聚焦对应标签页而不是开侧栏，
+      // 避免同一内容（尤其 webview）双实例
+      const promoted = currentSessionId
+        ? store.get(promotedRailItemsBySessionAtom).get(currentSessionId)
+        : undefined
+      if (currentSessionId && promoted?.has(item)) {
+        const railTabId = createRailTabId(currentSessionId, item)
+        store.set(activeTabIdAtom, railTabId)
+        syncSideEffects(store.get(syncedTabsAtom).find((t) => t.id === railTabId) ?? null)
+        return
+      }
       if (panelOpen && rightRailItem === item) {
         setPanelOpen(false)
         return
@@ -98,7 +131,15 @@ export function RightRailItems({
       setRightRailItem(item)
       setPanelOpen(true)
     },
-    [panelOpen, rightRailItem, setPanelOpen, setRightRailItem]
+    [
+      currentSessionId,
+      panelOpen,
+      rightRailItem,
+      setPanelOpen,
+      setRightRailItem,
+      store,
+      syncSideEffects,
+    ]
   )
 
   const toggleFiles = React.useCallback(() => {
@@ -176,14 +217,60 @@ export function RightRailItems({
     },
   ]
 
-  const visibleEntries = entries.filter((entry) => entry.visible)
+  // 已晋升为主区标签的项从 rail / tabs 隐藏，关掉对应标签页后回归
+  const promotedBySession = useAtomValue(promotedRailItemsBySessionAtom)
+  const promotedItems = currentSessionId
+    ? (promotedBySession.get(currentSessionId) ?? new Set<RightRailItem>())
+    : new Set<RightRailItem>()
+  const visibleEntries = entries.filter((entry) => entry.visible && !promotedItems.has(entry.id))
   const isTabs = orientation === 'tabs'
   const tooltipSide = isTabs ? 'bottom' : 'left'
+  const topLevelMode = useAtomValue(topLevelModeAtom)
+
+  /**
+   * 把某个分页晋升为主区标签页（全屏模式）。
+   * 只动被晋升的分页：侧栏保持打开并切到下一个可用分页；没有剩余分页才收起。
+   */
+  const promoteToTab = (entry: RailEntry, sourceEl: HTMLElement): void => {
+    if (!currentSessionId) return
+    // ghost 起点：晋升的是当前正在显示的分页 → 整个检查器面板；否则用分页按钮自身
+    const frameEl = sourceEl.closest<HTMLElement>('.app-inspector-frame')
+    const fromEl = panelOpen && rightRailItem === entry.id && frameEl ? frameEl : sourceEl
+    const fromRect = fromEl.getBoundingClientRect()
+
+    const result = openTab(store.get(tabsAtom), {
+      type: 'rail',
+      sessionId: currentSessionId,
+      title: entry.label,
+      railItem: entry.id,
+      mode: topLevelMode,
+    })
+    store.set(tabsAtom, result.tabs)
+    store.set(activeTabIdAtom, result.activeTabId)
+    syncSideEffects(result.tabs.find((t) => t.id === result.activeTabId) ?? null)
+
+    // 被晋升的正是当前显示的分页：切到下一个未晋升分页，侧栏其他页照常可用
+    if (rightRailItem === entry.id) {
+      const remaining = visibleEntries.find((e) => e.id !== entry.id)
+      if (remaining) {
+        setRightRailItem(remaining.id)
+      } else {
+        setPanelOpen(false)
+      }
+    }
+
+    const railTabId = createRailTabId(currentSessionId, entry.id)
+    flyRailGhost(fromRect, () =>
+      document.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(railTabId)}"]`)
+    )
+  }
 
   return (
     <div
       className={cn(
-        isTabs ? 'app-inspector-tabs' : 'rail-slide-host relative flex w-full flex-col items-center gap-1',
+        isTabs
+          ? 'app-inspector-tabs'
+          : 'rail-slide-host relative flex w-full flex-col items-center gap-1',
         className
       )}
       role={isTabs ? 'tablist' : undefined}
@@ -193,14 +280,10 @@ export function RightRailItems({
         const Icon = entry.icon
         const active = panelOpen && rightRailItem === entry.id
         const title =
-          entry.id === 'files'
-            ? '文件面板'
-            : entry.id === 'design'
-              ? 'Design Preview'
-              : entry.label
+          entry.id === 'files' ? '文件面板' : entry.id === 'design' ? 'Design Preview' : entry.label
 
-        return (
-          <Tooltip key={entry.id}>
+        const tabButton = (
+          <Tooltip key={isTabs ? undefined : entry.id}>
             <TooltipTrigger asChild>
               <button
                 type="button"
@@ -208,6 +291,7 @@ export function RightRailItems({
                 aria-selected={isTabs ? active : undefined}
                 aria-pressed={!isTabs ? active : undefined}
                 aria-label={entry.ariaLabel ?? entry.label}
+                data-rail-item={entry.id}
                 onClick={entry.onClick}
                 className={cn(
                   isTabs
@@ -230,6 +314,27 @@ export function RightRailItems({
               </div>
             </TooltipContent>
           </Tooltip>
+        )
+
+        if (!isTabs) return tabButton
+
+        // tabs 形态：每个分页外包一层，hover 浮出「转为主区标签页」小按钮
+        return (
+          <div key={entry.id} className="app-inspector-tab-wrap relative min-w-0 flex-1">
+            {tabButton}
+            <button
+              type="button"
+              className="app-inspector-tab-promote titlebar-no-drag"
+              aria-label={`${entry.label}：转为主区标签页`}
+              title="转为主区标签页"
+              onClick={(e) => {
+                e.stopPropagation()
+                promoteToTab(entry, e.currentTarget)
+              }}
+            >
+              <Maximize2 size={8} strokeWidth={2.25} aria-hidden />
+            </button>
+          </div>
         )
       })}
     </div>

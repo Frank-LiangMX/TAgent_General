@@ -12,6 +12,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@tagent/ui'
+import type { VoiceDictationSettings, MicPermissionResult } from '../../../types'
 import {
   SettingsCard,
   SettingsInput,
@@ -21,7 +22,8 @@ import {
   SettingsTextarea,
   SettingsToggle,
 } from './primitives'
-import type { VoiceDictationSettings, MicPermissionResult } from '../../../types'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 import { cn } from '@/lib/utils'
 
 const ENDPOINT_OPTIONS = [
@@ -132,17 +134,22 @@ export function VoiceInputSettings(): React.ReactElement {
 
   if (!settings) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
-        <Loader2 className="size-4 animate-spin" />
-        正在加载...
-      </div>
+      <SettingsPage>
+        <SettingsPageIntro title="语音" description="语音输入与听写相关选项" />
+        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          正在加载...
+        </div>
+      </SettingsPage>
     )
   }
 
   const micGranted = micPermission?.status === 'granted'
 
   return (
-    <div className="space-y-6">
+    <SettingsPage>
+      <SettingsPageIntro title="语音" description="语音输入与听写相关选项" />
+
       {/* 启用 + 权限 */}
       <SettingsSection title="语音输入" description="Ctrl+～ 呼起浮窗，按住说话实时转写为文本。">
         <SettingsCard>
@@ -296,6 +303,6 @@ export function VoiceInputSettings(): React.ReactElement {
       </SettingsSection>
 
       {saving && <p className="text-xs text-muted-foreground">正在保存...</p>}
-    </div>
+    </SettingsPage>
   )
 }

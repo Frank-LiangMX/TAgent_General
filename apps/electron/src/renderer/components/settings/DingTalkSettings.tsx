@@ -38,6 +38,7 @@ import {
   Button,
 } from '@tagent/ui'
 import { SettingsCard, SettingsInput, SettingsSecretInput, SettingsSection } from './primitives'
+import { SettingsPage } from './SettingsPage'
 
 import { dingtalkBotStatesAtom } from '@/atoms/dingtalk-atoms'
 import { cn } from '@/lib/utils'
@@ -130,7 +131,7 @@ export function DingTalkSettings(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-8">
+    <SettingsPage>
       {/* Bot 列表 */}
       <SettingsSection
         title="钉钉 Bot 列表"
@@ -237,7 +238,7 @@ export function DingTalkSettings(): React.ReactElement {
           </div>
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }
 

@@ -10,6 +10,8 @@ import { Globe, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import * as React from 'react'
 
 import { SettingsSection, SettingsCard, SettingsToggle, SettingsInput } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 
 import { proxyConfigAtom, loadProxyConfigAtom, updateProxyConfigAtom } from '@/atoms/proxy-atoms'
 import { cn } from '@/lib/utils'
@@ -32,10 +34,13 @@ export function ProxySettings(): React.ReactElement {
 
   if (!config) {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <Loader2 size={24} className="animate-spin" />
-        <span className="ml-2">加载中...</span>
-      </div>
+      <SettingsPage>
+        <SettingsPageIntro title="代理" description="网络代理与出站配置" />
+        <div className="flex h-64 items-center justify-center text-muted-foreground">
+          <Loader2 size={24} className="animate-spin" />
+          <span className="ml-2">加载中...</span>
+        </div>
+      </SettingsPage>
     )
   }
 
@@ -72,7 +77,9 @@ export function ProxySettings(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-6">
+    <SettingsPage>
+      <SettingsPageIntro title="代理" description="网络代理与出站配置" />
+
       {/* 代理开关 */}
       <SettingsSection
         title="代理配置"
@@ -185,6 +192,6 @@ export function ProxySettings(): React.ReactElement {
           </SettingsCard>
         </SettingsSection>
       )}
-    </div>
+    </SettingsPage>
   )
 }

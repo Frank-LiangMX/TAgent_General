@@ -1,7 +1,8 @@
 /**
  * SettingsUIConstants - 设置界面统一样式 token
  *
- * 与主壳 spatial 对齐：语义类由 settings-shell.css 接管视觉。
+ * 卡片表面权威：packages/ui/styles/glass.css `.settings-card`
+ * 壳层 / 行 / 字段：apps/electron/.../settings-shell.css
  */
 
 /** 标签样式 */

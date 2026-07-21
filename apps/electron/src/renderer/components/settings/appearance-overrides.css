@@ -33,42 +33,111 @@
  * ============================================================= */
 
 /* glow 对齐 Soft Glass primary：饱和适中、偏亮，避免脏重 */
-.tagent-style-card[data-style='slate-light']   { --theme-glow: hsl(25 32% 56%);   --theme-soft: hsl(25 32% 56% / 0.28);  }
-.tagent-style-card[data-style='ocean-light']   { --theme-glow: hsl(191 46% 48%);  --theme-soft: hsl(191 46% 48% / 0.28); }
-.tagent-style-card[data-style='forest-light']  { --theme-glow: hsl(148 32% 48%);  --theme-soft: hsl(148 32% 48% / 0.28); }
-.tagent-style-card[data-style='orange-light']  { --theme-glow: hsl(22 42% 54%);   --theme-soft: hsl(22 42% 54% / 0.28);  }
-.tagent-style-card[data-style='purple-light']  { --theme-glow: hsl(275 38% 56%);  --theme-soft: hsl(275 38% 56% / 0.28); }
-.tagent-style-card[data-style='slate-dark']    { --theme-glow: hsl(27 36% 66%);   --theme-soft: hsl(27 36% 66% / 0.32);  }
-.tagent-style-card[data-style='ocean-dark']    { --theme-glow: hsl(191 48% 68%);  --theme-soft: hsl(191 48% 68% / 0.32); }
-.tagent-style-card[data-style='forest-dark']   { --theme-glow: hsl(148 32% 64%);  --theme-soft: hsl(148 32% 64% / 0.32); }
-.tagent-style-card[data-style='orange-dark']   { --theme-glow: hsl(24 42% 62%);   --theme-soft: hsl(24 42% 62% / 0.32);  }
-.tagent-style-card[data-style='purple-dark']   { --theme-glow: hsl(275 40% 70%);  --theme-soft: hsl(275 40% 70% / 0.32); }
+.tagent-style-card[data-style='default-light'] {
+  --theme-glow: hsl(220 16% 52%);
+  --theme-soft: hsl(220 16% 52% / 0.28);
+}
+.tagent-style-card[data-style='default-dark'] {
+  --theme-glow: hsl(220 14% 68%);
+  --theme-soft: hsl(220 14% 68% / 0.32);
+}
+.tagent-style-card[data-style='slate-light'] {
+  --theme-glow: hsl(25 32% 56%);
+  --theme-soft: hsl(25 32% 56% / 0.28);
+}
+.tagent-style-card[data-style='ocean-light'] {
+  --theme-glow: hsl(191 46% 48%);
+  --theme-soft: hsl(191 46% 48% / 0.28);
+}
+.tagent-style-card[data-style='forest-light'] {
+  --theme-glow: hsl(148 32% 48%);
+  --theme-soft: hsl(148 32% 48% / 0.28);
+}
+.tagent-style-card[data-style='orange-light'] {
+  --theme-glow: hsl(22 42% 54%);
+  --theme-soft: hsl(22 42% 54% / 0.28);
+}
+.tagent-style-card[data-style='purple-light'] {
+  --theme-glow: hsl(275 38% 56%);
+  --theme-soft: hsl(275 38% 56% / 0.28);
+}
+.tagent-style-card[data-style='slate-dark'] {
+  --theme-glow: hsl(27 36% 66%);
+  --theme-soft: hsl(27 36% 66% / 0.32);
+}
+.tagent-style-card[data-style='ocean-dark'] {
+  --theme-glow: hsl(191 48% 68%);
+  --theme-soft: hsl(191 48% 68% / 0.32);
+}
+.tagent-style-card[data-style='forest-dark'] {
+  --theme-glow: hsl(148 32% 64%);
+  --theme-soft: hsl(148 32% 64% / 0.32);
+}
+.tagent-style-card[data-style='orange-dark'] {
+  --theme-glow: hsl(24 42% 62%);
+  --theme-soft: hsl(24 42% 62% / 0.32);
+}
+.tagent-style-card[data-style='purple-dark'] {
+  --theme-glow: hsl(275 40% 70%);
+  --theme-soft: hsl(275 40% 70% / 0.32);
+}
 
 /* =============================================================
  *  3. 关键帧定义（全部一次性，forwards 保留终态）
  * ============================================================= */
 
 @keyframes tagent-fade-up {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes tagent-sweep-once {
-  0%   { transform: translateX(-30%); opacity: 0; }
-  20%  { opacity: 1; }
-  100% { transform: translateX(220%); opacity: 0; }
+  0% {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(220%);
+    opacity: 0;
+  }
 }
 
 @keyframes tagent-pulse-ring {
-  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-  20%  { opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(7); opacity: 0; }
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(7);
+    opacity: 0;
+  }
 }
 
 @keyframes tagent-corner-snap {
-  0%   { opacity: 0; transform: scale(0.5); }
-  60%  { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* =============================================================
@@ -113,6 +182,24 @@
  * 预览色对齐 colors.ts SCENE 的 A/B/C 位姿语义：
  * A 偏上 · B 右下 · C 下中 + 对角底洗
  */
+
+/* default-light · 素白瓷（对齐 tokens.css 默认 scene：近无色白瓷 + 冷灰光斑） */
+.tagent-theme-default-light {
+  background:
+    radial-gradient(ellipse 42% 48% at 36% 10%, rgb(196 204 216 / 0.5), transparent 70%),
+    radial-gradient(ellipse 40% 46% at 48% 88%, rgb(206 210 218 / 0.38), transparent 72%),
+    radial-gradient(ellipse 52% 58% at 82% 78%, rgb(184 194 210 / 0.42), transparent 72%),
+    linear-gradient(135deg, rgb(244 246 250) 0%, rgb(244 246 250) 42%, rgb(230 234 240) 100%);
+}
+
+/* default-dark · 墨石（中性深玻璃底 + 冷灰光斑） */
+.tagent-theme-default-dark {
+  background:
+    radial-gradient(ellipse 42% 48% at 36% 10%, rgb(120 130 148 / 0.36), transparent 68%),
+    radial-gradient(ellipse 40% 46% at 48% 88%, rgb(96 102 114 / 0.28), transparent 70%),
+    radial-gradient(ellipse 52% 58% at 82% 78%, rgb(110 122 142 / 0.32), transparent 68%),
+    linear-gradient(155deg, hsl(220 10% 30%) 0%, hsl(220 10% 23%) 52%, hsl(220 10% 17%) 100%);
+}
 
 /* slate-light · 云絮 */
 .tagent-theme-cloud-dancer {
@@ -232,7 +319,7 @@
 }
 
 /* =============================================================
- *  6. 风格库布局：浅/深分组 + 5 列卡片
+ *  6. 风格库布局：按当前深浅模式显示一组色系卡片
  * ============================================================= */
 
 .tagent-style-library {
@@ -267,14 +354,9 @@
   color: var(--md-on-surface-faint, hsl(var(--muted-foreground) / 0.72));
 }
 
-/* 深色组：提示「抬升」气质，预览本身也更轻 */
-.tagent-style-group:last-child .tagent-style-group-hint {
-  opacity: 0.9;
-}
-
 .tagent-style-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -428,11 +510,168 @@
 
 @media (max-width: 720px) {
   .tagent-style-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .tagent-style-card {
     height: 104px;
+  }
+}
+
+/* =============================================================
+ *  6.5 深浅切换按钮
+ *  样式参考 uiverse.io/santosh-sarkar/terrible-mole-8（MIT）：
+ *  两个图标叠在同一格，transform 交叉旋转缩放，入场图标延迟 200ms
+ * ============================================================= */
+
+/* 容器：对齐侧栏 .tool-cluster 胶囊组（app-shell.css 同款配方） */
+.tagent-theme-mode-control {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--spatial-line, hsl(var(--border) / 0.55));
+  border-radius: var(--radius-glass-popover, 12px);
+  background: rgb(255 255 255 / 42%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  backdrop-filter: blur(10px) saturate(1.1);
+}
+
+.dark .tagent-theme-mode-control {
+  background: rgb(255 255 255 / 7%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+/* 图标段：太阳/月亮（对齐 .tool-cluster-icon 尺寸） */
+.tagent-daynight-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius-glass-popover, 12px) - 2px);
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    background-color 150ms var(--app-shell-motion, ease),
+    transform 140ms var(--app-shell-motion, ease);
+}
+
+.tagent-daynight-toggle:hover {
+  background: rgb(255 255 255 / 48%);
+}
+
+.dark .tagent-daynight-toggle:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.tagent-daynight-toggle:active {
+  transform: scale(0.97);
+}
+
+/*
+ * 图标叠放动画：对齐 uiverse terrible-mole-8 的 transform 配方。
+ * 关键态带 rotate(360deg)，退场态只留 scale(0)，进出都有旋转感。
+ */
+.tagent-daynight-icon {
+  grid-column: 1 / 1;
+  grid-row: 1 / 1;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  pointer-events: none;
+  transition: transform 500ms ease;
+  will-change: transform;
+}
+
+.tagent-daynight-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+/* 浅色态（默认）= 太阳在场：月亮缩没并带旋转，太阳延时旋入 */
+.tagent-daynight-icon--moon {
+  color: var(--spatial-muted, hsl(var(--muted-foreground) / 0.85));
+  transform: rotate(360deg) scale(0);
+}
+
+.tagent-daynight-icon--sun {
+  color: hsl(38 92% 50%);
+  transform: scale(1) rotate(360deg);
+  transition-delay: 200ms;
+}
+
+/* 深色态 = 月亮在场：太阳缩没，月亮延时旋入 */
+.tagent-daynight-toggle[data-dark] .tagent-daynight-icon--moon {
+  transform: scale(1);
+  transition-delay: 200ms;
+}
+
+.tagent-daynight-toggle[data-dark] .tagent-daynight-icon--sun {
+  transform: scale(0);
+  transition-delay: 0ms;
+}
+
+/* 文本段：自动（对齐 .tool-cluster-accent，active 才染 accent） */
+.tagent-theme-auto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 26px;
+  height: 26px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: calc(var(--radius-glass-popover, 12px) - 2px);
+  color: var(--spatial-muted, hsl(var(--muted-foreground)));
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  transition:
+    color 150ms var(--app-shell-motion, ease),
+    background-color 150ms var(--app-shell-motion, ease),
+    transform 140ms var(--app-shell-motion, ease);
+}
+
+.tagent-theme-auto:hover {
+  color: var(--spatial-ink, hsl(var(--foreground)));
+  background: rgb(255 255 255 / 48%);
+}
+
+.dark .tagent-theme-auto:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.tagent-theme-auto[data-active] {
+  color: var(--spatial-accent, hsl(var(--primary)));
+  background: var(--spatial-accent-soft, hsl(var(--primary) / 0.12));
+}
+
+.tagent-theme-auto[data-active]:hover {
+  background: color-mix(
+    in srgb,
+    var(--spatial-accent, hsl(var(--primary))) 18%,
+    rgb(255 255 255 / 30%)
+  );
+}
+
+.tagent-theme-auto:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagent-daynight-icon {
+    transition-duration: 0ms;
+    transition-delay: 0ms;
   }
 }
 
@@ -530,7 +769,9 @@
   box-shadow:
     0 0 0 4px var(--tagent-brand-soft),
     0 2px 6px hsl(var(--foreground) / 0.1);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
   pointer-events: none;
 }
 
@@ -678,12 +919,16 @@
   height: 1.4rem;
   padding: 0 0.3rem;
   border-radius: 0.25rem;
-  background: linear-gradient(180deg, hsl(var(--background) / 0.95) 0%, hsl(var(--muted) / 0.85) 100%);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--background) / 0.95) 0%,
+    hsl(var(--muted) / 0.85) 100%
+  );
   border: 1px solid var(--tagent-brand-soft);
   box-shadow:
     0 1px 0 hsl(var(--foreground) / 0.06),
     inset 0 -1px 0 hsl(var(--foreground) / 0.04);
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
   font-size: 0.65rem;
   font-weight: 600;
   color: var(--tagent-brand);

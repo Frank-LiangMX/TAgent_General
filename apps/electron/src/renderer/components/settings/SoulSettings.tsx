@@ -166,7 +166,7 @@ export function SoulSettings(): React.ReactElement {
   const progressPercent = Math.min((charCount / MAX_SOUL_LENGTH) * 100, 100)
 
   return (
-    <div className="space-y-6">
+    <>
       <SettingsSection
         title={
           <span className="flex items-center gap-2">
@@ -315,6 +315,6 @@ export function SoulSettings(): React.ReactElement {
           })}
         </div>
       </SettingsSection>
-    </div>
+    </>
   )
 }

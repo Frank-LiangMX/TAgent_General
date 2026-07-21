@@ -5,12 +5,14 @@
  */
 
 import type { Channel, ChannelModel } from '@tagent/shared'
-import { ArrowLeft, Loader2, Star } from 'lucide-react'
+import { Loader2, Star } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 
-import { Button, Switch, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Switch, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import { SettingsSection, SettingsCard } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsSubpageChrome } from './SettingsSubpageChrome'
 import { cn } from '@/lib/utils'
 
 const AUTO_SAVE_DELAY = 600
@@ -144,19 +146,16 @@ export function KsccChannelForm({
   const enabledCount = models.filter((m) => m.enabled).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
-          <ArrowLeft size={18} />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-medium text-foreground">配置 kscc 内网</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            认证由 kscc CLI 管理 · 修改会自动保存
-          </p>
-        </div>
-        {syncingCatalog && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
-      </div>
+    <SettingsPage>
+      <SettingsSubpageChrome
+        title="配置 kscc 内网"
+        onBack={onBack}
+        action={
+          syncingCatalog ? (
+            <Loader2 size={16} className="animate-spin text-muted-foreground" />
+          ) : undefined
+        }
+      />
 
       {ksccInstalled === false && (
         <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3 text-xs text-foreground/80">
@@ -246,6 +245,6 @@ export function KsccChannelForm({
           )}
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }

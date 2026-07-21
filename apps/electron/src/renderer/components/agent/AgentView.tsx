@@ -25,7 +25,6 @@ import {
   Settings,
   Paperclip,
   FolderPlus,
-  FolderOpen,
   Plus,
   MicIcon,
   X,
@@ -75,6 +74,7 @@ import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
 
 import { TaskProgressDock } from './TaskProgressDock'
+import { NoProjectEmptyState } from './NoProjectEmptyState'
 
 import {
   agentStreamingStatesAtom,
@@ -162,7 +162,7 @@ import { useDesignContextAugment } from '@/hooks/useDesignContextAugment'
 import { detectUIIntent, isNewDesignRequest } from '@/lib/detect-ui-intent'
 import { designSuggestionAtom, designEnabledAtom } from '@/atoms/design-preview-atoms'
 import { DesignSuggestionBanner } from '@/components/design-preview/DesignSuggestionBanner'
-import { useWorkspaceActions } from '@/hooks/useWorkspaceActions'
+
 import { isLikelyAgentIntent } from '@/lib/ask-heuristic'
 import {
   createClipboardPendingFile,
@@ -2964,29 +2964,10 @@ export function AgentView({
 
   // 是否有项目模式的工作区
   const hasProject = workspaces.some((w) => w.projectDirectory)
-  const { createProject } = useWorkspaceActions()
 
-  // 无项目时显示引导卡片
+  // 无项目时显示引导页（对齐 WelcomeEmptyState 浮岛布局）
   if (!hasProject) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="max-w-sm w-full mx-4 rounded-2xl bg-card shadow-xl p-8 text-center">
-          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
-            <FolderOpen className="size-8 text-primary" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">选择项目目录开始</h2>
-          <p className="text-sm text-muted-foreground mb-6">TAgent 将在你选择的代码目录中工作</p>
-          <Button
-            onClick={() => {
-              createProject().catch(console.error)
-            }}
-            className="w-full"
-          >
-            选择目录
-          </Button>
-        </div>
-      </div>
-    )
+    return <NoProjectEmptyState />
   }
 
   return (

@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@tagent/ui'
 import { SettingsCard, SettingsSection, SettingsSelect } from './primitives'
+import { SettingsPage } from './SettingsPage'
 
 import { agentWorkspacesAtom } from '@/atoms/agent-atoms'
 
@@ -50,7 +51,7 @@ export function BotDefaultSettings(): React.ReactElement {
     return <div className="py-8 text-center text-muted-foreground text-sm">加载中...</div>
 
   return (
-    <>
+    <SettingsPage>
       <SettingsSection title="默认配置" description="所有机器人平台发起新会话时使用的默认设置">
         <SettingsCard>
           {workspaceOptions.length > 0 ? (
@@ -75,8 +76,6 @@ export function BotDefaultSettings(): React.ReactElement {
           </Button>
         </div>
       </SettingsSection>
-
-      <div className="my-6 border-t border-border/50" />
 
       <SettingsSection
         title="机器人命令"
@@ -106,6 +105,6 @@ export function BotDefaultSettings(): React.ReactElement {
           </div>
         </SettingsCard>
       </SettingsSection>
-    </>
+    </SettingsPage>
   )
 }

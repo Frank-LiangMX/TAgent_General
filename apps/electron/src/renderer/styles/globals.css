@@ -5,6 +5,9 @@
 @import '@tagent/ui/styles/pressable.css';
 @import '@tagent/ui/styles/search.css';
 @import '@tagent/ui/styles/segmented-tabs.css';
+@import '@tagent/ui/styles/play-pause-toggle.css';
+@import '@tagent/ui/styles/switch.css';
+@import '@tagent/ui/styles/addon-loader.css';
 @import './agent-thread.css';
 
 @tailwind base;
@@ -1987,34 +1990,14 @@ html.theme-neumorph-dark .agent-toolbar-segmented .ui-segmented-tabs-item {
   border-radius: 999px;
 }
 
+/* neumorph：只调 Switch 光学 token，不覆盖结构（主题色笑脸胶囊） */
 html.theme-neumorph-light .ui-switch,
 html.theme-neumorph-dark .ui-switch {
-  border: 1px solid hsl(var(--border) / 0.9);
-  box-shadow: none;
-}
-
-html.theme-neumorph-light .agent-toolbar-switch.ui-switch,
-html.theme-neumorph-dark .agent-toolbar-switch.ui-switch {
-  border-color: hsl(var(--border) / 0.82);
-  background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%);
-  box-shadow:
-    inset 2px 2px 5px var(--neumorph-dark-edge-soft),
-    inset -2px -2px 5px var(--neumorph-light-edge-soft);
-}
-
-html.theme-neumorph-light .agent-toolbar-switch.ui-switch[data-state='checked'],
-html.theme-neumorph-dark .agent-toolbar-switch.ui-switch[data-state='checked'] {
-  background: linear-gradient(145deg, hsl(var(--primary) / 0.18) 0%, hsl(var(--background)) 100%);
-  box-shadow:
-    inset 2px 2px 5px hsl(var(--primary) / 0.14),
-    inset -2px -2px 5px var(--neumorph-light-edge-soft);
-}
-
-html.theme-neumorph-light .agent-toolbar-switch .ui-switch-thumb,
-html.theme-neumorph-dark .agent-toolbar-switch .ui-switch-thumb {
-  background: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
-  box-shadow:
-    0 3px 8px -8px hsl(var(--foreground) / 0.3),
+  --ui-switch-off-track: color-mix(in srgb, hsl(var(--muted)) 70%, hsl(var(--background)) 30%);
+  --ui-switch-thumb-from: hsl(var(--card));
+  --ui-switch-thumb-to: hsl(var(--background));
+  --ui-switch-thumb-shadow:
+    0 3px 8px -4px hsl(var(--foreground) / 0.28),
     inset 1px 1px 0 var(--neumorph-light-edge);
 }
 

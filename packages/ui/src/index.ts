@@ -3,6 +3,7 @@
  */
 
 // 基础组件（从 apps/electron/components/ui 迁移）
+export * from './components/addon-loader'
 export * from './components/alert'
 export * from './components/alert-dialog'
 export * from './components/badge'
@@ -16,6 +17,7 @@ export * from './components/image-lightbox'
 export * from './components/input'
 export * from './components/label'
 export * from './components/loading-indicator'
+export * from './components/play-pause-toggle'
 export * from './components/popover'
 export * from './components/scroll-area'
 export * from './components/scroll-progress-container'

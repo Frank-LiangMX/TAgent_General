@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { WpsConfigInput, WpsUserAuthState } from '@tagent/shared'
 import { Button } from '@tagent/ui'
 import { SettingsCard, SettingsInput, SettingsRow, SettingsSection } from './primitives'
+import { SettingsPage } from './SettingsPage'
 
 import { wpsBridgeStateAtom } from '@/atoms/wps-atoms'
 
@@ -240,7 +241,7 @@ export function WpsSettings(): React.ReactElement {
   const statusMeta = getStatusMeta(bridgeState.status)
 
   return (
-    <div className="space-y-8" data-search-id="wps-config">
+    <SettingsPage data-search-id="wps-config">
       <SettingsSection title="WPS 协作" description="接入 WPS365 消息回调，作为远程连通入口">
         <SettingsCard>
           <SettingsRow label="Bridge 状态">
@@ -414,6 +415,6 @@ export function WpsSettings(): React.ReactElement {
           </div>
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }

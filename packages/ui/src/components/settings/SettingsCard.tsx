@@ -1,7 +1,7 @@
 /**
  * SettingsCard - 设置卡片
  *
- * 抬升表面 + 行间分隔；视觉由 settings-card-surface 统一。
+ * 抬升表面 + 行间分隔；视觉由 glass.css `.settings-card` 统一。
  */
 
 import * as React from 'react'

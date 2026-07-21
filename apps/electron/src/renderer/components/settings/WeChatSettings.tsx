@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import type { WeChatBridgeStatus } from '@tagent/shared'
 import { Button } from '@tagent/ui'
 import { SettingsCard, SettingsRow, SettingsSection } from './primitives'
+import { SettingsPage } from './SettingsPage'
 
 import { wechatBridgeStateAtom } from '@/atoms/wechat-atoms'
 
@@ -113,7 +114,7 @@ export function WeChatSettings(): React.ReactElement {
   if (!loaded) return <div />
 
   return (
-    <div className="space-y-8">
+    <SettingsPage>
       {/* 连接状态 */}
       <SettingsSection title="微信集成" description="扫码登录微信，在微信中控制 TAgent">
         <SettingsCard>
@@ -256,6 +257,6 @@ export function WeChatSettings(): React.ReactElement {
           </div>
         </SettingsCard>
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }

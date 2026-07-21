@@ -4,6 +4,9 @@
 
 export * from './SettingsPanel'
 export * from './SettingsDialog'
+export * from './SettingsPage'
+export * from './SettingsPageIntro'
+export * from './SettingsSubpageChrome'
 export * from './ChannelSettings'
 export * from './ChannelForm'
 export * from './GeneralSettings'

@@ -1,7 +1,8 @@
 /**
  * SettingsDialog - 设置浮层
  *
- * 对齐主壳 spatial：panel 玻璃 + 模糊遮罩 + 平滑进退场。
+ * 对齐主壳 spatial / surface-role：modal elevated + 模糊遮罩。
+ * 注意：Portal 挂到 body，spatial token 在 settings-shell.css 的壳上复刻。
  */
 
 import * as DialogPrimitive from '@radix-ui/react-dialog'

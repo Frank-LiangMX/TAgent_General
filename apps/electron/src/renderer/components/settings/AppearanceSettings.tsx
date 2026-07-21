@@ -9,6 +9,7 @@
  */
 
 import { useAtom, useAtomValue } from 'jotai'
+import { Monitor, Moon, Sun } from 'lucide-react'
 import * as React from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
@@ -19,6 +20,8 @@ import type {
   ThemeStyle,
 } from '../../../types'
 import { SettingsSection, SettingsCard, SettingsSegmentedControl } from './primitives'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 
 import './appearance-overrides.css'
 
@@ -30,10 +33,7 @@ import {
 } from '@/atoms/advanced-material'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
 import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
-import {
-  officeMotionModeAtom,
-  type OfficeMotionMode,
-} from '@/atoms/session-presentation-atoms'
+import { officeMotionModeAtom, type OfficeMotionMode } from '@/atoms/session-presentation-atoms'
 import {
   themeModeAtom,
   themeStyleAtom,
@@ -43,14 +43,6 @@ import {
   applyThemeToDOM,
 } from '@/atoms/theme'
 import { cn } from '@/lib/utils'
-
-/** 皮肤选项 */
-const SKIN_OPTIONS = [
-  { value: 'light', label: '浅色' },
-  { value: 'dark', label: '深色' },
-  { value: 'system', label: '跟随系统' },
-  { value: 'special', label: '风格库' },
-]
 
 /** 阅读字号选项 */
 const READING_FONT_SIZE_OPTIONS = [
@@ -70,17 +62,30 @@ const OFFICE_MOTION_OPTIONS: { value: OfficeMotionMode; label: string }[] = [
   { value: 'reduced', label: '精简动效' },
 ]
 
-/** 特殊风格 ID（排除 default） */
-type SpecialStyleId = Exclude<ThemeStyle, 'default'>
+/** 主题色系（default = 默认中性色，也进风格库） */
+type ThemeFamily = 'default' | 'slate' | 'ocean' | 'forest' | 'orange' | 'purple'
 
-/** 特殊风格定义 */
-interface SpecialStyle {
-  id: SpecialStyleId
-  name: string
+/** 预览装饰符号 */
+type DecoKind =
+  | 'cloud'
+  | 'wave'
+  | 'leaf'
+  | 'star'
+  | 'moon'
+  | 'gem'
+  | 'sun'
+  | 'flame'
+  | 'flower'
+  | 'orb'
+
+/** 风格库卡片定义（每个色系有浅/深两套，按当前深浅模式只显示一套） */
+interface StyleCardDef {
+  family: ThemeFamily
   variant: 'light' | 'dark'
+  name: string
   tag: string
   previewClass: string
-  deco: 'cloud' | 'wave' | 'leaf' | 'star' | 'moon' | 'gem' | 'sun' | 'flame' | 'flower' | 'orb'
+  deco: DecoKind
 }
 
 /**
@@ -91,43 +96,51 @@ interface SpecialStyle {
  * - orange：琥珀主光 + 冷辅
  * - purple：紫藤主光（非「兰」的蓝紫）
  */
-const SPECIAL_STYLES: readonly SpecialStyle[] = [
-  // 浅色（按列：slate / ocean / forest / orange / purple）
+const STYLE_CARDS: readonly StyleCardDef[] = [
+  // 浅色（按列：default / slate / ocean / forest / orange / purple）
   {
-    id: 'slate-light',
-    name: '暖砂薄暮',
+    family: 'default',
+    name: '中性',
+    tag: 'Neutral',
+    variant: 'light',
+    previewClass: 'tagent-theme-default-light',
+    deco: 'orb',
+  },
+  {
+    family: 'slate',
+    name: '暖砂',
     tag: 'Slate',
     variant: 'light',
     previewClass: 'tagent-theme-cloud-dancer',
     deco: 'cloud',
   },
   {
-    id: 'ocean-light',
-    name: '碧海晴空',
+    family: 'ocean',
+    name: '碧海',
     tag: 'Ocean',
     variant: 'light',
     previewClass: 'tagent-theme-ocean-light',
     deco: 'wave',
   },
   {
-    id: 'forest-light',
-    name: '翠林晨光',
+    family: 'forest',
+    name: '翠林',
     tag: 'Forest',
     variant: 'light',
     previewClass: 'tagent-theme-forest-light',
     deco: 'leaf',
   },
   {
-    id: 'orange-light',
-    name: '琥珀晨曦',
+    family: 'orange',
+    name: '琥珀',
     tag: 'Amber',
     variant: 'light',
     previewClass: 'tagent-theme-terracotta-dawn',
     deco: 'sun',
   },
   {
-    id: 'purple-light',
-    name: '紫藤晓露',
+    family: 'purple',
+    name: '紫藤',
     tag: 'Violet',
     variant: 'light',
     previewClass: 'tagent-theme-wisteria-dawn',
@@ -135,40 +148,48 @@ const SPECIAL_STYLES: readonly SpecialStyle[] = [
   },
   // 深色（列对齐浅色）
   {
-    id: 'slate-dark',
-    name: '石板暮霭',
+    family: 'default',
+    name: '中性',
+    tag: 'Neutral',
+    variant: 'dark',
+    previewClass: 'tagent-theme-default-dark',
+    deco: 'orb',
+  },
+  {
+    family: 'slate',
+    name: '暖砂',
     tag: 'Slate',
     variant: 'dark',
     previewClass: 'tagent-theme-morandi-night',
     deco: 'gem',
   },
   {
-    id: 'ocean-dark',
-    name: '深海夜潮',
+    family: 'ocean',
+    name: '碧海',
     tag: 'Ocean',
     variant: 'dark',
     previewClass: 'tagent-theme-ocean-dark',
     deco: 'star',
   },
   {
-    id: 'forest-dark',
-    name: '青苔夜语',
+    family: 'forest',
+    name: '翠林',
     tag: 'Forest',
     variant: 'dark',
     previewClass: 'tagent-theme-forest-dark',
     deco: 'moon',
   },
   {
-    id: 'orange-dark',
-    name: '熔金余晖',
+    family: 'orange',
+    name: '琥珀',
     tag: 'Amber',
     variant: 'dark',
     previewClass: 'tagent-theme-terracotta-night',
     deco: 'flame',
   },
   {
-    id: 'purple-dark',
-    name: '雾紫夜语',
+    family: 'purple',
+    name: '紫藤',
     tag: 'Violet',
     variant: 'dark',
     previewClass: 'tagent-theme-wisteria-night',
@@ -192,31 +213,69 @@ export function AppearanceSettings(): React.ReactElement {
   const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
   const [officeMotionMode, setOfficeMotionMode] = useAtom(officeMotionModeAtom)
 
-  /** 切换皮肤 */
-  const handleThemeChange = React.useCallback(
-    (value: string) => {
-      const mode = value as ThemeMode
-      setThemeMode(mode)
-      updateThemeMode(mode)
-      if (mode !== 'special') {
+  /** 当前解析后的深浅（system 模式跟系统，special 模式看风格后缀） */
+  const resolvedDark =
+    themeMode === 'system'
+      ? systemIsDark
+      : themeMode === 'special'
+        ? themeStyle.endsWith('-dark')
+        : themeMode === 'dark'
+
+  /** 当前色系（default = 默认主题） */
+  const currentFamily: ThemeFamily =
+    themeMode === 'special' && themeStyle !== 'default'
+      ? (themeStyle.replace(/-(light|dark)$/, '') as ThemeFamily)
+      : 'default'
+
+  /** 应用「色系 + 深浅」组合到 atoms / 设置 / DOM */
+  const applyTheme = React.useCallback(
+    (family: ThemeFamily, dark: boolean) => {
+      if (family === 'default') {
+        const mode: ThemeMode = dark ? 'dark' : 'light'
+        setThemeMode(mode)
         setThemeStyle('default')
-        updateThemeStyle('default')
+        void updateThemeMode(mode)
+        void updateThemeStyle('default')
         applyThemeToDOM(mode, 'default', systemIsDark)
+      } else {
+        const style = `${family}-${dark ? 'dark' : 'light'}` as ThemeStyle
+        setThemeMode('special')
+        setThemeStyle(style)
+        void updateThemeMode('special')
+        void updateThemeStyle(style)
+        applyThemeToDOM('special', style, systemIsDark)
       }
     },
     [setThemeMode, setThemeStyle, systemIsDark]
   )
 
-  /** 选择风格库中的风格（强调色自动随主题 primary） */
-  const handleStyleSelect = React.useCallback(
-    (style: ThemeStyle) => {
-      setThemeMode('special')
-      setThemeStyle(style)
-      updateThemeMode('special')
-      updateThemeStyle(style)
-      applyThemeToDOM('special', style, systemIsDark)
+  /** 深浅切换：保持当前色系，翻转明暗（会退出跟随系统） */
+  const handleVariantToggle = React.useCallback(() => {
+    applyTheme(currentFamily, !resolvedDark)
+  }, [applyTheme, currentFamily, resolvedDark])
+
+  /** 跟随系统开关：开启时回到默认色系（special 风格自带深浅，无法跟随） */
+  const handleSystemFollowChange = React.useCallback(
+    (enabled: boolean) => {
+      if (enabled) {
+        setThemeMode('system')
+        setThemeStyle('default')
+        void updateThemeMode('system')
+        void updateThemeStyle('default')
+        applyThemeToDOM('system', 'default', systemIsDark)
+      } else {
+        applyTheme(currentFamily, resolvedDark)
+      }
     },
-    [setThemeMode, setThemeStyle, systemIsDark]
+    [applyTheme, currentFamily, resolvedDark, setThemeMode, setThemeStyle, systemIsDark]
+  )
+
+  /** 选择风格库色系：跟随当前深浅模式落到对应变体 */
+  const handleFamilySelect = React.useCallback(
+    (family: ThemeFamily) => {
+      applyTheme(family, resolvedDark)
+    },
+    [applyTheme, resolvedDark]
   )
 
   /** 切换阅读字号 */
@@ -249,53 +308,50 @@ export function AppearanceSettings(): React.ReactElement {
   )
 
   return (
-    <div className="space-y-4">
-      <SettingsSection title="主题皮肤" description="浅色 / 深色 / 跟随系统 / 风格库">
-        <SettingsCard>
-          <SettingsSegmentedControl
-            label="皮肤模式"
-            description="选「风格库」可浏览浅色 / 深色两套 scene 弥散皮肤"
-            value={themeMode}
-            onValueChange={handleThemeChange}
-            options={SKIN_OPTIONS}
-          />
+    <SettingsPage variant="dense">
+      <SettingsPageIntro title="外观" description="主题、风格库、字号与材质" />
 
-          {themeMode === 'special' && (
-            <div className="tagent-style-library px-4 pb-4 pt-1">
-              <div className="tagent-style-group">
-                <div className="tagent-style-group-label">
-                  <span>浅色</span>
-                  <span className="tagent-style-group-hint">冷暖撞色弥散</span>
-                </div>
-                <div className="tagent-style-grid">
-                  {SPECIAL_STYLES.filter((s) => s.variant === 'light').map((style) => (
-                    <StyleCard
-                      key={style.id}
-                      style={style}
-                      isSelected={themeStyle === style.id}
-                      onSelect={() => handleStyleSelect(style.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="tagent-style-group">
-                <div className="tagent-style-group-label">
-                  <span>深色</span>
-                  <span className="tagent-style-group-hint">中暗底 + 透亮光斑</span>
-                </div>
-                <div className="tagent-style-grid">
-                  {SPECIAL_STYLES.filter((s) => s.variant === 'dark').map((style) => (
-                    <StyleCard
-                      key={style.id}
-                      style={style}
-                      isSelected={themeStyle === style.id}
-                      onSelect={() => handleStyleSelect(style.id)}
-                    />
-                  ))}
-                </div>
+      <SettingsSection title="主题皮肤" description="深浅模式与主题色系">
+        <SettingsCard>
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex-1 min-w-0 mr-4">
+              <div className="text-sm font-medium text-foreground">深浅模式</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {themeMode === 'system'
+                  ? `自动 · 当前为${resolvedDark ? '深色' : '浅色'}`
+                  : `手动 · ${resolvedDark ? '深色' : '浅色'}`}
               </div>
             </div>
-          )}
+            <ThemeModeControl
+              isDark={resolvedDark}
+              isAuto={themeMode === 'system'}
+              onVariantToggle={handleVariantToggle}
+              onAutoToggle={() => handleSystemFollowChange(themeMode !== 'system')}
+            />
+          </div>
+
+          <div className="tagent-style-library px-4 pb-4 pt-1">
+            <div className="tagent-style-group">
+              <div className="tagent-style-group-label">
+                <span>主题色系</span>
+                <span className="tagent-style-group-hint">
+                  {resolvedDark ? '深色 · 中暗底 + 透亮光斑' : '浅色 · 冷暖撞色弥散'}
+                </span>
+              </div>
+              <div className="tagent-style-grid">
+                {STYLE_CARDS.filter((s) => s.variant === (resolvedDark ? 'dark' : 'light')).map(
+                  (style) => (
+                    <StyleCard
+                      key={`${style.family}-${style.variant}`}
+                      style={style}
+                      isSelected={currentFamily === style.family}
+                      onSelect={() => handleFamilySelect(style.family)}
+                    />
+                  )
+                )}
+              </div>
+            </div>
+          </div>
         </SettingsCard>
       </SettingsSection>
 
@@ -311,10 +367,8 @@ export function AppearanceSettings(): React.ReactElement {
         </SettingsCard>
       </SettingsSection>
 
-      {/* 排版与材质 */}
       <SettingsSection title="排版与材质" description="字号、缩放、玻璃质感">
         <SettingsCard>
-          {/* 界面缩放 */}
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex-1 min-w-0 mr-4">
               <div className="text-sm font-medium text-foreground">界面缩放</div>
@@ -323,7 +377,6 @@ export function AppearanceSettings(): React.ReactElement {
             <ZoomKeycapHint />
           </div>
 
-          {/* 阅读字号 */}
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex-1 min-w-0 mr-4">
               <div className="text-sm font-medium text-foreground">阅读字号</div>
@@ -365,7 +418,86 @@ export function AppearanceSettings(): React.ReactElement {
           />
         </SettingsCard>
       </SettingsSection>
+    </SettingsPage>
+  )
+}
+
+// =====================================================================
+// 深浅切换（样式参考 uiverse.io/santosh-sarkar/terrible-mole-8：
+// 月亮旋出缩没、太阳延迟旋入，纯 transform 交叉动画）
+// =====================================================================
+
+interface DayNightToggleProps {
+  isDark: boolean
+  onToggle: () => void
+}
+
+interface ThemeModeControlProps {
+  isDark: boolean
+  isAuto: boolean
+  onVariantToggle: () => void
+  onAutoToggle: () => void
+}
+
+function ThemeModeControl({
+  isDark,
+  isAuto,
+  onVariantToggle,
+  onAutoToggle,
+}: ThemeModeControlProps): React.ReactElement {
+  return (
+    <div className="tagent-theme-mode-control">
+      <DayNightToggle isDark={isDark} onToggle={onVariantToggle} />
+      <button
+        type="button"
+        aria-pressed={isAuto}
+        onClick={onAutoToggle}
+        data-active={isAuto || undefined}
+        className="tagent-theme-auto"
+      >
+        <Monitor size={14} strokeWidth={2} aria-hidden="true" />
+        <span>自动</span>
+      </button>
     </div>
+  )
+}
+
+function DayNightToggle({ isDark, onToggle }: DayNightToggleProps): React.ReactElement {
+  // 本地视觉态：先翻图标开启动画，再延后抛主题切换，
+  // 避免 html.dark / 风格库重排把 CSS transition 掐掉。
+  const [visualDark, setVisualDark] = React.useState(isDark)
+
+  React.useEffect(() => {
+    setVisualDark(isDark)
+  }, [isDark])
+
+  const handleClick = React.useCallback(() => {
+    const next = !visualDark
+    setVisualDark(next)
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        onToggle()
+      })
+    })
+  }, [onToggle, visualDark])
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={visualDark}
+      aria-label={visualDark ? '切换到浅色模式' : '切换到深色模式'}
+      onClick={handleClick}
+      data-dark={visualDark || undefined}
+      className="tagent-daynight-toggle"
+    >
+      <span className="tagent-daynight-icon tagent-daynight-icon--moon" aria-hidden="true">
+        <Moon size={14} strokeWidth={2} fill="currentColor" />
+      </span>
+      <span className="tagent-daynight-icon tagent-daynight-icon--sun" aria-hidden="true">
+        <Sun size={14} strokeWidth={2} />
+      </span>
+    </button>
   )
 }
 
@@ -374,7 +506,7 @@ export function AppearanceSettings(): React.ReactElement {
 // =====================================================================
 
 interface StyleCardProps {
-  style: SpecialStyle
+  style: StyleCardDef
   isSelected: boolean
   onSelect: () => void
 }
@@ -387,7 +519,7 @@ function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.React
       onClick={onSelect}
       aria-pressed={isSelected}
       aria-label={`${style.name}（${style.variant === 'light' ? '浅色' : '深色'}）`}
-      data-style={style.id}
+      data-style={`${style.family}-${style.variant}`}
       data-variant={style.variant}
       data-selected={isSelected || undefined}
       className="tagent-style-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
@@ -427,7 +559,7 @@ function StyleCard({ style, isSelected, onSelect }: StyleCardProps): React.React
 // ---------------------------------------------------------------------
 
 /** 8 种 TA 风味装饰符号的 SVG path */
-const DECO_PATHS: Record<SpecialStyle['deco'], React.ReactElement> = {
+const DECO_PATHS: Record<DecoKind, React.ReactElement> = {
   cloud: (
     <path
       d="M10 28 Q4 28 4 22 Q4 16 10 16 Q11 8 20 8 Q28 8 30 16 Q38 16 38 22 Q38 28 32 28 Z"
@@ -521,7 +653,7 @@ const DECO_PATHS: Record<SpecialStyle['deco'], React.ReactElement> = {
 
 interface ThemePreviewProps {
   previewClass: string
-  deco: SpecialStyle['deco']
+  deco: DecoKind
 }
 
 /** 单个主题预览：纯 CSS 渐变 + 噪点 + 中央装饰符号 */

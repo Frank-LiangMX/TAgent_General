@@ -388,28 +388,24 @@ export function ComposerUnderlay({
           <div className="flex items-center justify-between gap-4 px-1.5 py-0.5">
             <span className="text-xs text-foreground/70">自动预览修改中文件</span>
             <Switch
+              size="sm"
               checked={autoPreviewEnabled}
               onCheckedChange={setAutoPreviewEnabled}
-              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
             />
           </div>
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between gap-4 px-1.5 py-0.5">
             <span className="text-xs text-foreground/70">输出完保持展开</span>
             <Switch
+              size="sm"
               checked={processGroupsKeepExpanded}
               onCheckedChange={setProcessGroupsKeepExpanded}
-              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
             />
           </div>
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between gap-4 px-1.5 py-0.5">
             <span className="text-xs text-foreground/70">展开思考内容</span>
-            <Switch
-              checked={thinkingExpanded}
-              onCheckedChange={setThinkingExpanded}
-              className="agent-toolbar-switch h-4 w-7 [&>span]:size-3 [&>span]:data-[state=checked]:translate-x-3"
-            />
+            <Switch size="sm" checked={thinkingExpanded} onCheckedChange={setThinkingExpanded} />
           </div>
         </div>
       </UnderlayCell>

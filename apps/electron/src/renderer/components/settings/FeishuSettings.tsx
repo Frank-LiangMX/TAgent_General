@@ -66,6 +66,7 @@ import {
   SegmentedTabsItem,
 } from '@tagent/ui'
 import { SettingsCard, SettingsInput, SettingsSecretInput, SettingsSection } from './primitives'
+import { SettingsPage } from './SettingsPage'
 
 import { agentWorkspacesAtom, agentSessionsAtom } from '@/atoms/agent-atoms'
 import { feishuBotStatesAtom, feishuBindingsAtom } from '@/atoms/feishu-atoms'
@@ -708,7 +709,7 @@ function FeishuBindingsTab(): React.ReactElement {
   const p2pBindings = bindings.filter((b) => b.chatType !== 'group')
 
   return (
-    <div className="space-y-8">
+    <SettingsPage>
       <SettingsSection
         title="绑定管理"
         description="查看和管理飞书聊天与 TAgent 工作区/会话的绑定关系"
@@ -767,7 +768,7 @@ function FeishuBindingsTab(): React.ReactElement {
           </div>
         )}
       </SettingsSection>
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -1536,7 +1537,7 @@ function FeishuConfigTab(): React.ReactElement {
   }
 
   return (
-    <div className="space-y-8">
+    <SettingsPage>
       {/* 视频教程（顶部最显眼处，未配置 URL 时自动隐藏） */}
       <FeishuTutorialVideo />
 
@@ -1712,7 +1713,7 @@ function FeishuConfigTab(): React.ReactElement {
 
       {/* 飞书 CLI 配置引导 */}
       <FeishuCliSection />
-    </div>
+    </SettingsPage>
   )
 }
 
@@ -1722,7 +1723,7 @@ export function FeishuSettings(): React.ReactElement {
   const [activeTab, setActiveTab] = React.useState<FeishuTab>('config')
 
   return (
-    <div className="space-y-6">
+    <SettingsPage>
       <SegmentedTabs
         className="max-w-xs"
         value={activeTab}
@@ -1736,6 +1737,6 @@ export function FeishuSettings(): React.ReactElement {
       </SegmentedTabs>
 
       {activeTab === 'config' ? <FeishuConfigTab /> : <FeishuBindingsTab />}
-    </div>
+    </SettingsPage>
   )
 }

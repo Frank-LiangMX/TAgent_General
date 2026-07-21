@@ -1132,7 +1132,8 @@
  * 8. settings-card — 走 surface token（默认 frosted，非永远高透）
  * ========================================================================== */
 
-.settings-card {
+.settings-card,
+.settings-card-surface {
   position: relative;
   isolation: isolate;
   /* frosted 默认扁平；soft/glass 由 --surface-shadow-elevated 带一点抬起 */
@@ -1146,13 +1147,16 @@
 }
 
 [data-material='soft'] .settings-card,
-[data-material='glass'] .settings-card {
+[data-material='soft'] .settings-card-surface,
+[data-material='glass'] .settings-card,
+[data-material='glass'] .settings-card-surface {
   background: var(--surface-bg-elevated);
   border: var(--surface-rim-width) solid var(--surface-rim);
   box-shadow: var(--surface-shadow-elevated);
 }
 
-.settings-card::after {
+.settings-card::after,
+.settings-card-surface::after {
   content: '';
   position: absolute;
   top: 0;
@@ -1172,10 +1176,15 @@
 
 /* frosted：主题色微光渐变（与 panel-glass 同款），替代纯高光线 */
 [data-material='frosted'] .settings-card::after,
+[data-material='frosted'] .settings-card-surface::after,
 :root:not([data-material]) .settings-card::after,
+:root:not([data-material]) .settings-card-surface::after,
 .dark[data-material='frosted'] .settings-card::after,
+.dark[data-material='frosted'] .settings-card-surface::after,
 .dark:not([data-material]) .settings-card::after,
-[data-material='frosted'].dark .settings-card::after {
+.dark:not([data-material]) .settings-card-surface::after,
+[data-material='frosted'].dark .settings-card::after,
+[data-material='frosted'].dark .settings-card-surface::after {
   top: 0;
   left: 0;
   right: 0;
@@ -1224,319 +1233,30 @@
 }
 
 /* ============================================================================
- * 10. Switch — 液态玻璃开关
- * 复刻: Jhey / cross-browser liquid toggle— drag/tap (CodePen bNVWoBW)
+ * 10. Switch — 主题色笑脸胶囊（Uiverse average-monkey-56）
+ * 结构与尺寸权威在 styles/switch.css；此处只做材质光学微调，禁止再覆盖尺寸。
  * ============================================================================ */
 
-.ui-switch-filter-defs,
-.ui-switch-knockout,
-.ui-switch-indicator-liquid {
-  display: none;
+/* glass：开态渐变略提亮 + 拇指玻璃高光 */
+[data-material='glass'] .ui-switch {
+  --ui-switch-on-to: color-mix(in srgb, hsl(var(--primary)) 55%, white 45%);
+  --ui-switch-thumb-shadow:
+    0 4px 10px -3px hsl(var(--foreground) / 0.22),
+    inset 0 1px 0 hsl(0 0% 100% / 0.55);
 }
 
-/*
- * 案例的唯一驱动量是 --complete（0 → 100 / 100 → 0）。
- * data-liquid-active 只负责同一组液态层的放大和透明化，不切换 DOM。
- */
-[data-material='glass'] .ui-switch.ui-switch {
-  --complete: 0;
-  --ui-switch-border: 2px;
-  --ui-switch-transition: 0.2s;
-  --ui-switch-ease: ease-out;
-  --ui-switch-liquid-color: color-mix(
-    in srgb,
-    hsl(var(--input)) calc((100 - var(--complete)) * 1%),
-    hsl(var(--primary)) calc(var(--complete) * 1%)
-  );
-  position: relative;
-  isolation: isolate;
-  overflow: visible;
-  container-type: inline-size;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  touch-action: none;
-}
-
-[data-material='glass'] .ui-switch-filter-defs {
-  display: block;
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-[data-material='glass'] .ui-switch-thumb {
-  display: none;
-}
-
-[data-material='glass'] .ui-switch-knockout,
-[data-material='glass'] .ui-switch-indicator-liquid,
-[data-material='glass'] .ui-switch-indicator,
-[data-material='glass'] .ui-switch-mask,
-[data-material='glass'] .ui-switch-liquid-shadow,
-[data-material='glass'] .ui-switch-liquid-wrapper,
-[data-material='glass'] .ui-switch-liquids,
-[data-material='glass'] .ui-switch-track-shadow,
-[data-material='glass'] .ui-switch-liquid-track,
-[data-material='glass'] .ui-switch-liquid-cover {
-  display: block;
-  pointer-events: none;
-}
-
-/* knockout backdrop */
-[data-material='glass'] .ui-switch-knockout {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  filter: var(--ui-switch-remove-black-filter);
-  will-change: filter, scale;
-  transform: translate3d(0, 0, 0);
-}
-
-[data-material='glass'] .ui-switch-indicator-masked {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 12;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--ui-switch-liquid-color);
-  translate: -50% -50%;
-  container-type: inline-size;
-}
-
-[data-material='glass'] .ui-switch-mask {
-  position: absolute;
-  top: 50%;
-  left: var(--ui-switch-border);
-  width: calc(60% - (2 * var(--ui-switch-border)));
-  height: calc(100% - (2 * var(--ui-switch-border)));
-  margin-left: 0;
-  border-radius: 999px;
-  background: #000;
-  translate: calc((var(--complete) / 100) * (100cqi - 60cqi)) -50%;
-  transition-property: height, width, margin;
-  transition-duration: var(--ui-switch-transition);
-  transition-timing-function: var(--ui-switch-ease);
-  will-change: height, width, margin;
-}
-
-/* goo window */
-[data-material='glass'] .ui-switch-indicator-liquid {
-  position: absolute;
-  top: 50%;
-  left: var(--ui-switch-border);
-  width: calc(60% - (2 * var(--ui-switch-border)));
-  height: calc(100% - (2 * var(--ui-switch-border)));
-  border-radius: 999px;
-  translate: calc((var(--complete) / 100) * (100cqi - 100% - (2 * var(--ui-switch-border)))) -50%;
-  scale: 1;
-  container-type: inline-size;
-  transition-property: scale;
-  transition-duration: var(--ui-switch-transition);
-  transition-timing-function: var(--ui-switch-ease);
-}
-
-[data-material='glass'] .ui-switch-liquid-wrapper {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 999px;
-  clip-path: inset(0 0 0 0 round 999px);
-  filter: blur(2px);
-  transition: filter var(--ui-switch-transition) var(--ui-switch-ease);
-}
-
-[data-material='glass'] .ui-switch-liquids {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 999px;
-  filter: var(--ui-switch-goo-filter);
-  transform: translate3d(0, 0, 0);
-}
-
-[data-material='glass'] .ui-switch-track-shadow {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  border-radius: 999px;
-  box-shadow:
-    inset 0 0 1px 2px var(--ui-switch-liquid-color),
-    inset calc(((var(--complete) / 100) * 4px) - 2px) 0 1px 2px var(--ui-switch-liquid-color);
-  transition: opacity var(--ui-switch-transition) var(--ui-switch-ease);
-}
-
-[data-material='glass'] .ui-switch-liquid-track {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 36px;
-  height: 20px;
-  min-height: 0;
-  border-radius: 999px;
-  background: var(--ui-switch-liquid-color);
-  translate: calc((var(--complete) / 100) * (100cqi - 100% - (6 * var(--ui-switch-border)))) -50%;
-  transition-property: height, width, filter, left;
-  transition-duration: var(--ui-switch-transition);
-  transition-timing-function: var(--ui-switch-ease);
-}
-
-[data-material='glass'] .ui-switch-liquid-shadow {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  opacity: 0;
-  border-radius: 999px;
-  box-shadow:
-    1px -1px 2px hsl(0 0% 100% / 0.5) inset,
-    -1px -1px 2px hsl(0 0% 100% / 0.5) inset,
-    1px 1px 2px hsl(0 0% 30% / 0.5) inset,
-    -4px 2px 5px -3px hsl(0 0% 30% / 0.25) inset,
-    -1px 1px 3px hsl(0 0% 30% / 0.25) inset,
-    -1px -1px 4px hsl(0 0% 60% / 0.15),
-    1px 1px 2px hsl(0 0% 30% / 0.15),
-    2px 3px 8px -3px hsl(0 0% 30% / 0.5);
-  transition: opacity var(--ui-switch-transition) var(--ui-switch-ease);
-}
-
-[data-material='glass'] .ui-switch-liquid-cover {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: hsl(var(--background));
-  opacity: 1;
-  transition: opacity var(--ui-switch-transition) var(--ui-switch-ease);
-}
-
-/*
- * 原案例的 bounce 曲线与交互顺序：
- * active 放大并去掉 cover → GSAP 驱动 --complete → active=false 缩回。
- */
-[data-material='glass'] .ui-switch[data-liquid-active='true'] {
-  --ui-switch-transition: 0.6s;
-  --ui-switch-ease: linear(
-    0 0%,
-    0.6091 3.69%,
-    1.0259 7.24%,
-    1.1733 9.05%,
-    1.283 10.92%,
-    1.3562 12.87%,
-    1.3948 14.95%,
-    1.4014 16.03%,
-    1.3999 17.16%,
-    1.3731 19.64%,
-    1.3202 22.27%,
-    1.1394 29.39%,
-    1.0582 33.17%,
-    0.9943 37.45%,
-    0.9734 39.64%,
-    0.9593 41.92%,
-    0.9505 45.08%,
-    0.9517 48.7%,
-    0.9924 63.02%,
-    1.0046 71.2%,
-    1.0061 78.24%,
-    1 100%
-  );
-}
-
-[data-material='glass'] .ui-switch[data-liquid-pressed='true'] .ui-switch-liquid-track {
-  min-height: 10px;
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-mask {
-  width: calc((60% - (2 * var(--ui-switch-border))) * 1.65);
-  height: calc((100% - (2 * var(--ui-switch-border))) * 1.65);
-  margin-left: calc((60% - (2 * var(--ui-switch-border))) * -0.325);
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-indicator-liquid {
-  scale: 1.65;
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-liquid-wrapper {
-  filter: blur(0);
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-liquid-shadow {
-  opacity: 1;
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-track-shadow {
-  opacity: 1;
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-liquid-cover {
-  opacity: 0;
-}
-
-[data-material='glass'] .ui-switch[data-liquid-active='true'] .ui-switch-liquid-track {
-  left: calc(var(--ui-switch-border) * 3);
-  height: calc(20px - (6 * var(--ui-switch-border)));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-material='glass'] .ui-switch.ui-switch {
-    --ui-switch-transition: 1ms;
-  }
-}
-
-/* frosted: 标准开关 */
-[data-material='frosted'] .ui-switch,
-:root:not([data-material]) .ui-switch {
-  background: hsl(var(--input));
-}
-
-[data-material='frosted'] .ui-switch[data-state='checked'],
-:root:not([data-material]) .ui-switch[data-state='checked'] {
-  background: hsl(var(--primary));
-}
-
-[data-material='frosted'] .ui-switch-thumb,
-:root:not([data-material]) .ui-switch-thumb {
-  background: hsl(var(--background));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-[data-material='frosted'] .ui-switch-track-bg,
-:root:not([data-material]) .ui-switch-track-bg,
-[data-material='frosted'] .ui-switch-thumb-highlight,
-:root:not([data-material]) .ui-switch-thumb-highlight {
-  display: none;
-}
-
-/* soft: 拟态开关 */
+/* soft：拇指更拟态 */
 [data-material='soft'] .ui-switch {
-  background: hsl(var(--input));
-}
-
-[data-material='soft'] .ui-switch[data-state='checked'] {
-  background: hsl(var(--primary));
-}
-
-[data-material='soft'] .ui-switch-thumb {
-  background: hsl(var(--card));
-  box-shadow:
+  --ui-switch-thumb-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
     inset 0 -1px 0 rgba(0, 0, 0, 0.05),
-    0 2px 4px rgba(145, 158, 175, 0.18);
+    0 3px 6px rgba(145, 158, 175, 0.22);
 }
 
-[data-material='soft'].dark .ui-switch-thumb,
-.dark[data-material='soft'] .ui-switch-thumb {
-  box-shadow:
+[data-material='soft'].dark .ui-switch,
+.dark[data-material='soft'] .ui-switch {
+  --ui-switch-thumb-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     inset 0 -1px 0 rgba(0, 0, 0, 0.15),
-    0 2px 6px rgba(0, 0, 0, 0.22);
-}
-
-[data-material='soft'] .ui-switch-track-bg,
-[data-material='soft'] .ui-switch-thumb-highlight {
-  display: none;
+    0 3px 8px rgba(0, 0, 0, 0.28);
 }

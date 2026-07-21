@@ -120,7 +120,7 @@ function CrewTaskDetail({
   )
 }
 
-export function KanbanCrewPanel({ width }: { width?: number }): React.ReactElement {
+export function KanbanCrewPanel(): React.ReactElement {
   const sessionId = useAtomValue(currentAgentSessionIdAtom) ?? ''
   const { tasks, board, boardId, loading, refresh, isWorkerSession, ownerSessionId } =
     useKanbanCrewBoard(sessionId)
@@ -213,10 +213,7 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
 
   if (!boardId || !board) {
     return (
-      <div
-        className="h-full flex flex-col items-center justify-center gap-2 px-6 text-center"
-        style={width ? { width } : undefined}
-      >
+      <div className="h-full flex flex-col items-center justify-center gap-2 px-6 text-center">
         <Users className="size-8 text-muted-foreground/30" />
         <p className="text-xs text-muted-foreground">当前会话还没有班组</p>
         <p className="text-[11px] text-muted-foreground/70">
@@ -229,20 +226,8 @@ export function KanbanCrewPanel({ width }: { width?: number }): React.ReactEleme
   const doneCount = tasks.filter((t) => t.status === 'done').length
 
   return (
-    <div
-      className="kanban-crew-panel h-full flex flex-col min-h-0 bg-transparent"
-      style={width ? { width } : undefined}
-    >
-      <div className="kanban-crew-panel-header flex items-center gap-2 px-3 py-2 shrink-0 shadow-[inset_0_-1px_0_hsl(var(--foreground)/0.06)]">
-        <Users className="size-3.5 text-foreground/60" />
-        <span className="text-xs font-medium text-foreground truncate">
-          {board.title ?? board.rootGoal.slice(0, 40)}
-        </span>
-        {isWorkerSession ? (
-          <span className="text-[9px] text-muted-foreground/70 shrink-0">工人视角</span>
-        ) : null}
-      </div>
-
+    <div className="kanban-crew-panel h-full flex flex-col min-h-0 bg-transparent">
+      {/* 标题 chrome 由 RightInspectorFrame 统一提供 */}
       <KanbanBoardToolbar
         boardId={board.id}
         maxConcurrent={board.maxConcurrent ?? 3}

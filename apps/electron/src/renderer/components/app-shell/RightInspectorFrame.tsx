@@ -26,18 +26,15 @@ const INSPECTOR_TITLES: Record<RightRailItem, string> = {
   crew: '班组',
 }
 
-export const RightInspectorFrame = React.memo(function RightInspectorFrame({
-  width,
-}: {
-  width: number
-}): React.ReactElement {
+export const RightInspectorFrame = React.memo(function RightInspectorFrame(): React.ReactElement {
   const activeItem = useAtomValue(rightRailItemAtom)
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const [placement, setPlacement] = useAtom(agentSidePanelPlacementAtom)
   const isDock = placement === 'dock'
 
   return (
-    <div className="app-inspector-frame" style={{ width }}>
+    // 宽度由外层 island 统一管理（style.width 在 AppShell 设一次）
+    <div className="app-inspector-frame">
       <header className="app-inspector-header titlebar-no-drag">
         <div className="app-inspector-heading">
           <span className="app-inspector-kicker">CONTEXT</span>
@@ -94,7 +91,7 @@ export const RightInspectorFrame = React.memo(function RightInspectorFrame({
       <RightRailItems panelOpen orientation="tabs" />
 
       <div className="app-inspector-body">
-        <RightSidePanel width={width} />
+        <RightSidePanel />
       </div>
     </div>
   )

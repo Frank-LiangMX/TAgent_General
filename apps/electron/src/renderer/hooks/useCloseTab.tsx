@@ -23,10 +23,12 @@ import {
   tabsAtom,
   activeTabIdAtom,
   closeTab,
+  getRailItemFromTab,
   isPreviewTab,
   sessionViewStateMapAtom,
 } from '@/atoms/tab-atoms'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
+import { flyRailGhost } from '@/lib/rail-tab-flight'
 
 interface UseCloseTabReturn {
   /** 请求关闭当前会话入口 */
@@ -79,10 +81,26 @@ export function useCloseTab(): UseCloseTabReturn {
   const executeClose = React.useCallback(
     (tabId: string) => {
       const closingTab = tabs.find((t) => t.id === tabId)
-      const wasActive = activeTabId === tabId
+
+      // rail tab 关闭：先趁 DOM 还在取 tab 矩形，状态更新后 ghost 飞回右栏按钮
+      let railFlightFrom: DOMRect | null = null
+      const railItem = closingTab ? getRailItemFromTab(closingTab) : null
+      if (railItem) {
+        railFlightFrom =
+          document
+            .querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(tabId)}"]`)
+            ?.getBoundingClientRect() ?? null
+      }
+
       const result = closeTab(tabs, activeTabId, tabId)
       setTabs(result.tabs)
       setActiveTabId(result.activeTabId)
+
+      if (railItem && railFlightFrom) {
+        flyRailGhost(railFlightFrom, () =>
+          document.querySelector<HTMLElement>(`[data-rail-item="${CSS.escape(railItem)}"]`)
+        )
+      }
 
       // 同步该会话的视图状态：
       // - 关闭预览 Tab → 预览不再打开（保留 lastView，切回不再重建预览）
@@ -106,7 +124,9 @@ export function useCloseTab(): UseCloseTabReturn {
         }
       }
 
-      if (wasActive) {
+      // 关闭父会话时可能连带移除当前激活的 rail / preview 子标签，
+      // 因此按 activeTabId 是否实际变化判断，而不能只看被点关闭的标签是否 active。
+      if (activeTabId !== result.activeTabId) {
         const newActiveTab = result.activeTabId
           ? (result.tabs.find((t) => t.id === result.activeTabId) ?? null)
           : null

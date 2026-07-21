@@ -18,6 +18,8 @@ import {
   SettingsSection,
   SettingsSegmentedControl,
 } from '@tagent/ui'
+import { SettingsPage } from './SettingsPage'
+import { SettingsPageIntro } from './SettingsPageIntro'
 import type { ShortcutCategory, ShortcutOverrides } from '@/lib/shortcut-defaults'
 
 import { shortcutOverridesAtom, sendWithCmdEnterAtom } from '@/atoms/shortcut-atoms'
@@ -323,7 +325,9 @@ export function ShortcutSettings(): React.ReactElement {
   const categoryOrder: ShortcutCategory[] = ['app', 'navigation', 'edit', 'global']
 
   return (
-    <div className="space-y-6">
+    <SettingsPage>
+      <SettingsPageIntro title="快捷键" description="全局与编辑器快捷键" />
+
       <SettingsSection title="发送消息" description="选择在输入框中发送消息的快捷键">
         <SettingsCard>
           <SettingsSegmentedControl
@@ -438,6 +442,6 @@ export function ShortcutSettings(): React.ReactElement {
           </Button>
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

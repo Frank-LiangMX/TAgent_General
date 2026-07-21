@@ -28,7 +28,8 @@ import {
 import { appModeAtom } from '@/atoms/app-mode'
 import { selectedModelAtom } from '@/atoms/model-atoms'
 import { currentComposerModeAtom, composerModeMapAtom } from '@/atoms/composer-atoms'
-import { searchDialogOpenAtom } from '@/atoms/search-atoms'
+import { sessionSearchFocusTokenAtom } from '@/atoms/search-atoms'
+import { navigationSidebarOpenAtom, activeRailItemAtom } from '@/atoms/app-mode'
 import {
   settingsOpenAtom,
   channelFormDirtyAtom,
@@ -61,7 +62,9 @@ export function GlobalShortcuts(): null {
   const [settingsOpen, setSettingsOpen] = useAtom(settingsOpenAtom)
   const channelFormDirty = useAtomValue(channelFormDirtyAtom)
   const setSettingsCloseRequested = useSetAtom(settingsCloseRequestedAtom)
-  const [searchOpen, setSearchOpen] = useAtom(searchDialogOpenAtom)
+  const setSessionSearchFocusToken = useSetAtom(sessionSearchFocusTokenAtom)
+  const setNavigationSidebarOpen = useSetAtom(navigationSidebarOpenAtom)
+  const setActiveRailItem = useSetAtom(activeRailItemAtom)
   const setShortcutOverrides = useSetAtom(shortcutOverridesAtom)
   const shortcutOverrides = useAtomValue(shortcutOverridesAtom)
   const setSendWithCmdEnter = useSetAtom(sendWithCmdEnterAtom)
@@ -108,10 +111,6 @@ export function GlobalShortcuts(): null {
       setSettingsOpen(false)
       return
     }
-    if (searchOpen) {
-      setSearchOpen(false)
-      return
-    }
 
     if (!activeTabId) return
     requestClose(activeTabId)
@@ -120,8 +119,6 @@ export function GlobalShortcuts(): null {
     setSettingsOpen,
     channelFormDirty,
     setSettingsCloseRequested,
-    searchOpen,
-    setSearchOpen,
     activeTabId,
     requestClose,
   ])
@@ -143,10 +140,14 @@ export function GlobalShortcuts(): null {
     useCallback(() => setSettingsOpen(true), [setSettingsOpen])
   )
 
-  // Cmd+Shift+F / Ctrl+Shift+F → 全局搜索
+  // Cmd+Shift+F / Ctrl+Shift+F → 聚焦侧栏会话搜索（无弹窗）
   useShortcut(
     'global-search',
-    useCallback(() => setSearchOpen(true), [setSearchOpen])
+    useCallback(() => {
+      setNavigationSidebarOpen(true)
+      setActiveRailItem('sessions')
+      setSessionSearchFocusToken((n) => n + 1)
+    }, [setNavigationSidebarOpen, setActiveRailItem, setSessionSearchFocusToken])
   )
 
   // Cmd+N → 新建 Agent 会话

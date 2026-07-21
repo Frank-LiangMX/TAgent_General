@@ -205,10 +205,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
   const [pendingAction, setPendingAction] = React.useState<PendingAction>(null)
   const showNavDialog = pendingAction !== null
 
-  const activeTabItem = ALL_TABS.find((t) => t.id === activeTab) ?? ALL_TABS[0]!
-  const activeGroupLabel =
-    TAB_GROUPS.find((g) => g.key === activeTabItem.group)?.label ?? activeTabItem.group
-
   const bumpPane = React.useCallback(() => {
     setPaneKey((k) => k + 1)
   }, [])
@@ -316,7 +312,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
 
       <div className="settings-shell-body">
         <aside className="settings-shell-nav">
-          <nav className="settings-shell-nav-scroll" aria-label="设置分类">
+          <nav className="settings-shell-nav-scroll scrollbar-autohide" aria-label="设置分类">
             {TAB_GROUPS.map((group) => {
               const groupTabs = ALL_TABS.filter((t) => t.group === group.key)
               if (groupTabs.length === 0) return null
@@ -349,19 +345,12 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
         </aside>
 
         <section className="settings-shell-main">
-          <div className="settings-shell-pagehead">
-            <div className="min-w-0">
-              <span className="settings-shell-pagehead-kicker">{activeGroupLabel}</span>
-              <h2 className="settings-shell-pagehead-title">{activeTabItem.label}</h2>
-              <p className="settings-shell-pagehead-desc">{activeTabItem.description}</p>
-            </div>
-          </div>
-
-          <div className="settings-shell-scroll">
+          <div className="settings-shell-scroll scrollbar-autohide">
             <div
               ref={contentRef}
               key={`${activeTab}-${paneKey}`}
               className={cn('settings-shell-content', 'settings-shell-pane')}
+              data-settings-tab={activeTab}
             >
               {renderTabContent(activeTab)}
             </div>
@@ -375,7 +364,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
           if (!open) cancelPendingAction()
         }}
       >
-        <AlertDialogContent className="border-border/50 shadow-xl">
+        <AlertDialogContent className="session-glass-modal border-0">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">放弃未保存的更改？</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
@@ -383,9 +372,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.ReactEleme
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelPendingAction} className="border-border/50">
-              留在当前页
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={cancelPendingAction}>留在当前页</AlertDialogCancel>
             <AlertDialogAction
               onClick={executePendingAction}
               className="bg-primary text-primary-foreground hover:bg-primary/90"

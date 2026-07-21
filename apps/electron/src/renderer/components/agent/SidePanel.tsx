@@ -67,7 +67,6 @@ import {
   STICKY_ROW_BASE_CLASS,
   canBeSticky,
 } from '@/components/file-browser'
-import { detectIsWindows } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 
 function getPathBasename(filePath: string): string {
@@ -87,7 +86,6 @@ interface SidePanelProps {
   sessionPath: string | null
   activeTab: 'project' | 'activity' | 'changes'
   onTabChange: (tab: 'project' | 'activity' | 'changes') => void
-  width?: number
 }
 
 const filePanelActionButtonClass =
@@ -98,9 +96,7 @@ export function SidePanel({
   sessionPath,
   activeTab,
   onTabChange,
-  width = 280,
 }: SidePanelProps): React.ReactElement {
-  const isWindows = React.useMemo(() => detectIsWindows(), [])
 
   // Tab 系统
   const previewFileMap = useAtomValue(previewFileMapAtom)
@@ -344,20 +340,8 @@ export function SidePanel({
   const hasSessionAttachedItems = attachedDirs.length > 0 || attachedFiles.length > 0
 
   return (
-    <div
-      className={cn(
-        'side-panel-root relative z-0 h-full flex-shrink-0 overflow-hidden',
-        isWindows ? 'pt-[28px]' : 'pt-0'
-      )}
-    >
-      {/* Windows 顶部拖拽条：避开右上角窗口按钮区域（与 RailInspectorHeader right-[126px] 一致） */}
-      {isWindows && (
-        <div
-          className="pointer-events-auto absolute inset-x-0 top-0 z-[1] h-[28px] titlebar-drag-region"
-          style={{ right: 126 }}
-          aria-hidden
-        />
-      )}
+    <div className="side-panel-root relative z-0 h-full flex-shrink-0 overflow-hidden">
+      {/* 窗口拖拽由 inspector header 承担，不再自带 Win 顶部拖条 */}
       {/* 面板内容（tab 栏 + 内容切换） */}
       <div className="w-full h-full flex flex-col">
         <DiffPanelTabBar activeTab={activeTab} onTabChange={onTabChange} />
