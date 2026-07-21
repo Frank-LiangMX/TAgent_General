@@ -343,6 +343,7 @@ export function WelcomeEmptyState(): React.ReactElement {
         {/* 头栏：对齐侧栏 sidebar-head（kicker + 标题 + accent 胶囊），不用实心主按钮 */}
         <header
           className="kanban-crew-badge mb-7 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+          data-assistant-contact-surface
           data-welcome-transition-direction="left"
           data-welcome-transition-item
         >

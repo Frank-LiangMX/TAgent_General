@@ -10,7 +10,9 @@ import {
   sampleAssistantGesture,
   sampleAssistantMotion,
   sampleAssistantRollRotation,
+  sampleAssistantSlimeRest,
   sampleAssistantState,
+  sampleAssistantTravelDeformation,
   type AssistantGesture,
   type AssistantPresenceState,
   type AssistantPresenceTheme,
@@ -28,6 +30,8 @@ interface AssistantPalette {
 
 interface AssistantLayers {
   root: Container
+  deformAxis: Container
+  deformContent: Container
   shadow: Graphics
   particleField: Container
   reactionRing: Graphics
@@ -142,7 +146,8 @@ function tracePresenceBody(
   radius: number,
   phase: number,
   restAmount: number,
-  fluid: boolean
+  fluid: boolean,
+  restPhase = phase
 ): Graphics {
   if (restAmount <= 0.001) {
     return fluid ? traceFluidBody(graphics, radius, phase) : graphics.circle(0, 0, radius)
@@ -150,24 +155,27 @@ function tracePresenceBody(
 
   const horizontal = fluid ? Math.sin(phase) * 1.45 * (1 - restAmount) : 0
   const vertical = fluid ? Math.cos(phase * 0.84) * 1.2 * (1 - restAmount) : 0
+  const restMotion = sampleAssistantSlimeRest(restPhase, false)
+  const crownLift = restMotion.breath * radius * 0.04
+  const lateralShift = restMotion.lateral * radius
   const top = {
-    x: mix(horizontal * -0.22, -radius * 0.1, restAmount),
-    y: mix(-radius - vertical, -radius * 0.96, restAmount),
+    x: mix(horizontal * -0.22, -radius * 0.1 + lateralShift * 0.028, restAmount),
+    y: mix(-radius - vertical, -radius * 0.96 - crownLift, restAmount),
   }
   const right = {
-    x: mix(radius + horizontal, radius * 1.06, restAmount),
+    x: mix(radius + horizontal, radius * 1.072 - lateralShift * 0.025, restAmount),
     y: mix(vertical * 0.2, radius * 0.04, restAmount),
   }
   const bottomRight = {
-    x: mix(radius * 0.7 + horizontal * 0.2, radius * 0.76, restAmount),
+    x: mix(radius * 0.7 + horizontal * 0.2, radius * 0.76 + lateralShift * 0.004, restAmount),
     y: mix(radius * 0.7 + vertical * 0.45, radius * 0.76, restAmount),
   }
   const bottomLeft = {
-    x: mix(-radius * 0.7 + horizontal * 0.18, -radius * 0.68, restAmount),
+    x: mix(-radius * 0.7 + horizontal * 0.18, -radius * 0.68 + lateralShift * 0.004, restAmount),
     y: mix(radius * 0.7 + vertical * 0.48, radius * 0.79, restAmount),
   }
   const left = {
-    x: mix(-radius + horizontal * 0.42, -radius * 1.08, restAmount),
+    x: mix(-radius + horizontal * 0.42, -radius * 1.092 - lateralShift * 0.025, restAmount),
     y: mix(-vertical * 0.18, radius * 0.14, restAmount),
   }
 
@@ -255,6 +263,10 @@ export class AssistantPresenceRenderer {
   private rollStartedAt: number | null = null
   private rollDuration = 0
   private rollDirection = 1
+  private surfaceContact = false
+  private shadowVisibility = 1
+  private travelMotion = { deltaX: 0, deltaY: 0, duration: 0, startedAt: this.startTime }
+  private travelDeformation = { axisAngle: 0, scaleAcross: 1, scaleAlong: 1 }
 
   constructor(
     private readonly host: HTMLElement,
@@ -304,6 +316,8 @@ export class AssistantPresenceRenderer {
       }
     })
     const root = new pixi.Container()
+    const deformAxis = new pixi.Container()
+    const deformContent = new pixi.Container()
     const halo = new pixi.Graphics()
     const outerGlow = new pixi.Graphics()
     const core = new pixi.Graphics()
@@ -333,7 +347,7 @@ export class AssistantPresenceRenderer {
     eyeGlow.addChild(glowLeft, glowRight)
     eyes.addChild(eyeLeft, eyeRight)
 
-    root.addChild(
+    deformContent.addChild(
       halo,
       outerGlow,
       core,
@@ -345,6 +359,8 @@ export class AssistantPresenceRenderer {
       eyeGlow,
       eyes
     )
+    deformAxis.addChild(deformContent)
+    root.addChild(deformAxis)
     app.stage.addChild(shadow, reactionRing, particleField, root)
     app.ticker.maxFPS = 30
     app.ticker.add(this.tick)
@@ -352,6 +368,8 @@ export class AssistantPresenceRenderer {
     this.app = app
     this.layers = {
       root,
+      deformAxis,
+      deformContent,
       shadow,
       particleField,
       reactionRing,
@@ -451,6 +469,21 @@ export class AssistantPresenceRenderer {
   clearRoll(): void {
     this.rollStartedAt = null
     this.rollDuration = 0
+  }
+
+  setTravelMotion(deltaX: number, deltaY: number, duration: number): void {
+    this.travelMotion = {
+      deltaX,
+      deltaY,
+      duration: Math.max(0, duration),
+      startedAt: performance.now(),
+    }
+    this.syncTicker()
+  }
+
+  setSurfaceContact(surfaceContact: boolean): void {
+    this.surfaceContact = surfaceContact
+    this.syncTicker()
   }
 
   destroy(): void {
@@ -558,11 +591,13 @@ export class AssistantPresenceRenderer {
       this.rollDirection,
       this.reducedMotion
     )
-    const ambientMotionWeight = this.activeGesture === 'tired' ? 0.08 : 1
+    const ambientMotionWeight = this.activeGesture === 'tired' ? 0 : 1
     const ambientBreathScale = this.activeGesture === 'tired' ? 1 : motion.breathScale
     const appearance = ASSISTANT_APPEARANCE[this.theme]
     const {
       root,
+      deformAxis,
+      deformContent,
       shadow,
       particleField,
       reactionRing,
@@ -587,6 +622,8 @@ export class AssistantPresenceRenderer {
           ? this.palette.warm
           : this.palette.primary
 
+    this.shadowVisibility = damp(this.shadowVisibility, this.surfaceContact ? 0 : 1, 12, deltaMs)
+
     shadow
       .clear()
       .ellipse(
@@ -602,7 +639,11 @@ export class AssistantPresenceRenderer {
       )
       .fill({
         color: stateAccent,
-        alpha: appearance.glowAlpha * state.glowMultiplier * (1 + reaction.glowBoost * 0.65),
+        alpha:
+          appearance.glowAlpha *
+          state.glowMultiplier *
+          (1 + reaction.glowBoost * 0.65) *
+          this.shadowVisibility,
       })
     root.position.set(
       center + motion.bodyX * ambientMotionWeight + reaction.bodyX,
@@ -614,12 +655,43 @@ export class AssistantPresenceRenderer {
         state.verticalOffset
     )
     root.alpha = state.opacity
-    root.rotation =
+    const rootRotation =
       motion.tilt * ambientMotionWeight + reaction.rotation + state.rotationOffset + rollRotation
+    root.rotation = rootRotation
     root.scale.set(
       ambientBreathScale * reaction.scaleX * state.scaleX,
       (2 - ambientBreathScale) * reaction.scaleY * state.scaleY
     )
+    const travelTarget = sampleAssistantTravelDeformation(
+      now - this.travelMotion.startedAt,
+      this.travelMotion.duration,
+      this.travelMotion.deltaX,
+      this.travelMotion.deltaY,
+      this.reducedMotion || this.activeGesture === 'tired'
+    )
+    const deformSmoothing = travelTarget.active ? 13 : 9
+    this.travelDeformation.scaleAlong = damp(
+      this.travelDeformation.scaleAlong,
+      travelTarget.scaleAlong,
+      deformSmoothing,
+      deltaMs
+    )
+    this.travelDeformation.scaleAcross = damp(
+      this.travelDeformation.scaleAcross,
+      travelTarget.scaleAcross,
+      deformSmoothing,
+      deltaMs
+    )
+    const angleDelta = Math.atan2(
+      Math.sin(travelTarget.axisAngle - this.travelDeformation.axisAngle),
+      Math.cos(travelTarget.axisAngle - this.travelDeformation.axisAngle)
+    )
+    const angleFactor = 1 - Math.exp((-11 * deltaMs) / 1000)
+    this.travelDeformation.axisAngle += angleDelta * angleFactor
+    const relativeDeformAngle = this.travelDeformation.axisAngle - rootRotation
+    deformAxis.rotation = relativeDeformAngle
+    deformAxis.scale.set(this.travelDeformation.scaleAlong, this.travelDeformation.scaleAcross)
+    deformContent.rotation = -relativeDeformAngle
     halo.scale.set(1 + reaction.glowBoost * 0.055)
     outerGlow.scale.set(1 + reaction.glowBoost * 0.075)
     flow.rotation = motion.flowRotation * (isFluid ? 0.36 : 1)
@@ -696,7 +768,14 @@ export class AssistantPresenceRenderer {
 
     if (isFluid) {
       const fluidPhase = motion.ribbonPhase * 0.22
-      tracePresenceBody(halo.clear(), BODY_RADIUS + 4, fluidPhase, restAmount, true).fill({
+      tracePresenceBody(
+        halo.clear(),
+        BODY_RADIUS + 4,
+        fluidPhase,
+        restAmount,
+        true,
+        motion.ribbonPhase
+      ).fill({
         color: stateAccent,
         alpha: appearance.glowAlpha * state.glowMultiplier * (this.reducedMotion ? 0.34 : 0.62),
       })
@@ -705,12 +784,20 @@ export class AssistantPresenceRenderer {
         BODY_RADIUS + 1.5,
         fluidPhase + 1.2,
         restAmount,
-        true
+        true,
+        motion.ribbonPhase
       ).fill({
         color: this.palette.cool,
         alpha: appearance.glowAlpha * state.glowMultiplier * (0.7 + motion.corePulse * 0.12),
       })
-      tracePresenceBody(core.clear(), BODY_RADIUS - 7, fluidPhase + 2.4, restAmount, true)
+      tracePresenceBody(
+        core.clear(),
+        BODY_RADIUS - 7,
+        fluidPhase + 2.4,
+        restAmount,
+        true,
+        motion.ribbonPhase
+      )
         .fill({
           color: this.palette.primary,
           alpha: appearance.coreAlpha * motion.corePulse * 0.78,
@@ -720,15 +807,36 @@ export class AssistantPresenceRenderer {
 
       for (const ribbon of ribbons) ribbon.clear()
 
-      tracePresenceBody(membrane.clear(), BODY_RADIUS, fluidPhase, restAmount, true).fill({
+      tracePresenceBody(
+        membrane.clear(),
+        BODY_RADIUS,
+        fluidPhase,
+        restAmount,
+        true,
+        motion.ribbonPhase
+      ).fill({
         color: this.palette.highlight,
         alpha: this.theme === 'light' ? 0.58 : appearance.bodyAlpha * 0.16,
       })
-      tracePresenceBody(membrane, BODY_RADIUS, fluidPhase, restAmount, true).fill({
+      tracePresenceBody(
+        membrane,
+        BODY_RADIUS,
+        fluidPhase,
+        restAmount,
+        true,
+        motion.ribbonPhase
+      ).fill({
         color: this.palette.cool,
         alpha: appearance.bodyAlpha * (this.theme === 'light' ? 0.22 : 0.3),
       })
-      tracePresenceBody(membrane, BODY_RADIUS, fluidPhase, restAmount, true).stroke({
+      tracePresenceBody(
+        membrane,
+        BODY_RADIUS,
+        fluidPhase,
+        restAmount,
+        true,
+        motion.ribbonPhase
+      ).stroke({
         color: this.theme === 'light' ? this.palette.primary : this.palette.eye,
         width: 1.05,
         alpha: appearance.membraneAlpha * mix(0.62, 0.24, restAmount),
@@ -756,7 +864,14 @@ export class AssistantPresenceRenderer {
           })
       }
 
-      tracePresenceBody(rimLight.clear(), BODY_RADIUS - 0.4, fluidPhase, restAmount, true).stroke({
+      tracePresenceBody(
+        rimLight.clear(),
+        BODY_RADIUS - 0.4,
+        fluidPhase,
+        restAmount,
+        true,
+        motion.ribbonPhase
+      ).stroke({
         color: this.palette.eye,
         width: 1.15,
         alpha:

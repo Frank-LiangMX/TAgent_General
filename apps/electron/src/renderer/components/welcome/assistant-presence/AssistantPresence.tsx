@@ -2,6 +2,8 @@ import { useAtomValue } from 'jotai'
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+
 import { AssistantPresenceRenderer } from './assistant-renderer'
 import {
   ASSISTANT_TIRED_DURATION_MS,
@@ -59,8 +61,11 @@ export function AssistantPresence({
   const recoveryTimerRef = React.useRef<number | null>(null)
   const roamTimerRef = React.useRef<number | null>(null)
   const clickStateRef = React.useRef(INITIAL_ASSISTANT_CLICK_STATE)
+  const cardContactRef = React.useRef(false)
+  const contactOffsetRef = React.useRef(0)
   const chasingRef = React.useRef(false)
   const roamPoseRef = React.useRef({ rotation: 0, x: 0, y: 0 })
+  const roamWorldRef = React.useRef({ x: 0, y: 0 })
   const roamXRef = React.useRef(0)
   const [ready, setReady] = React.useState(false)
   const [reacting, setReacting] = React.useState(false)
@@ -76,6 +81,26 @@ export function AssistantPresence({
   const [roamStage, setRoamStage] = React.useState<HTMLElement | null>(null)
   const [roamPose, setRoamPose] = React.useState({ rotation: 0, x: 0, y: 0 })
   const [grounded, setGrounded] = React.useState(false)
+  const [contactOffset, setContactOffset] = React.useState(0)
+
+  const measureCardContactOffset = React.useCallback((): number => {
+    const host = hostRef.current
+    const stage = host?.parentElement
+    const surface = stage?.parentElement?.querySelector<HTMLElement>(
+      '[data-assistant-contact-surface]'
+    )
+    if (!host || !stage || !surface) return (host?.offsetHeight ?? 144) * 0.3
+
+    const stageRect = stage.getBoundingClientRect()
+    const surfaceRect = surface.getBoundingClientRect()
+    const bodyContactY = host.offsetHeight * 0.78
+    return surfaceRect.top - stageRect.top - host.offsetTop - bodyContactY
+  }, [])
+
+  const updateContactOffset = React.useCallback((nextOffset: number): void => {
+    contactOffsetRef.current = nextOffset
+    setContactOffset(nextOffset)
+  }, [])
 
   React.useEffect(() => {
     const host = hostRef.current
@@ -167,7 +192,25 @@ export function AssistantPresence({
       roamTimerRef.current = window.setTimeout(callback, delay)
     }
 
-    const applyPose = (nextPose: { rotation: number; x: number; y: number }): void => {
+    const applyPose = (
+      nextPose: { rotation: number; x: number; y: number },
+      duration: number,
+      cardContact = false
+    ): void => {
+      const nextContactOffset = cardContact ? measureCardContactOffset() : 0
+      const nextWorld = {
+        x: nextPose.x,
+        y: nextPose.y + nextContactOffset,
+      }
+      rendererRef.current?.setTravelMotion(
+        nextWorld.x - roamWorldRef.current.x,
+        nextWorld.y - roamWorldRef.current.y,
+        duration
+      )
+      rendererRef.current?.setSurfaceContact(cardContact)
+      roamWorldRef.current = nextWorld
+      cardContactRef.current = cardContact
+      updateContactOffset(nextContactOffset)
       roamPoseRef.current = nextPose
       roamXRef.current = nextPose.x
       setRoamPose(nextPose)
@@ -204,11 +247,14 @@ export function AssistantPresence({
           const duration = 4800 + Math.random() * 2200
           setRoamMode('bubble')
           setRoamDuration(duration)
-          applyPose({
-            rotation: (Math.random() * 2 - 1) * 1.25,
-            x: nextX,
-            y: (Math.random() * 2 - 1) * maxY,
-          })
+          applyPose(
+            {
+              rotation: (Math.random() * 2 - 1) * 1.25,
+              x: nextX,
+              y: (Math.random() * 2 - 1) * maxY,
+            },
+            duration
+          )
           bubbleDrifts += 1
 
           if (bubbleDrifts >= 2 + Math.floor(Math.random() * 2) && maxX > 32) {
@@ -249,16 +295,19 @@ export function AssistantPresence({
         const arcY = Math.max(-maxY, Math.min(maxY, (current.y + targetY) / 2 - 9))
         setRoamMode('chase')
         setRoamDuration(940)
-        applyPose({
-          rotation: direction * 2.4,
-          x: current.x + (targetX - current.x) * 0.58,
-          y: arcY,
-        })
+        applyPose(
+          {
+            rotation: direction * 2.4,
+            x: current.x + (targetX - current.x) * 0.58,
+            y: arcY,
+          },
+          940
+        )
 
         later(() => {
           if (disposed) return
           setRoamDuration(860)
-          applyPose({ rotation: direction * -0.7, x: targetX, y: targetY })
+          applyPose({ rotation: direction * -0.7, x: targetX, y: targetY }, 860)
 
           later(() => {
             if (disposed) return
@@ -287,7 +336,7 @@ export function AssistantPresence({
       setGrounded(true)
       setRoamMode('land')
       setRoamDuration(760)
-      applyPose({ rotation: 0, x: current.x, y: 0 })
+      applyPose({ rotation: 0, x: current.x, y: 0 }, 760, true)
       rendererRef.current?.setPointer(
         stageRect.left + stageRect.width / 2 + current.x,
         stageRect.bottom
@@ -299,13 +348,13 @@ export function AssistantPresence({
         setRoamMode('roll')
         setRoamDuration(2400)
         rendererRef.current?.startRoll(direction, 2400)
-        applyPose({ rotation: 0, x: targetX, y: 0 })
+        applyPose({ rotation: 0, x: targetX, y: 0 }, 2400, true)
 
         later(() => {
           if (disposed) return
           rendererRef.current?.clearRoll()
           setRoamDuration(0)
-          applyPose({ rotation: 0, x: targetX, y: 0 })
+          applyPose({ rotation: 0, x: targetX, y: 0 }, 0, true)
           setRoamMode('dizzy')
           rendererRef.current?.triggerGesture('dizzy')
           showRoamMessage('等等，地面在转…', 1550)
@@ -316,11 +365,14 @@ export function AssistantPresence({
             chasingRef.current = false
             setRoamMode('bubble')
             setRoamDuration(1250)
-            applyPose({
-              rotation: 0,
-              x: targetX,
-              y: (Math.random() * 2 - 1) * maxY,
-            })
+            applyPose(
+              {
+                rotation: 0,
+                x: targetX,
+                y: (Math.random() * 2 - 1) * maxY,
+              },
+              1250
+            )
             bubbleDrifts = 0
             later(() => scheduleBubbleDrift(), 1380)
           }, 1450)
@@ -340,7 +392,16 @@ export function AssistantPresence({
         roamTimerRef.current = null
       }
     }
-  }, [exhausted, onPlayfulMessage, reducedMotion, roaming, showPlayfulBubble, variant])
+  }, [
+    exhausted,
+    measureCardContactOffset,
+    onPlayfulMessage,
+    reducedMotion,
+    roaming,
+    showPlayfulBubble,
+    updateContactOffset,
+    variant,
+  ])
 
   const showMessage = React.useCallback(
     (message: string, duration: number) => {
@@ -375,10 +436,28 @@ export function AssistantPresence({
     showMessage(interaction.message, interaction.gesture === 'tired' ? 2200 : 1500)
 
     if (interaction.becameTired) {
+      const canTravelToCard = roaming && variant === 'hero' && !reducedMotion
+      const host = hostRef.current
+      if (canTravelToCard && host && !cardContactRef.current) {
+        const dropDistance = measureCardContactOffset()
+        rendererRef.current?.setTravelMotion(0, dropDistance, 780)
+        rendererRef.current?.setSurfaceContact(true)
+        roamWorldRef.current.y += dropDistance
+        cardContactRef.current = true
+        updateContactOffset(dropDistance)
+      }
       setExhausted(true)
       if (recoveryTimerRef.current !== null) window.clearTimeout(recoveryTimerRef.current)
       recoveryTimerRef.current = window.setTimeout(() => {
         clickStateRef.current = recoverAssistantClickState()
+        if (canTravelToCard && host && cardContactRef.current) {
+          const riseDistance = contactOffsetRef.current
+          rendererRef.current?.setTravelMotion(0, -riseDistance, 780)
+          rendererRef.current?.setSurfaceContact(false)
+          roamWorldRef.current.y -= riseDistance
+          cardContactRef.current = false
+          updateContactOffset(0)
+        }
         setExhausted(false)
         playGesture('recover')
         showMessage('呼……缓过来了', 1600)
@@ -386,7 +465,16 @@ export function AssistantPresence({
       }, ASSISTANT_TIRED_DURATION_MS)
     }
     onActivate?.()
-  }, [onActivate, playGesture, showMessage])
+  }, [
+    measureCardContactOffset,
+    onActivate,
+    playGesture,
+    reducedMotion,
+    roaming,
+    showMessage,
+    updateContactOffset,
+    variant,
+  ])
 
   const handlePointerDown = React.useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -424,7 +512,7 @@ export function AssistantPresence({
               transform: reducedMotion
                 ? undefined
                 : exhausted || grounded
-                  ? `translate3d(${roamPose.x}px, calc(${roamPose.y}px + 34%), 0) rotate(${exhausted ? roamPose.rotation * 0.2 : roamPose.rotation}deg)`
+                  ? `translate3d(${roamPose.x}px, ${roamPose.y + contactOffset}px, 0) rotate(${exhausted ? roamPose.rotation * 0.2 : roamPose.rotation}deg)`
                   : `translate3d(${roamPose.x}px, ${roamPose.y}px, 0) rotate(${roamPose.rotation}deg)`,
             } as React.CSSProperties)
           : undefined
@@ -434,14 +522,20 @@ export function AssistantPresence({
         <span className="assistant-presence__fallback-eye" />
         <span className="assistant-presence__fallback-eye" />
       </div>
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        className="assistant-presence__hit-target"
-        title={title}
-        onClick={handleClick}
-        onPointerDown={handlePointerDown}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={ariaLabel}
+            className="assistant-presence__hit-target"
+            onClick={handleClick}
+            onPointerDown={handlePointerDown}
+          />
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>
+          {title}
+        </TooltipContent>
+      </Tooltip>
       {showPlayfulBubble && (
         <span
           aria-live="polite"

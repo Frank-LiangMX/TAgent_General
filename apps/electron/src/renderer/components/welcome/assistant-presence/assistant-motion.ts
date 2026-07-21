@@ -62,6 +62,19 @@ export interface AssistantMotionSample {
   ribbonPhase: number
 }
 
+export interface AssistantTravelDeformationSample {
+  active: boolean
+  axisAngle: number
+  scaleAcross: number
+  scaleAlong: number
+  strain: number
+}
+
+export interface AssistantSlimeRestSample {
+  breath: number
+  lateral: number
+}
+
 export interface AssistantReactionSample {
   active: boolean
   eyeScaleY: number
@@ -298,6 +311,54 @@ export function damp(current: number, target: number, smoothing: number, deltaMs
   if (deltaMs <= 0) return current
   const factor = 1 - Math.exp((-smoothing * deltaMs) / 1000)
   return current + (target - current) * factor
+}
+
+/**
+ * 疲劳形态仍保留很慢的黏弹性流动。两个不同频率的波叠加后不会像机械循环，
+ * 同时只输出轮廓形变信号，不产生整体位移或点击反馈。
+ */
+export function sampleAssistantSlimeRest(
+  phase: number,
+  reducedMotion: boolean
+): AssistantSlimeRestSample {
+  if (reducedMotion) return { breath: 0, lateral: 0 }
+
+  return {
+    breath: Math.sin(phase * 0.44),
+    lateral: Math.sin(phase * 0.31 + 1.1) * 0.72 + Math.sin(phase * 0.83) * 0.28,
+  }
+}
+
+/**
+ * 根据一次外层位移估算软体的速度形变。局部 X 轴对齐运动方向并压缩，
+ * 局部 Y 轴补偿伸展；正弦速度包络让起步和刹停自然回到中性形态。
+ */
+export function sampleAssistantTravelDeformation(
+  elapsedMs: number,
+  durationMs: number,
+  deltaX: number,
+  deltaY: number,
+  reducedMotion: boolean
+): AssistantTravelDeformationSample {
+  const distance = Math.hypot(deltaX, deltaY)
+  const axisAngle = distance > 0.001 ? Math.atan2(deltaY, deltaX) : 0
+  if (reducedMotion || durationMs <= 0 || distance < 0.5) {
+    return { active: false, axisAngle, scaleAcross: 1, scaleAlong: 1, strain: 0 }
+  }
+
+  const progress = clamp(elapsedMs / durationMs, 0, 1)
+  const velocityEnvelope = Math.sin(progress * Math.PI)
+  const averageSpeed = (distance / durationMs) * 1000
+  const peakStrain = clamp(averageSpeed / 550, 0, 0.13)
+  const strain = peakStrain * Math.max(0, velocityEnvelope)
+
+  return {
+    active: elapsedMs >= 0 && elapsedMs < durationMs,
+    axisAngle,
+    scaleAcross: 1 + strain * 0.78,
+    scaleAlong: 1 - strain,
+    strain,
+  }
 }
 
 export function sampleAssistantRollRotation(

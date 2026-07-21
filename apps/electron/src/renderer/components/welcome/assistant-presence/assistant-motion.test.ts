@@ -11,7 +11,9 @@ import {
   sampleAssistantMotion,
   sampleAssistantReaction,
   sampleAssistantRollRotation,
+  sampleAssistantSlimeRest,
   sampleAssistantState,
+  sampleAssistantTravelDeformation,
 } from './assistant-motion'
 import {
   ASSISTANT_PIXI_FILTERS_ENABLED,
@@ -38,6 +40,40 @@ describe('assistant motion', () => {
     expect(sampleAssistantRollRotation(1200, 2400, 1, false)).toBeCloseTo(Math.PI * 2)
     expect(sampleAssistantRollRotation(2400, 2400, -1, false)).toBeCloseTo(-Math.PI * 4)
     expect(sampleAssistantRollRotation(1200, 2400, 1, true)).toBe(0)
+  })
+
+  it('compresses a soft body along its velocity axis and stretches across it', () => {
+    const horizontal = sampleAssistantTravelDeformation(500, 1000, 100, 0, false)
+    const vertical = sampleAssistantTravelDeformation(500, 1000, 0, -100, false)
+
+    expect(horizontal.active).toBe(true)
+    expect(horizontal.axisAngle).toBe(0)
+    expect(horizontal.scaleAlong).toBeLessThan(1)
+    expect(horizontal.scaleAcross).toBeGreaterThan(1)
+    expect(vertical.axisAngle).toBeCloseTo(-Math.PI / 2)
+    expect(vertical.strain).toBeCloseTo(horizontal.strain)
+  })
+
+  it('scales travel deformation with speed and disables it for reduced motion', () => {
+    const slow = sampleAssistantTravelDeformation(500, 1000, 20, 0, false)
+    const fast = sampleAssistantTravelDeformation(500, 1000, 100, 0, false)
+    const reduced = sampleAssistantTravelDeformation(500, 1000, 100, 0, true)
+
+    expect(fast.strain).toBeGreaterThan(slow.strain)
+    expect(reduced.strain).toBe(0)
+    expect(reduced.scaleAlong).toBe(1)
+    expect(reduced.scaleAcross).toBe(1)
+  })
+
+  it('keeps a tired slime subtly alive and respects reduced motion', () => {
+    const first = sampleAssistantSlimeRest(0, false)
+    const later = sampleAssistantSlimeRest(Math.PI, false)
+    const reduced = sampleAssistantSlimeRest(Math.PI, true)
+
+    expect(later.breath).not.toBeCloseTo(first.breath)
+    expect(later.lateral).not.toBeCloseTo(first.lateral)
+    expect(Math.abs(later.lateral)).toBeLessThanOrEqual(1)
+    expect(reduced).toEqual({ breath: 0, lateral: 0 })
   })
 
   it('keeps quiet internal motion without spatial movement for reduced motion', () => {

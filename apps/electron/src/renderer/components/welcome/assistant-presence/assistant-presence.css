@@ -205,6 +205,7 @@ html[data-assistant-presence-transition='pending'] [data-assistant-transition-ta
 }
 
 .assistant-presence[data-ready='false'][data-gesture='tired'] .assistant-presence__fallback {
+  transform-origin: 50% 72%;
   animation: assistant-presence-fallback-tired 4300ms ease-out both;
 }
 
@@ -446,7 +447,18 @@ html[data-assistant-presence-transition='pending'] [data-assistant-transition-ta
   0% {
     transform: translateY(0) rotate(0) scale(0.55);
   }
-  12%,
+  12% {
+    transform: translate(0.12rem, 0.58rem) rotate(4deg) scale(0.64, 0.46);
+  }
+  36% {
+    transform: translate(0.1rem, 0.58rem) rotate(3.4deg) scale(0.655, 0.448);
+  }
+  62% {
+    transform: translate(0.14rem, 0.58rem) rotate(4.3deg) scale(0.628, 0.472);
+  }
+  84% {
+    transform: translate(0.11rem, 0.58rem) rotate(3.7deg) scale(0.65, 0.454);
+  }
   100% {
     transform: translate(0.12rem, 0.58rem) rotate(4deg) scale(0.64, 0.46);
   }
