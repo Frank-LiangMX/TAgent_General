@@ -7,7 +7,7 @@
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
-import { ChevronDown, ChevronRight, Layers, Send } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, Layers, Send } from 'lucide-react'
 import * as React from 'react'
 
 import { currentDocumentAtom } from '@/design/canvas-shape-store'
@@ -122,7 +122,19 @@ function TreeView({
   return <>{roots.map(renderNode)}</>
 }
 
-export function LayerTreePanel({ className }: { className?: string }): React.ReactElement | null {
+export interface LayerTreePanelProps {
+  className?: string
+  /** 浮岛展开态（false 时只显示 Layers 把手行） */
+  open?: boolean
+  /** 点击把手行切换展开/收起 */
+  onToggle?: () => void
+}
+
+export function LayerTreePanel({
+  className,
+  open = true,
+  onToggle,
+}: LayerTreePanelProps): React.ReactElement | null {
   // v3 数据源
   const doc = useAtomValue(currentDocumentAtom)
   const v3Nodes = React.useMemo(() => buildLayerTree(doc), [doc])
@@ -205,42 +217,54 @@ export function LayerTreePanel({ className }: { className?: string }): React.Rea
   return (
     <div
       className={cn(
-        'flex h-full flex-col border-r border-border/40 bg-background/60 backdrop-blur',
+        'flex min-h-0 flex-col overflow-hidden rounded-xl border border-border/50 bg-background/70 backdrop-blur',
         className
       )}
     >
-      <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
-        <div className="flex size-5 items-center justify-center rounded bg-primary/10">
-          <Layers className="size-3 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-xs font-medium text-foreground truncate">分层</h3>
-          <p className="text-[10px] text-muted-foreground">{items.length} 个元素</p>
-        </div>
-      </div>
+      {/* 把手行：Layers 浮岛的常驻头（点击展开/收起，同一个浮窗） */}
+      <button
+        type="button"
+        className="flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-label={open ? '收起分层' : '展开分层'}
+      >
+        <Layers className={cn('size-3.5', open && 'text-primary')} />
+        <span className={cn(open && 'text-foreground')}>Layers</span>
+        <span className="text-[10px]">{items.length}</span>
+        {open ? (
+          <ChevronUp className="ml-auto size-3" />
+        ) : (
+          <ChevronDown className="ml-auto size-3" />
+        )}
+      </button>
 
-      {selectedIds.length > 0 && (
-        <div className="border-b border-border/40 px-3 py-2">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-1.5 rounded bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
-            onClick={handleTellAgent}
-          >
-            <Send className="size-3" />
-            <span>把这 {selectedIds.length} 个元素告诉 Agent</span>
-          </button>
-        </div>
+      {open && (
+        <>
+          {selectedIds.length > 0 && (
+            <div className="px-2.5 pb-1.5">
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                onClick={handleTellAgent}
+              >
+                <Send className="size-3" />
+                <span>把这 {selectedIds.length} 个元素告诉 Agent</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto px-1.5 pb-2">
+            <TreeView
+              items={items}
+              selectedIds={selectedIds}
+              onSelect={handleSelect}
+              expanded={expanded}
+              toggleExpand={toggleExpand}
+            />
+          </div>
+        </>
       )}
-
-      <div className="flex-1 overflow-y-auto px-1.5 py-2">
-        <TreeView
-          items={items}
-          selectedIds={selectedIds}
-          onSelect={handleSelect}
-          expanded={expanded}
-          toggleExpand={toggleExpand}
-        />
-      </div>
     </div>
   )
 }

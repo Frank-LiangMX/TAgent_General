@@ -86,7 +86,7 @@ export function ImportDropZone({ className }: ImportDropZoneProps): React.ReactE
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-1.5 rounded border border-border/40 bg-background/60 px-2 py-1 text-[11px] text-muted-foreground hover:border-primary/40 hover:text-foreground disabled:opacity-50"
+              className="flex h-7 items-center gap-1.5 rounded-lg border border-border/45 bg-background/50 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground disabled:pointer-events-none disabled:opacity-45"
               onClick={() => inputRef.current?.click()}
               disabled={busy}
               aria-label="导入 HTML / 截图"

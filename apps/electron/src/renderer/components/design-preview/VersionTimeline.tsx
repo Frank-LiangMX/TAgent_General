@@ -42,12 +42,12 @@ function SnapshotChip({
   return (
     <div
       className={cn(
-        'group flex shrink-0 flex-col items-stretch rounded-md border text-[11px]',
+        'group flex shrink-0 flex-col items-stretch rounded-lg border text-[11px] transition-colors',
         isActive
-          ? 'border-primary bg-primary/10 text-primary'
+          ? 'border-primary/35 bg-primary/10 text-primary'
           : isLatest
-            ? 'border-emerald-500/50 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300'
-            : 'border-border/40 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+            ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300'
+            : 'border-border/45 bg-background/50 text-muted-foreground hover:bg-background/75 hover:text-foreground'
       )}
     >
       <button type="button" className="flex items-center gap-1 px-2 py-1" onClick={onActivate}>
@@ -90,16 +90,8 @@ export function VersionTimeline({ className }: { className?: string }): React.Re
   }
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-1.5 border-b border-border/40 bg-background/70 px-3 py-1.5 backdrop-blur',
-        className
-      )}
-    >
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        版本
-      </span>
-      <div className="flex flex-1 items-center gap-1 overflow-x-auto">
+    <div className={cn('flex items-center justify-center gap-1.5 pt-2', className)}>
+      <div className="flex max-w-full items-center gap-1 overflow-x-auto">
         {snapshots.map((snap) => (
           <SnapshotChip
             key={snap.id}
@@ -115,7 +107,7 @@ export function VersionTimeline({ className }: { className?: string }): React.Re
       {activeId && (
         <button
           type="button"
-          className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="shrink-0 rounded-lg border border-border/45 bg-background/50 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground"
           onClick={() => setActiveId(null)}
         >
           回到最新

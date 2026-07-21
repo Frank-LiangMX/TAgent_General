@@ -11,7 +11,7 @@
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Eye, Layers as LayersIcon, Sparkles, X } from 'lucide-react'
+import { Eye, Sparkles, X } from 'lucide-react'
 import * as React from 'react'
 
 import {
@@ -51,12 +51,14 @@ export interface DesignCanvasProps {
 function DisabledState(): React.ReactElement {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+      <div className="flex size-11 items-center justify-center rounded-2xl border border-border/60 bg-background/60 shadow-sm">
         <Eye className="size-5 text-muted-foreground" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <p className="text-sm font-medium text-foreground">Design Preview 未启用</p>
-        <p className="text-xs text-muted-foreground">让 Agent 生成 UI 原型后会自动启用</p>
+        <p className="mx-auto max-w-[220px] text-xs leading-relaxed text-muted-foreground">
+          让 Agent 生成 UI 原型后会自动启用
+        </p>
       </div>
     </div>
   )
@@ -65,16 +67,22 @@ function DisabledState(): React.ReactElement {
 function EmptyState(): React.ReactElement {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-        <Sparkles className="size-5 text-primary" />
+      <div className="flex size-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary shadow-lg shadow-primary/10">
+        <Sparkles className="size-5" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <p className="text-sm font-medium text-foreground">等待 Agent 生成 UI 原型</p>
-        <p className="text-xs text-muted-foreground">在对话中说「帮我做一个登录页面」</p>
+        <p className="mx-auto max-w-[220px] text-xs leading-relaxed text-muted-foreground">
+          在对话中说「帮我做一个登录页面」，选中元素后可直接告诉 Agent 修改这里
+        </p>
       </div>
     </div>
   )
 }
+
+/** 原型基调的工具栏胶囊按钮（细发丝描边 + 半透明底） */
+const toolbarChipClass =
+  'flex h-7 items-center gap-1.5 rounded-lg border border-border/45 bg-background/50 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground disabled:pointer-events-none disabled:opacity-45'
 
 /** 是否在可编辑区域（输入框等），空格键不应触发平移 */
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -103,7 +111,8 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
   const [activeTool, setActiveTool] = useAtom(designActiveToolAtom)
   const setV2SelectedIds = useSetAtom(selectedElementIdsAtom)
 
-  const [layersOpen, setLayersOpen] = React.useState(true)
+  // Layers 浮岛默认收起为把手（对齐原型 canvas-layer-handle）
+  const [layersOpen, setLayersOpen] = React.useState(false)
 
   // ── iframe bridge（连接注入脚本 → 选中态/分层） ──
   const [iframeEl, setIframeEl] = React.useState<HTMLIFrameElement | null>(null)
@@ -337,61 +346,42 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
   const isPanTool = activeTool === 'pan'
 
   return (
-    <div className={cn('flex h-full w-full', className)}>
-      {/* 左侧 Layers（v2 HTML 模式也有分层） */}
-      {layersOpen && hasContent && (
-        <div className="w-56 shrink-0">
-          <LayerTreePanel />
-        </div>
-      )}
-
+    <div className={cn('flex h-full w-full flex-col px-2.5 pb-2.5 pt-2', className)}>
       <div className="flex flex-1 flex-col relative min-w-0">
-        {/* 顶部 toolbar */}
-        <div className="flex items-center gap-2 border-b border-border/40 bg-background/60 px-3 py-1.5 backdrop-blur">
-          <button
-            type="button"
-            className={cn(
-              'flex items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-muted',
-              layersOpen && 'bg-muted'
-            )}
-            onClick={() => setLayersOpen((v) => !v)}
-            disabled={!hasContent}
-          >
-            <LayersIcon className="size-3.5" />
-            <span>分层</span>
-          </button>
-          <div className="ml-1">
-            <ImportDropZone />
-          </div>
-          {selectedIds.length > 0 && (
+        {/* 顶部工具栏：原型 scene-toolbar 基调，工具/缩放/刷新与导入同一行 */}
+        <div className="mb-2 flex items-center gap-1.5">
+          {hasContent && (
             <>
-              <div className="ml-2 text-[11px] text-muted-foreground">
-                已选中 {selectedIds.length} 个元素
-              </div>
-              <button
-                type="button"
-                className="ml-auto flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() => clearSel()}
-              >
-                <X className="size-3" /> 取消选中
-              </button>
+              <DesignDock />
+              <span className="mx-0.5 h-4 w-px bg-border/40" />
             </>
+          )}
+          <ImportDropZone />
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              className={cn(toolbarChipClass, 'border-primary/30 bg-primary/10 text-primary')}
+              onClick={() => clearSel()}
+            >
+              <span>已选中 {selectedIds.length} 个元素</span>
+              <X className="size-3" />
+            </button>
           )}
         </div>
 
-        {/* 版本时间线（仅 v3 模式） */}
-        {hasV3Content && <VersionTimeline />}
-
-        {/* 画布区域（relative 用于覆盖层定位） */}
+        {/* 画布场域：内嵌大圆角卡片 + 原型同款细点阵网格（relative 用于覆盖层定位） */}
         <div
           ref={containerRefCallback}
-          className={cn('flex-1 overflow-hidden relative', isPanTool && 'cursor-grab')}
+          className={cn(
+            'flex-1 overflow-hidden relative rounded-2xl border border-border/45',
+            isPanTool && 'cursor-grab'
+          )}
           onMouseDown={handleContainerMouseDown}
           onClick={handleContainerClick}
           style={{
-            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.12) 1px, transparent 1px)`,
-            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
-            backgroundColor: 'hsl(var(--background))',
+            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.3) 0.75px, transparent 0.8px)`,
+            backgroundSize: `${15 * viewport.zoom}px ${15 * viewport.zoom}px`,
+            backgroundColor: 'hsl(var(--muted) / 0.4)',
           }}
         >
           {hasV3Content ? (
@@ -446,6 +436,20 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
             />
           )}
 
+          {/* Layers 浮岛：右上角单一浮窗，点把手行展开分层树（原型 canvas-layer-handle） */}
+          {hasContent && (
+            <div className="pointer-events-none absolute bottom-3 right-3 top-3 z-40 flex w-60 flex-col items-stretch">
+              <LayerTreePanel
+                className={cn(
+                  'pointer-events-auto min-h-0 shadow-lg shadow-foreground/5',
+                  !layersOpen && 'w-auto self-end'
+                )}
+                open={layersOpen}
+                onToggle={() => setLayersOpen((v) => !v)}
+              />
+            </div>
+          )}
+
           {/* 左下角常驻缩略图 */}
           {hasContent && (
             <div className="pointer-events-none absolute bottom-3 left-3 z-40">
@@ -454,12 +458,8 @@ export function DesignCanvas({ className }: DesignCanvasProps): React.ReactEleme
           )}
         </div>
 
-        {/* Dock */}
-        {hasContent && (
-          <div className="absolute bottom-3 right-3 z-50 pointer-events-none">
-            <DesignDock />
-          </div>
-        )}
+        {/* 版本时间线：画布下方居中胶囊条（仅 v3 模式） */}
+        {hasV3Content && <VersionTimeline />}
       </div>
     </div>
   )

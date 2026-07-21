@@ -1,24 +1,19 @@
 /**
- * DesignDock — 画布浮动 Dock 工具栏
+ * DesignDock — 画布顶部工具组（原型 scene-toolbar 基调）
  *
  * - 选择 / 交互 / 平移模式切换
  * - 缩放控制
  * - 刷新 / 清空
- * - 放大模式 / 沉浸全屏
- * - 沉浸全屏下：隐藏/显示会话
+ *
+ * 窗口态入口（聚焦 / 沉浸全屏）已移除：聚焦走 RightInspectorFrame 头部，Esc 统一退出。
  */
 
 import { useAtom, useSetAtom } from 'jotai'
 import {
-  Expand,
   Hand,
-  Maximize2,
-  MessageSquare,
-  Minimize2,
   MinusCircle,
   MousePointer2,
   MousePointerClick,
-  PanelLeftClose,
   PlusCircle,
   RefreshCw,
   Scan,
@@ -29,14 +24,10 @@ import * as React from 'react'
 import {
   clearDesignCanvasAtom,
   designActiveToolAtom,
-  designFullscreenAtom,
-  designImmersiveAtom,
-  designImmersiveHideChatAtom,
   designSelectionAtom,
   refreshDesignCanvasAtom,
   type DesignCanvasTool,
 } from '@/atoms/design-preview-atoms'
-import { inspectorMagnifiedAtom } from '@/atoms/app-mode'
 import { zoomAtom, resetViewportAtom } from '@/design/canvas-viewport-store'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@tagent/ui'
@@ -68,12 +59,16 @@ function DockTooltip({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="top" sideOffset={8}>
+      <TooltipContent side="bottom" sideOffset={8}>
         {label}
       </TooltipContent>
     </Tooltip>
   )
 }
+
+/** 顶部工具栏图标胶囊（与导入按钮同基调） */
+const dockChipClass =
+  'flex size-7 items-center justify-center rounded-lg border border-border/45 bg-background/50 text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground'
 
 export interface DesignDockProps {
   className?: string
@@ -83,27 +78,13 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
   const [activeTool, setActiveTool] = useAtom(designActiveToolAtom)
   const [zoom, setZoom] = useAtom(zoomAtom)
   const resetZoom = useSetAtom(resetViewportAtom)
-  const [designFullscreen, setDesignFullscreen] = useAtom(designFullscreenAtom)
-  const [inspectorMagnified, setInspectorMagnified] = useAtom(inspectorMagnifiedAtom)
-  const magnify = inspectorMagnified || designFullscreen
-  const setMagnify = (next: boolean) => {
-    setInspectorMagnified(next)
-    setDesignFullscreen(next)
-  }
-  const [immersive, setImmersive] = useAtom(designImmersiveAtom)
-  const [hideChat, setHideChat] = useAtom(designImmersiveHideChatAtom)
   const refresh = useSetAtom(refreshDesignCanvasAtom)
   const clear = useSetAtom(clearDesignCanvasAtom)
   const setSelection = useSetAtom(designSelectionAtom)
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div
-        className={cn(
-          'pointer-events-auto flex items-center gap-0.5 rounded-lg border border-border/50 bg-background/90 px-1.5 py-1 shadow-lg backdrop-blur-sm',
-          className
-        )}
-      >
+      <div className={cn('flex items-center gap-1.5', className)}>
         {TOOLS.map((tool) => (
           <DockTooltip key={tool.value} label={tool.tip}>
             <button
@@ -113,10 +94,8 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
                 if (tool.value === 'select') setSelection(null)
               }}
               className={cn(
-                'flex size-7 items-center justify-center rounded-md transition-colors',
-                activeTool === tool.value
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                dockChipClass,
+                activeTool === tool.value && 'border-primary/30 bg-primary/10 text-primary'
               )}
               aria-label={tool.label}
             >
@@ -131,7 +110,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
           <button
             type="button"
             onClick={() => setZoom(Math.max(0.1, zoom - 0.25))}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className={dockChipClass}
             aria-label="缩小"
           >
             <MinusCircle className="size-3.5" />
@@ -142,7 +121,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
           <button
             type="button"
             onClick={() => setZoom(Math.min(4, zoom + 0.25))}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className={dockChipClass}
             aria-label="放大缩放"
           >
             <PlusCircle className="size-3.5" />
@@ -152,7 +131,7 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
           <button
             type="button"
             onClick={() => resetZoom()}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className={dockChipClass}
             aria-label="适应"
           >
             <Scan className="size-3.5" />
@@ -162,86 +141,15 @@ export function DesignDock({ className }: DesignDockProps): React.ReactElement {
         <span className="mx-0.5 h-4 w-px bg-border/40" />
 
         <DockTooltip label="刷新">
-          <button
-            type="button"
-            onClick={() => refresh()}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="刷新"
-          >
+          <button type="button" onClick={() => refresh()} className={dockChipClass} aria-label="刷新">
             <RefreshCw className="size-3.5" />
           </button>
         </DockTooltip>
         <DockTooltip label="清空画布">
-          <button
-            type="button"
-            onClick={() => clear()}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="清空"
-          >
+          <button type="button" onClick={() => clear()} className={dockChipClass} aria-label="清空">
             <Trash2 className="size-3.5" />
           </button>
         </DockTooltip>
-
-        <span className="mx-0.5 h-4 w-px bg-border/40" />
-
-        {/* 聚焦模式：扩大画布区，仍保留左侧导航 */}
-        {!immersive && (
-          <DockTooltip label={magnify ? '退出聚焦' : '聚焦模式'}>
-            <button
-              type="button"
-              onClick={() => setMagnify(!magnify)}
-              className={cn(
-                'flex size-7 items-center justify-center rounded-md transition-colors',
-                magnify
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-              aria-label={magnify ? '退出聚焦' : '聚焦模式'}
-            >
-              {magnify ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
-            </button>
-          </DockTooltip>
-        )}
-
-        {/* 沉浸全屏：隐藏壳层，只留会话 + 画布 */}
-        <DockTooltip label={immersive ? '退出全屏' : '全屏模式'}>
-          <button
-            type="button"
-            onClick={() => setImmersive(!immersive)}
-            className={cn(
-              'flex size-7 items-center justify-center rounded-md transition-colors',
-              immersive
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
-            aria-label={immersive ? '退出全屏' : '全屏模式'}
-          >
-            {immersive ? <Minimize2 className="size-3.5" /> : <Expand className="size-3.5" />}
-          </button>
-        </DockTooltip>
-
-        {/* 沉浸全屏下：隐藏 / 显示会话 */}
-        {immersive && (
-          <DockTooltip label={hideChat ? '显示会话' : '隐藏会话'}>
-            <button
-              type="button"
-              onClick={() => setHideChat(!hideChat)}
-              className={cn(
-                'flex size-7 items-center justify-center rounded-md transition-colors',
-                hideChat
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-              aria-label={hideChat ? '显示会话' : '隐藏会话'}
-            >
-              {hideChat ? (
-                <MessageSquare className="size-3.5" />
-              ) : (
-                <PanelLeftClose className="size-3.5" />
-              )}
-            </button>
-          </DockTooltip>
-        )}
       </div>
     </TooltipProvider>
   )
@@ -282,8 +190,7 @@ function ZoomInput({
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit()
         }}
-        className="min-w-[2.5rem] text-center text-[11px] font-medium tabular-nums text-foreground bg-muted/60 rounded border border-border/40 outline-none"
-        style={{ width: '2.8rem', padding: '1px 2px' }}
+        className="h-7 w-[3.2rem] rounded-lg border border-border/45 bg-background/75 text-center text-[11px] font-medium tabular-nums text-foreground outline-none"
         aria-label="缩放比例"
       />
     )
@@ -293,7 +200,7 @@ function ZoomInput({
     <DockTooltip label="点击输入缩放比例">
       <button
         type="button"
-        className="min-w-[2.5rem] text-center text-[11px] font-medium tabular-nums text-foreground hover:bg-muted/40 rounded"
+        className="flex h-7 min-w-[3.2rem] items-center justify-center rounded-lg border border-border/45 bg-background/50 px-2 text-[11px] font-medium tabular-nums text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground"
         onClick={() => {
           setDraft(String(Math.round(zoom * 100)))
           setEditing(true)
