@@ -7,7 +7,12 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
-import { DEFAULT_THEME_MODE, DEFAULT_ADVANCED_MATERIAL_MODE } from '../../types'
+import {
+  DEFAULT_ADVANCED_MATERIAL_MODE,
+  DEFAULT_ASSISTANT_PRESENCE_STYLE,
+  DEFAULT_THEME_MODE,
+  normalizeAssistantPresenceStyle,
+} from '../../types'
 
 import type { AppSettings } from '../../types'
 import { applyAdvancedMaterialReleaseReset } from './advanced-material-release-reset'
@@ -44,6 +49,7 @@ function createDefaultSettings(): AppSettings {
   return {
     themeMode: DEFAULT_THEME_MODE,
     advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
+    assistantPresenceStyle: DEFAULT_ASSISTANT_PRESENCE_STYLE,
     onboardingCompleted: false,
     environmentCheckSkipped: false,
     notificationsEnabled: true,
@@ -59,6 +65,7 @@ function normalizeSettings(data: Partial<AppSettings>): AppSettings {
     ...data,
     themeMode: data.themeMode || DEFAULT_THEME_MODE,
     advancedMaterialMode: resolveAdvancedMaterialMode(data),
+    assistantPresenceStyle: normalizeAssistantPresenceStyle(data.assistantPresenceStyle),
     onboardingCompleted: data.onboardingCompleted ?? false,
     environmentCheckSkipped: data.environmentCheckSkipped ?? false,
     notificationsEnabled: data.notificationsEnabled ?? true,

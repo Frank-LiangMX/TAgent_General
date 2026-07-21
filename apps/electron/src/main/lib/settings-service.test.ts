@@ -19,7 +19,25 @@ const { getSettings, isAgentStreamingEnabled, updateSettings } = await import('.
 describe('streaming output setting', () => {
   beforeEach(() => {
     fsMocks.existsSync.mockReturnValue(false)
+    fsMocks.readFileSync.mockReset()
     fsMocks.writeFileSync.mockReset()
+  })
+
+  test('keeps the current ribbon presence as the default', () => {
+    expect(getSettings().assistantPresenceStyle).toBe('ribbon')
+  })
+
+  test('restores fluid presence and normalizes unknown legacy values', () => {
+    fsMocks.existsSync.mockReturnValue(true)
+    fsMocks.readFileSync.mockReturnValueOnce(
+      JSON.stringify({ themeMode: 'dark', assistantPresenceStyle: 'fluid' })
+    )
+    expect(getSettings().assistantPresenceStyle).toBe('fluid')
+
+    fsMocks.readFileSync.mockReturnValueOnce(
+      JSON.stringify({ themeMode: 'dark', assistantPresenceStyle: 'unknown' })
+    )
+    expect(getSettings().assistantPresenceStyle).toBe('ribbon')
   })
 
   afterEach(() => {

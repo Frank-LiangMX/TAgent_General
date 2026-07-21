@@ -31,7 +31,7 @@ interface CreateSessionOptions {
   /** 覆盖当前工作区；Office 用它在指定楼层内创建办公室。 */
   workspaceId?: string
   /** 创建后、打开前执行；供展示壳层预置 per-session UI 偏好。 */
-  beforeOpen?: (session: AgentSessionMeta) => void
+  beforeOpen?: (session: AgentSessionMeta) => void | Promise<void>
   /**
    * 顶层模式：'general'（默认）| 'ta'
    * TA 模式创建的会话在 agent_sessions 中带 mode='ta' 标记，与通用模式数据隔离。
@@ -82,7 +82,7 @@ export function useCreateSession(): CreateSessionActions {
         options?.modelId
       )
       setAgentSessions((prev) => [meta, ...prev])
-      options?.beforeOpen?.(meta)
+      await options?.beforeOpen?.(meta)
       openSession('agent', meta.id, meta.title, options?.mode)
       setActiveView('conversations')
       if (options?.draft) {

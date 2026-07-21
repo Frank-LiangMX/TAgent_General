@@ -48,6 +48,10 @@ import {
   unviewedCompletedSessionIdsAtom,
 } from './atoms/agent-atoms'
 import { appModeAtom } from './atoms/app-mode'
+import {
+  assistantPresenceStyleAtom,
+  initializeAssistantPresenceStyle,
+} from './atoms/assistant-presence'
 import { channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/model-atoms'
 import { dingtalkBotStatesAtom } from './atoms/dingtalk-atoms'
 import { feishuBotStatesAtom } from './atoms/feishu-atoms'
@@ -565,6 +569,19 @@ function TAgentBrandInitializer(): null {
 }
 
 /**
+ * 欢迎页 Agent 形象初始化
+ */
+function AssistantPresenceStyleInitializer(): null {
+  const setStyle = useSetAtom(assistantPresenceStyleAtom)
+
+  useEffect(() => {
+    void initializeAssistantPresenceStyle(setStyle)
+  }, [setStyle])
+
+  return null
+}
+
+/**
  * Agent IPC 监听器初始化组件
  *
  * 全局挂载，永不销毁。确保 Agent 流式事件、权限请求
@@ -950,6 +967,7 @@ if (isQuickTaskWindow) {
         <MarkdownFontSizeInitializer />
         <AdvancedMaterialInitializer />
         <TAgentBrandInitializer />
+        <AssistantPresenceStyleInitializer />
         <AgentListenersInitializer />
         <AskListenersInitializer />
         <UpdaterInitializer />

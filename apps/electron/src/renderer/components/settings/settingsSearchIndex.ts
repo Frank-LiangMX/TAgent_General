@@ -202,6 +202,12 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
         keywords: ['theme', 'dark', 'light'],
       },
       { id: 'theme-style', title: '皮肤风格', description: '10 种主题风格' },
+      {
+        id: 'assistant-presence-style',
+        title: 'Agent 形象',
+        description: '流光 / 柔液欢迎页角色形态',
+        keywords: ['avatar', 'assistant', 'chatbot', '角色'],
+      },
       { id: 'brand-color', title: '品牌色', description: 'TAgent 品牌色' },
       { id: 'markdown-font-size', title: 'Markdown 字号', description: '阅读字号档位' },
       {

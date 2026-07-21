@@ -1,0 +1,127 @@
+.composer-assistant-input-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.composer-assistant-input-field {
+  min-width: 0;
+  flex: 1;
+}
+
+.composer-assistant-presence {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  width: 4.25rem;
+  height: 4.25rem;
+  flex: 0 0 4.25rem;
+  place-items: center;
+  isolation: isolate;
+}
+
+.composer-assistant-presence[data-location='composer'] {
+  margin: -0.25rem -0.2rem -0.2rem 0.1rem;
+}
+
+.composer-assistant-presence[data-location='attention'] {
+  margin: 0 auto -0.75rem;
+}
+
+.composer-assistant-presence__state-dot {
+  position: absolute;
+  top: 0.72rem;
+  left: 0.7rem;
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid hsl(var(--card) / 0.82);
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  box-shadow: 0 0 0.5rem hsl(var(--primary) / 0.38);
+  pointer-events: none;
+}
+
+.composer-assistant-presence[data-state='standby'] .composer-assistant-presence__state-dot {
+  opacity: 0.42;
+  background: hsl(var(--muted-foreground));
+  box-shadow: none;
+}
+
+.composer-assistant-presence[data-state='needs-input'] .composer-assistant-presence__state-dot {
+  background: hsl(var(--scene-ambient-b));
+  box-shadow: 0 0 0.55rem hsl(var(--scene-ambient-b) / 0.55);
+}
+
+.composer-assistant-presence[data-state='error'] .composer-assistant-presence__state-dot {
+  background: hsl(var(--destructive));
+  box-shadow: 0 0 0.55rem hsl(var(--destructive) / 0.5);
+}
+
+.composer-assistant-presence__status {
+  position: absolute;
+  z-index: 5;
+  top: -1.45rem;
+  left: 50%;
+  width: max-content;
+  max-width: 9rem;
+  padding: 0.34rem 0.54rem;
+  transform: translate(-50%, 0.3rem) scale(0.96);
+  transform-origin: 1.15rem 100%;
+  border: 1px solid var(--surface-role-composer-rim, hsl(var(--border) / 0.72));
+  border-radius: 0.68rem 0.68rem 0.68rem 0.24rem;
+  opacity: 0;
+  background: var(--surface-role-composer-fill, hsl(var(--card) / 0.92));
+  box-shadow: var(--surface-shadow-raised, 0 0.4rem 1.2rem hsl(var(--foreground) / 0.1));
+  color: hsl(var(--foreground) / 0.82);
+  font-size: 0.625rem;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  transition:
+    opacity var(--motion-duration-fast, 160ms) var(--motion-ease-spatial, ease-out),
+    transform var(--motion-duration-fast, 160ms) var(--motion-ease-spatial, ease-out);
+}
+
+.composer-assistant-presence__status::after {
+  position: absolute;
+  bottom: -0.2rem;
+  left: 0.72rem;
+  width: 0.36rem;
+  height: 0.36rem;
+  transform: rotate(45deg);
+  border-right: 1px solid var(--surface-role-composer-rim, hsl(var(--border) / 0.72));
+  border-bottom: 1px solid var(--surface-role-composer-rim, hsl(var(--border) / 0.72));
+  background: inherit;
+  content: '';
+}
+
+.composer-assistant-presence[data-state='needs-input'] .composer-assistant-presence__status {
+  color: hsl(var(--scene-ambient-b));
+}
+
+.composer-assistant-presence[data-state='error'] .composer-assistant-presence__status {
+  color: hsl(var(--destructive));
+}
+
+.composer-assistant-presence[data-announcing='true'] .composer-assistant-presence__status {
+  transform: translate(-50%, 0) scale(1);
+  opacity: 1;
+}
+
+@media (max-width: 680px) {
+  .composer-assistant-presence,
+  .composer-assistant-presence .assistant-presence[data-variant='compact'] {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+
+  .composer-assistant-presence {
+    flex-basis: 3.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-assistant-presence__status {
+    transition: opacity var(--motion-duration-fast, 160ms) ease-out;
+  }
+}
