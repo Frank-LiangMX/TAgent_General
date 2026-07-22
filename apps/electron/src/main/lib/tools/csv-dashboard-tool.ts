@@ -347,7 +347,59 @@ export function executeCsvDashboard(toolCall: ToolCall): ToolResult {
     if (action === 'create') {
       const title = (toolCall.arguments.title as string) || 'CSV 数据分析看板'
       const sectionsJson = toolCall.arguments.sections_json as string | undefined
-      const sections: DashboardSection[] = sectionsJson ? JSON.parse(sectionsJson) : []
+
+      let sections: DashboardSection[] = []
+      if (sectionsJson) {
+        try {
+          sections = JSON.parse(sectionsJson)
+          if (!Array.isArray(sections)) {
+            return {
+              toolCallId: toolCall.id,
+              content: 'sections_json 必须是 JSON 数组。示例: [{"type":"stats","data":{"key":"value"}}]',
+              isError: true,
+            }
+          }
+        } catch (e) {
+          return {
+            toolCallId: toolCall.id,
+            content: `sections_json 解析失败: ${e instanceof Error ? e.message : String(e)}\n\n正确格式示例:\n[{"type":"stats","data":{"资源总数":"999,999","总体积":"40.6GB"}}, {"type":"chart","chart_type":"pie","title":"分类分布","data":{"贴图":25.9,"模型":5.9}}]`,
+            isError: true,
+          }
+        }
+      }
+
+      // 验证每个 section 的结构
+      for (let i = 0; i < sections.length; i++) {
+        const s = sections[i]!
+        if (!s.type) {
+          return {
+            toolCallId: toolCall.id,
+            content: `sections[${i}] 缺少 type 字段。支持的 type: "stats" | "chart" | "table"`,
+            isError: true,
+          }
+        }
+        if (s.type === 'stats' && !s.data) {
+          return {
+            toolCallId: toolCall.id,
+            content: `sections[${i}] type="stats" 缺少 data 字段。data 应为 {label: value} 扁平对象。示例: {"data":{"资源总数":"999,999"}}`,
+            isError: true,
+          }
+        }
+        if (s.type === 'chart' && !s.data) {
+          return {
+            toolCallId: toolCall.id,
+            content: `sections[${i}] type="chart" 缺少 data 字段。pie/horizontal_bar: data 为 {label:number}；bar: data 为 [{name,value}]`,
+            isError: true,
+          }
+        }
+        if (s.type === 'table' && (!s.columns || !s.rows)) {
+          return {
+            toolCallId: toolCall.id,
+            content: `sections[${i}] type="table" 缺少 columns 或 rows 字段。示例: {"columns":["列1","列2"],"rows":[{"列1":"值1"}]}`,
+            isError: true,
+          }
+        }
+      }
 
       const html = buildDashboardHtml(title, sections)
       fs.writeFileSync(dashboardPath, html, 'utf-8')

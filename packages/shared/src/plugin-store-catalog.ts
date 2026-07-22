@@ -156,20 +156,33 @@ const INLINE_STORE_SKILLS: PluginStoreSkillInstallSpec[] = [
 - 回答中必须引用查询结果和查询语句。
 - 不确定时说"需要查询数据"而不是猜测。
 
+## csv_dashboard sections_json 字段结构
+
+**stats 卡片**（data 是 label→value 扁平对象）:
+\`\`\`json
+{"type":"stats", "data":{"资源总数":"999,999","总体积":"40.6 GB","最大引用":"399次"}}
+\`\`\`
+
+**chart 饼图/水平柱图**（data 是 label→number 扁平对象）:
+\`\`\`json
+{"type":"chart", "chart_type":"pie", "title":"分类分布", "data":{"贴图":25.97,"模型":5.97,"烘焙":6.37}}
+\`\`\`
+
+**chart 柱状图**（data 是 [{name,value}] 数组）:
+\`\`\`json
+{"type":"chart", "chart_type":"bar", "title":"模块体积", "data":[{"name":"地形","value":8.29},{"name":"建筑","value":4.67}]}
+\`\`\`
+
+**table 表格**（columns + rows）:
+\`\`\`json
+{"type":"table", "title":"明细", "columns":["分类","数量","体积"], "rows":[{"分类":"贴图","数量":664879,"体积":"25.97GB"}], "sortable":true, "paginated":true}
+\`\`\`
+
 ## 看板类型
 
 - **总览看板** — 调用 csv_dashboard(action="create") 生成包含统计卡片、图表、表格的完整看板。
 - **聚焦视图** — 调用 csv_dashboard(action="add_view") 追加特定分类的聚焦分析视图。
-- **临时查询** — 维度少时直接用 markdown 表格回答，不需要生成看板。
-
-## 图表类型
-
-csv_dashboard 支持的 section 类型：
-- stats: 统计卡片
-- chart.pie: 饼图
-- chart.bar: 柱状图
-- chart.horizontal_bar: 水平柱状图
-- table: 可排序/分页表格`,
+- **临时查询** — 维度少时直接用 markdown 表格回答，不需要生成看板。`,
   },
 ]
 
