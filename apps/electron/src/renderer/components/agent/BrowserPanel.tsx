@@ -339,7 +339,7 @@ export function BrowserPanel({ initialUrl, onCollapse }: BrowserPanelProps): Rea
             // eslint-disable-next-line react/no-unknown-property
             partition="persist:browser-preview"
             // eslint-disable-next-line react/no-unknown-property
-            webpreferences="contextIsolation=yes,nodeIntegration=no,sandbox=yes"
+            webpreferences="contextIsolation=yes,nodeIntegration=no"
             className="absolute inset-0 h-full w-full"
           />
         ) : (
