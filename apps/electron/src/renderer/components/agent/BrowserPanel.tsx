@@ -202,8 +202,7 @@ export function BrowserPanel({ initialUrl, onCollapse }: BrowserPanelProps): Rea
     if (!file) return
     const filePath = (file as unknown as { path?: string }).path || file.name
     if (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-      const { pathToFileURL } = require('url')
-      const url = pathToFileURL(filePath).href
+      const url = 'file:///' + filePath.replace(/\\/g, '/')
       setActiveUrl(url)
       setDraftUrl(formatAddressInput(url))
       setLoading(true)
