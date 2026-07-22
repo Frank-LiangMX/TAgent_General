@@ -78,7 +78,8 @@ export function isCsvDashboardToolCall(toolName: string): boolean {
 // ===== 缓存路径 =====
 
 function getCacheDir(sessionId: string): string {
-  const base = path.join(os.tmpdir(), 'TAgent', 'csv-cache', sessionId)
+  // 看板用独立的缓存目录，避免和 csv_prepare 的 meta.json 冲突
+  const base = path.join(os.tmpdir(), 'TAgent', 'csv-cache', `${sessionId}-dashboard`)
   fs.mkdirSync(base, { recursive: true })
   return base
 }
@@ -317,7 +318,9 @@ function readDashboardMeta(sessionId: string): DashboardMeta {
   const metaPath = getMetaPath(sessionId)
   if (!fs.existsSync(metaPath)) return { generated_views: [] }
   try {
-    return JSON.parse(fs.readFileSync(metaPath, 'utf-8'))
+    const data = JSON.parse(fs.readFileSync(metaPath, 'utf-8'))
+    // 兼容处理：如果 generated_views 不存在或不是数组，返回空数组
+    return { generated_views: Array.isArray(data.generated_views) ? data.generated_views : [] }
   } catch {
     return { generated_views: [] }
   }
