@@ -3,6 +3,7 @@ import * as React from 'react'
 import type { PluginStoreLogoKey } from '@tagent/shared'
 
 import context7Docs from '@/assets/plugin-icons/context7-docs.svg'
+import csvAnalysis from '@/assets/plugin-icons/csv-analysis.svg'
 import frontendE2e from '@/assets/plugin-icons/frontend-e2e.svg'
 import githubDevCollab from '@/assets/plugin-icons/github-dev-collab.svg'
 import officeSuite from '@/assets/plugin-icons/office-suite.svg'
@@ -22,6 +23,7 @@ export const PLUGIN_BUNDLE_LOGO_URLS: Record<PluginStoreLogoKey, string> = {
   'planning-suite': planningSuite,
   'skill-workshop': skillWorkshop,
   'superpowers-full': superpowersFull,
+  'csv-analysis': csvAnalysis,
 }
 
 interface PluginBundleLogoProps {

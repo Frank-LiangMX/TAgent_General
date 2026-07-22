@@ -16,6 +16,7 @@ export type PluginStoreLogoKey =
   | 'planning-suite'
   | 'skill-workshop'
   | 'superpowers-full'
+  | 'csv-analysis'
 
 export interface StorePluginBundle {
   id: string
@@ -140,6 +141,18 @@ export const TAGENT_STORE_PLUGIN_BUNDLES: readonly StorePluginBundle[] = [
     publisher: 'Superpowers (Jesse Vincent)',
     repositoryUrl: 'https://github.com/obra/superpowers',
     homepageUrl: 'https://github.com/obra/superpowers',
+  },
+  {
+    id: 'csv-analysis',
+    name: 'CSV 数据分析看板',
+    description: '读取任意 CSV 文件，自动推断列结构，生成交互式数据看板（图表+可排序表格）。',
+    category: 'workflow',
+    tier: 'recommended',
+    mcps: [],
+    skills: ['csv-analysis'],
+    logo: 'csv-analysis',
+    publisher: 'TAgent',
+    repositoryUrl: `${TAGENT_REPO}/src/main/lib/tools/csv-prepare-tool.ts`,
   },
 ] as const
 

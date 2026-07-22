@@ -132,6 +132,45 @@ const INLINE_STORE_SKILLS: PluginStoreSkillInstallSpec[] = [
 2. 标注破坏性变更、迁移步骤与已知风险。
 3. 语言简洁可扫读，避免堆砌内部实现细节。`,
   },
+  {
+    slug: 'csv-analysis',
+    name: 'CSV 数据分析',
+    description: '读取 CSV 文件，建立 SQLite 索引，生成交互式数据看板。',
+    version: '1.0.0',
+    category: 'workflow',
+    tier: 'recommended',
+    installKind: 'inline',
+    body: `# CSV 数据分析
+
+分析 CSV 数据时使用本 Skill。
+
+## 工作流程
+
+1. **加载数据** — 调用 csv_prepare 加载 CSV 文件到 SQLite，获取列结构和统计摘要。
+2. **查询分析** — 调用 csv_query 按维度聚合/筛选/排序，获取分析结果。
+3. **生成看板** — 调用 csv_dashboard 生成交互式 HTML 看板。
+
+## 数据严谨性
+
+- 所有涉及数据的问题必须调用 csv_query 查询，不得估算或猜测数字。
+- 回答中必须引用查询结果和查询语句。
+- 不确定时说"需要查询数据"而不是猜测。
+
+## 看板类型
+
+- **总览看板** — 调用 csv_dashboard(action="create") 生成包含统计卡片、图表、表格的完整看板。
+- **聚焦视图** — 调用 csv_dashboard(action="add_view") 追加特定分类的聚焦分析视图。
+- **临时查询** — 维度少时直接用 markdown 表格回答，不需要生成看板。
+
+## 图表类型
+
+csv_dashboard 支持的 section 类型：
+- stats: 统计卡片
+- chart.pie: 饼图
+- chart.bar: 柱状图
+- chart.horizontal_bar: 水平柱状图
+- table: 可排序/分页表格`,
+  },
 ]
 
 /** bundled Skill 元数据（目录在 apps/electron/default-skills/） */
