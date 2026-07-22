@@ -186,110 +186,140 @@ const SAMPLE_SIZE = 10000 // 采样行数
 const INSERT_BATCH_SIZE = 5000 // 每批插入行数
 
 /**
- * 流式处理 CSV 文件：
- * 1. 第一遍：采样推断列类型
- * 2. 第二遍：分批插入 SQLite + 聚合统计
+ * 流式处理 CSV 文件（不阻塞主线程）
+ * 使用 Papa.parse 的流式 API，逐行处理
  */
 function processCsvStream(
   filePath: string,
   dbPath: string,
   columnInfos: ColumnInfo[]
-): { rowCount: number; compressSum: number } {
-  const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
-  db.pragma('synchronous = OFF')
-  db.pragma('cache_size = -64000') // 64MB cache
+): Promise<{ rowCount: number; compressSum: number }> {
+  return new Promise((resolve, reject) => {
+    const db = new Database(dbPath)
+    db.pragma('journal_mode = WAL')
+    db.pragma('synchronous = OFF')
+    db.pragma('cache_size = -64000')
 
-  // 创建表
-  const colDefs = columnInfos.map((c) => {
-    const colName = c.name.replace(/[^a-zA-Z0-9_]/g, '_')
-    if (c.type === 'integer') return `${colName} INTEGER`
-    if (c.type === 'real') return `${colName} REAL`
-    return `${colName} TEXT`
-  })
-  db.exec(`CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, ${colDefs.join(', ')})`)
-
-  // 准备插入语句
-  const colNames = columnInfos.map((c) => c.name.replace(/[^a-zA-Z0-9_]/g, '_'))
-  const placeholders = colNames.map(() => '?').join(', ')
-  const insertStmt = db.prepare(`INSERT INTO assets (${colNames.join(', ')}) VALUES (${placeholders})`)
-
-  // 找到 compress 列索引
-  const compressIdx = columnInfos.findIndex((c) => c.name === 'compress')
-
-  let rowCount = 0
-  let compressSum = 0
-  let batch: (string | number)[][] = []
-
-  // 流式读取
-  const fileContent = fs.readFileSync(filePath, 'utf-8')
-  const lines = fileContent.split('\n')
-  const header = lines[0]
-  const dataLines = lines.slice(1)
-
-  // 使用 papaparse 解析每一行
-  for (let i = 0; i < dataLines.length; i++) {
-    const line = dataLines[i] ?? ''
-    if (!line.trim()) continue
-
-    // 解析单行
-    const result = Papa.parse<string[]>(line, { header: false })
-    if (result.errors.length > 0) continue
-
-    const values = result.data[0]
-    if (!values || values.length === 0) continue
-
-    // 转换类型
-    const row = columnInfos.map((c, idx) => {
-      const raw = values[idx] ?? ''
-      if (c.type === 'integer') return parseInt(raw, 10) || 0
-      if (c.type === 'real') return parseFloat(raw) || 0
-      return raw
+    // 创建表
+    const colDefs = columnInfos.map((c) => {
+      const colName = c.name.replace(/[^a-zA-Z0-9_]/g, '_')
+      if (c.type === 'integer') return `${colName} INTEGER`
+      if (c.type === 'real') return `${colName} REAL`
+      return `${colName} TEXT`
     })
+    db.exec(`CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, ${colDefs.join(', ')})`)
 
-    // 累积 compress
-    if (compressIdx >= 0) {
-      compressSum += (row[compressIdx] as number) || 0
+    const colNames = columnInfos.map((c) => c.name.replace(/[^a-zA-Z0-9_]/g, '_'))
+    const placeholders = colNames.map(() => '?').join(', ')
+    const insertStmt = db.prepare(`INSERT INTO assets (${colNames.join(', ')}) VALUES (${placeholders})`)
+    const compressIdx = columnInfos.findIndex((c) => c.name === 'compress')
+
+    let rowCount = 0
+    let compressSum = 0
+    let batch: (string | number)[][] = []
+    let headerParsed = false
+    let header: string[] = []
+
+    const flushBatch = () => {
+      if (batch.length > 0) {
+        const insertMany = db.transaction((rows: (string | number)[][]) => {
+          for (const r of rows) {
+            insertStmt.run(...r)
+          }
+        })
+        insertMany(batch)
+        batch = []
+      }
     }
 
-    batch.push(row)
-    rowCount++
+    // 使用 Papa.parse 流式 API
+    const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8', highWaterMark: 64 * 1024 })
+    let leftover = ''
 
-    // 批量插入
-    if (batch.length >= INSERT_BATCH_SIZE) {
-      const insertMany = db.transaction((rows: (string | number)[][]) => {
-        for (const r of rows) {
-          insertStmt.run(...r)
+    fileStream.on('data', (chunk: string | Buffer) => {
+      const text = typeof chunk === 'string' ? chunk : chunk.toString('utf-8')
+      leftover += text
+      const lines = leftover.split('\n')
+      leftover = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.trim()) continue
+
+        if (!headerParsed) {
+          const result = Papa.parse<string[]>(line, { header: false })
+          if (result.data && result.data.length > 0 && result.data[0]) {
+            header = result.data[0]
+            headerParsed = true
+          }
+          continue
         }
-      })
-      insertMany(batch)
-      batch = []
-    }
-  }
 
-  // 插入剩余
-  if (batch.length > 0) {
-    const insertMany = db.transaction((rows: (string | number)[][]) => {
-      for (const r of rows) {
-        insertStmt.run(...r)
+        const result = Papa.parse<string[]>(line, { header: false })
+        if (result.errors.length > 0 || !result.data || !result.data[0]) continue
+
+        const values = result.data[0]
+        const row = columnInfos.map((c, idx) => {
+          const raw = values[idx] ?? ''
+          if (c.type === 'integer') return parseInt(raw, 10) || 0
+          if (c.type === 'real') return parseFloat(raw) || 0
+          return raw
+        })
+
+        if (compressIdx >= 0) {
+          compressSum += (row[compressIdx] as number) || 0
+        }
+
+        batch.push(row)
+        rowCount++
+
+        if (batch.length >= INSERT_BATCH_SIZE) {
+          flushBatch()
+        }
       }
     })
-    insertMany(batch)
-  }
 
-  // 建索引
-  for (const col of columnInfos) {
-    if (col.role === 'dimension') {
-      const colName = col.name.replace(/[^a-zA-Z0-9_]/g, '_')
-      db.exec(`CREATE INDEX IF NOT EXISTS idx_assets_${colName} ON assets(${colName})`)
-    }
-  }
-  if (compressIdx >= 0) {
-    db.exec('CREATE INDEX IF NOT EXISTS idx_assets_compress ON assets(compress)')
-  }
+    fileStream.on('end', () => {
+      // 处理最后一行
+      if (leftover.trim() && headerParsed) {
+        const result = Papa.parse<string[]>(leftover, { header: false })
+        if (result.data && result.data[0]) {
+          const values = result.data[0]
+          const row = columnInfos.map((c, idx) => {
+            const raw = values[idx] ?? ''
+            if (c.type === 'integer') return parseInt(raw, 10) || 0
+            if (c.type === 'real') return parseFloat(raw) || 0
+            return raw
+          })
+          if (compressIdx >= 0) {
+            compressSum += (row[compressIdx] as number) || 0
+          }
+          batch.push(row)
+          rowCount++
+        }
+      }
 
-  db.close()
-  return { rowCount, compressSum }
+      flushBatch()
+
+      // 建索引
+      for (const col of columnInfos) {
+        if (col.role === 'dimension') {
+          const colName = col.name.replace(/[^a-zA-Z0-9_]/g, '_')
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_assets_${colName} ON assets(${colName})`)
+        }
+      }
+      if (compressIdx >= 0) {
+        db.exec('CREATE INDEX IF NOT EXISTS idx_assets_compress ON assets(compress)')
+      }
+
+      db.close()
+      resolve({ rowCount, compressSum })
+    })
+
+    fileStream.on('error', (err: Error) => {
+      db.close()
+      reject(err)
+    })
+  })
 }
 
 // ===== 核心实现 =====
@@ -394,7 +424,7 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
       fs.unlinkSync(dbPath)
     }
 
-    const { rowCount, compressSum } = processCsvStream(resolvedPath, dbPath, columnInfos)
+    const { rowCount, compressSum } = await processCsvStream(resolvedPath, dbPath, columnInfos)
 
     // 概览统计
     const overview = {
