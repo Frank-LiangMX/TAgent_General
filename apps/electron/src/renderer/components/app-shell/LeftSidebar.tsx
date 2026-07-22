@@ -87,8 +87,6 @@ const ACTIVE_SESSION_STATUS_PRIORITY: Record<SessionIndicatorStatus, number> = {
   completed: 2,
   idle: 3,
 }
-const PROJECT_SESSION_RECENT_WINDOW_MS = 3 * 86_400_000
-
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
@@ -575,6 +573,20 @@ export function LeftSidebar({
       })
       .catch(console.error)
   }, [setConversations, setUserProfile, setAgentSessions, setSessionChannelMap, setSessionModelMap])
+
+  // 应用启动后主动触发一次自动归档，确保长期未活动的会话进入归档而非隐藏不可见
+  React.useEffect(() => {
+    window.electronAPI
+      .runAutoArchive()
+      .then((count) => {
+        if (count > 0) {
+          console.log(`[侧边栏] 自动归档了 ${count} 个过期会话`)
+          // 归档后刷新列表
+          window.electronAPI.listAgentSessions().then(setAgentSessions).catch(console.error)
+        }
+      })
+      .catch(console.error)
+  }, [setAgentSessions])
 
   // 窗口聚焦时重新同步列表，修复长时间后前后端不一致
   React.useEffect(() => {
@@ -2505,51 +2517,29 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
     }
   }
 
-  const recentCutoff = Date.now() - PROJECT_SESSION_RECENT_WINDOW_MS
   const getStatus = (sessionId: string): SessionIndicatorStatus =>
     agentIndicatorMap.get(sessionId) ?? 'idle'
 
-  // 会话排序优先级：置顶 > 工作中(running/blocked) > 工作中(done/manual) > 活跃 > 最近更新
-  const sessionPriority = (s: AgentSessionMeta): number => {
-    if (s.pinned) return 0
-    const status = getStatus(s.id)
-    if (ACTIVE_SESSION_STATUSES.has(status)) return 1 + ACTIVE_SESSION_STATUS_PRIORITY[status]
-    if (s.manualWorking) return 10
-    return 20
-  }
-
-  const activeSessions = group.sessions
-    .filter((s) => ACTIVE_SESSION_STATUSES.has(getStatus(s.id)))
-    .slice()
-    .sort((a, b) => {
-      const pa = sessionPriority(a),
-        pb = sessionPriority(b)
-      if (pa !== pb) return pa - pb
+  // 会话排序优先级：置顶 > 工作中(running/blocked/主动) > 最近更新
+  const sortedSessions = React.useMemo(() => {
+    const items = group.sessions.slice()
+    items.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+      const pa = getStatus(a.id)
+      const pb = getStatus(b.id)
+      const paPriority = ACTIVE_SESSION_STATUS_PRIORITY[pa] ?? 99
+      const pbPriority = ACTIVE_SESSION_STATUS_PRIORITY[pb] ?? 99
+      if (paPriority !== pbPriority) return paPriority - pbPriority
+      if (a.manualWorking && !b.manualWorking) return -1
+      if (!a.manualWorking && b.manualWorking) return 1
       return b.updatedAt - a.updatedAt
     })
-  const activeIds = new Set(activeSessions.map((s) => s.id))
+    return items
+  }, [group.sessions])
 
-  const fillSessions = group.sessions
-    .filter(
-      (s) => !activeIds.has(s.id) && (s.pinned || s.manualWorking || s.updatedAt >= recentCutoff)
-    )
-    .slice()
-    .sort((a, b) => {
-      const pa = sessionPriority(a),
-        pb = sessionPriority(b)
-      if (pa !== pb) return pa - pb
-      return b.updatedAt - a.updatedAt
-    })
-  const fillIds = new Set(fillSessions.map((s) => s.id))
-
-  const currentSession =
-    activeSessionId && !activeIds.has(activeSessionId) && !fillIds.has(activeSessionId)
-      ? (group.sessions.find((s) => s.id === activeSessionId) ?? null)
-      : null
   // 当前 group 是否包含选中会话——选中时隐藏折叠按钮，避免折叠后选中态消失
   const hasActiveSession = !!activeSessionId && group.sessions.some((s) => s.id === activeSessionId)
-
-  const sessions = [...activeSessions, ...fillSessions, ...(currentSession ? [currentSession] : [])]
 
   const isDragging = dragProjectId === group.workspace.id
   const isBatchMode = batchSelectWorkspaceId === group.workspace.id
@@ -2783,9 +2773,9 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
         <div className={cn('min-h-0', collapsed ? 'overflow-hidden' : 'overflow-visible')}>
-          {!collapsed && sessions.length > 0 ? (
+          {!collapsed && sortedSessions.length > 0 ? (
             <div className="flex flex-col">
-              {sessions.map((session) => (
+              {sortedSessions.map((session) => (
                 <AgentSessionItem
                   key={session.id}
                   session={session}

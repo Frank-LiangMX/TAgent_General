@@ -48,7 +48,11 @@ export function FilePathChip({
   const trimmedPath = filePath.trim()
   const { path: cleanPath, suffix: lineColSuffix } = stripLineCol(trimmedPath)
   const filename = getFileName(cleanPath)
-  const isAbsolute = cleanPath.startsWith('/') || /^[A-Z]:\\/.test(cleanPath)
+  // 与 @tagent/shared isAbsoluteFilePath 对齐：Windows 盘符大小写 + 正/反斜杠 + UNC
+  const isAbsolute =
+    cleanPath.startsWith('/') ||
+    cleanPath.startsWith('\\\\') ||
+    /^[A-Za-z]:[\\/]/.test(cleanPath)
 
   const chipRef = React.useRef<HTMLButtonElement>(null)
 
@@ -61,9 +65,9 @@ export function FilePathChip({
   const cache = getFileExistsCache()
   const [fileStatus, setFileStatus] = React.useState<'idle' | 'resolved' | 'broken'>(() => {
     const key = existsCacheKey(cleanPath, candidateBases)
-    if (cache.has(key)) {
-      return cache.get(key) ? 'resolved' : 'broken'
-    }
+    // 只信任「存在」缓存；负缓存可能由写盘竞态 / 路径大小写误判产生，需允许重试
+    if (cache.get(key) === true) return 'resolved'
+    if (cache.has(key)) cache.delete(key)
     return 'idle'
   })
 
@@ -97,10 +101,11 @@ export function FilePathChip({
     if (!el || !onResolveFile) return
 
     const key = existsCacheKey(cleanPath, candidateBases)
-    if (cache.has(key)) {
-      setFileStatus(cache.get(key) ? 'resolved' : 'broken')
+    if (cache.get(key) === true) {
+      setFileStatus('resolved')
       return
     }
+    if (cache.has(key)) cache.delete(key)
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -111,7 +116,9 @@ export function FilePathChip({
         onResolveFile(cleanPath, bases)
           .then((resolved) => {
             const exists = resolved !== null
-            cache.set(key, exists)
+            // 仅缓存「存在」：避免一次性误判（盘符大小写/写盘竞态）永久锁死为 broken
+            if (exists) cache.set(key, true)
+            else cache.delete(key)
             setFileStatus(exists ? 'resolved' : 'broken')
           })
           .catch(() => {})

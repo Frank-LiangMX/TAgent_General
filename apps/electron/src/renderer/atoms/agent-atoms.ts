@@ -6,7 +6,7 @@
  */
 
 import { TAGENT_DEFAULT_PERMISSION_MODE, resolveDisplayContextWindow } from '@tagent/shared'
-import { atom } from 'jotai'
+import { atom, type createStore } from 'jotai'
 import { atomFamily, atomWithStorage } from 'jotai/utils'
 
 import type {
@@ -321,24 +321,273 @@ export const workspaceFilesVersionAtom = atom(0)
 
 // ===== 侧面板 Atoms =====
 
-/** 侧面板是否打开（全局共享，所有会话共用一个状态） */
-export const agentSidePanelOpenAtom = atomWithStorage<boolean>('tagent-agent-sidepanel-open', true)
+/** 未记录过的会话：右栏默认展开 */
+export const DEFAULT_AGENT_SIDE_PANEL_OPEN = true
 
-/** 侧面板宽度（全局共享，用户拖拽后持久化） */
-export const agentSidePanelWidthAtom = atomWithStorage<number>('tagent-agent-sidepanel-width', 280)
+const SIDE_PANEL_OPEN_BY_SESSION_KEY = 'tagent-agent-sidepanel-open-by-session'
+
+function migrateSidePanelOpen(raw: unknown): boolean {
+  return typeof raw === 'boolean' ? raw : DEFAULT_AGENT_SIDE_PANEL_OPEN
+}
+
+/** 按 sessionId 持久化的右栏开合 */
+const agentSidePanelOpenBySessionStorageAtom = atomWithStorage<Record<string, boolean>>(
+  SIDE_PANEL_OPEN_BY_SESSION_KEY,
+  {}
+)
+
+const writeAgentSidePanelOpenBySessionAtom = atom(
+  null,
+  (_get, set, update: (prev: Map<string, boolean>) => Map<string, boolean>) => {
+    const stored = _get(agentSidePanelOpenBySessionStorageAtom)
+    const prev = new Map(
+      Object.entries(stored).map(([k, v]) => [k, migrateSidePanelOpen(v)] as const)
+    )
+    const next = update(prev)
+    const obj: Record<string, boolean> = {}
+    next.forEach((value, key) => {
+      obj[key] = value
+    })
+    set(agentSidePanelOpenBySessionStorageAtom, obj)
+  }
+)
+
+/** 按 Agent sessionId 读写右栏开合 */
+export const agentSidePanelOpenFamily = atomFamily((sessionId: string) =>
+  atom(
+    (get) => {
+      const stored = get(agentSidePanelOpenBySessionStorageAtom)
+      return migrateSidePanelOpen(stored[sessionId])
+    },
+    (_get, set, open: boolean) => {
+      set(writeAgentSidePanelOpenBySessionAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(sessionId, open)
+        return map
+      })
+    }
+  )
+)
+
+/** jotai store（与 app-mode 同形，避免循环 import） */
+type SidePanelChromeStore = ReturnType<typeof createStore>
 
 /**
- * 展开态占位方式（全局共享，持久化）：
+ * 为指定 Agent 会话设置右栏开合（不必是当前会话）。
+ * UI 侧订阅当前会话请继续用 agentSidePanelOpenAtom。
+ */
+export function setAgentSidePanelOpenForSession(
+  store: SidePanelChromeStore,
+  sessionId: string,
+  open: boolean
+): void {
+  if (!sessionId) return
+  store.set(agentSidePanelOpenFamily(sessionId), open)
+}
+
+/** 读取指定会话的右栏是否打开 */
+export function getAgentSidePanelOpenForSession(
+  store: SidePanelChromeStore,
+  sessionId: string
+): boolean {
+  if (!sessionId) return false
+  return store.get(agentSidePanelOpenFamily(sessionId))
+}
+
+/**
+ * 当前 Agent 会话的右栏开合（读写 facade，兼容旧调用点）。
+ * 无当前会话时读 false；写入在无会话时 no-op。
+ */
+export const agentSidePanelOpenAtom = atom(
+  (get) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return false
+    return get(agentSidePanelOpenFamily(sessionId))
+  },
+  (get, set, open: boolean) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(agentSidePanelOpenFamily(sessionId), open)
+  }
+)
+
+/** 右栏默认宽度（与 right-panel-width DEFAULT_RIGHT_PANEL_WIDTH 对齐，避免 atoms→components 依赖） */
+export const DEFAULT_SIDE_PANEL_WIDTH = 380
+
+const SIDE_PANEL_WIDTH_BY_SESSION_KEY = 'tagent-agent-sidepanel-width-by-session'
+const LEGACY_SIDE_PANEL_WIDTH_KEY = 'tagent-agent-sidepanel-width'
+
+/** 校验并规范化持久化的右栏宽度 */
+export function migrateSidePanelWidth(raw: unknown): number {
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : DEFAULT_SIDE_PANEL_WIDTH
+}
+
+function readLegacySidePanelWidth(): number | undefined {
+  if (typeof localStorage === 'undefined') return undefined
+  try {
+    const raw = localStorage.getItem(LEGACY_SIDE_PANEL_WIDTH_KEY)
+    if (raw == null) return undefined
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** 按 sessionId 持久化的右栏宽度 */
+const agentSidePanelWidthBySessionStorageAtom = atomWithStorage<Record<string, number>>(
+  SIDE_PANEL_WIDTH_BY_SESSION_KEY,
+  {}
+)
+
+const writeAgentSidePanelWidthBySessionAtom = atom(
+  null,
+  (_get, set, update: (prev: Map<string, number>) => Map<string, number>) => {
+    const stored = _get(agentSidePanelWidthBySessionStorageAtom)
+    const prev = new Map(
+      Object.entries(stored).map(([k, v]) => [k, migrateSidePanelWidth(v)] as const)
+    )
+    const next = update(prev)
+    const obj: Record<string, number> = {}
+    next.forEach((value, key) => {
+      obj[key] = value
+    })
+    set(agentSidePanelWidthBySessionStorageAtom, obj)
+  }
+)
+
+/** 按 Agent sessionId 读写右栏宽度；无 per-session 记录时 fallback 旧全局 key */
+export const agentSidePanelWidthFamily = atomFamily((sessionId: string) =>
+  atom(
+    (get) => {
+      const stored = get(agentSidePanelWidthBySessionStorageAtom)
+      if (Object.hasOwn(stored, sessionId)) {
+        return migrateSidePanelWidth(stored[sessionId])
+      }
+      return readLegacySidePanelWidth() ?? DEFAULT_SIDE_PANEL_WIDTH
+    },
+    (_get, set, width: number) => {
+      set(writeAgentSidePanelWidthBySessionAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(sessionId, migrateSidePanelWidth(width))
+        return map
+      })
+    }
+  )
+)
+
+/**
+ * 当前 Agent 会话的右栏宽度（读写 facade，兼容旧调用点）。
+ * 无当前会话时读默认宽度；写入在无会话时 no-op。
+ */
+export const agentSidePanelWidthAtom = atom(
+  (get) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return DEFAULT_SIDE_PANEL_WIDTH
+    return get(agentSidePanelWidthFamily(sessionId))
+  },
+  (get, set, width: number) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(agentSidePanelWidthFamily(sessionId), width)
+  }
+)
+
+/**
+ * 展开态占位方式（按会话持久化）：
  * - float：浮在 main 上（可重叠）
  * - dock：真实占列，main 让宽、不重叠
  */
 export type AgentSidePanelPlacement = 'float' | 'dock'
-export const agentSidePanelPlacementAtom = atomWithStorage<AgentSidePanelPlacement>(
-  'tagent-agent-sidepanel-placement',
-  'float'
+
+export const DEFAULT_SIDE_PANEL_PLACEMENT: AgentSidePanelPlacement = 'float'
+
+const SIDE_PANEL_PLACEMENT_BY_SESSION_KEY = 'tagent-agent-sidepanel-placement-by-session'
+const LEGACY_SIDE_PANEL_PLACEMENT_KEY = 'tagent-agent-sidepanel-placement'
+
+/** 校验并规范化持久化的右栏占位方式 */
+export function migrateSidePanelPlacement(raw: unknown): AgentSidePanelPlacement {
+  return raw === 'float' || raw === 'dock' ? raw : DEFAULT_SIDE_PANEL_PLACEMENT
+}
+
+function readLegacySidePanelPlacement(): AgentSidePanelPlacement | undefined {
+  if (typeof localStorage === 'undefined') return undefined
+  try {
+    const raw = localStorage.getItem(LEGACY_SIDE_PANEL_PLACEMENT_KEY)
+    if (raw == null) return undefined
+    const parsed: unknown = JSON.parse(raw)
+    return parsed === 'float' || parsed === 'dock' ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** 按 sessionId 持久化的右栏占位方式 */
+const agentSidePanelPlacementBySessionStorageAtom = atomWithStorage<
+  Record<string, AgentSidePanelPlacement>
+>(SIDE_PANEL_PLACEMENT_BY_SESSION_KEY, {})
+
+const writeAgentSidePanelPlacementBySessionAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    update: (prev: Map<string, AgentSidePanelPlacement>) => Map<string, AgentSidePanelPlacement>
+  ) => {
+    const stored = _get(agentSidePanelPlacementBySessionStorageAtom)
+    const prev = new Map(
+      Object.entries(stored).map(([k, v]) => [k, migrateSidePanelPlacement(v)] as const)
+    )
+    const next = update(prev)
+    const obj: Record<string, AgentSidePanelPlacement> = {}
+    next.forEach((value, key) => {
+      obj[key] = value
+    })
+    set(agentSidePanelPlacementBySessionStorageAtom, obj)
+  }
 )
 
-/** @deprecated 保留以兼容旧代码，但实际所有 session 都读全局 atom */
+/** 按 Agent sessionId 读写右栏占位；无 per-session 记录时 fallback 旧全局 key */
+export const agentSidePanelPlacementFamily = atomFamily((sessionId: string) =>
+  atom(
+    (get) => {
+      const stored = get(agentSidePanelPlacementBySessionStorageAtom)
+      if (Object.hasOwn(stored, sessionId)) {
+        return migrateSidePanelPlacement(stored[sessionId])
+      }
+      return readLegacySidePanelPlacement() ?? DEFAULT_SIDE_PANEL_PLACEMENT
+    },
+    (_get, set, placement: AgentSidePanelPlacement) => {
+      set(writeAgentSidePanelPlacementBySessionAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(sessionId, migrateSidePanelPlacement(placement))
+        return map
+      })
+    }
+  )
+)
+
+/**
+ * 当前 Agent 会话的右栏占位方式（读写 facade，兼容旧调用点）。
+ * 无当前会话时读 'float'；写入在无会话时 no-op。
+ */
+export const agentSidePanelPlacementAtom = atom(
+  (get) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return DEFAULT_SIDE_PANEL_PLACEMENT
+    return get(agentSidePanelPlacementFamily(sessionId))
+  },
+  (get, set, placement: AgentSidePanelPlacement) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(agentSidePanelPlacementFamily(sessionId), placement)
+  }
+)
+
+/**
+ * @deprecated 已由 agentSidePanelOpenFamily + 持久化 Map 取代；
+ * 保留空 Map 以免旧 import 崩掉。
+ */
 export const agentSidePanelOpenMapAtom = atom<Map<string, boolean>>(new Map())
 
 /** 侧面板当前 Tab：'project' | 'activity' | 'changes'（per-session Map） */
@@ -370,7 +619,7 @@ export const agentDiffUnseenFilesAtom = atom(new Map<string, Set<string>>())
  */
 export const agentDiffDataAtom = atom(new Map<string, UnstagedChangesResult>())
 
-/** 当前会话的侧面板是否打开（派生只读：全局共享，但仅在有当前会话且为 Agent 模式时显示） */
+/** 当前会话的侧面板是否打开（仅在有当前会话时为 true 可能） */
 export const currentSessionSidePanelOpenAtom = atom<boolean>((get) => {
   const currentId = get(currentAgentSessionIdAtom)
   if (!currentId) return false

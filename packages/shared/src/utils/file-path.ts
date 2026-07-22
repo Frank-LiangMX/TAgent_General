@@ -86,9 +86,10 @@ export function getFileExistsCache(): Map<string, boolean> {
   return fileExistsCache
 }
 
-/** 从路径提取文件名 */
+/** 从路径提取文件名（兼容 POSIX `/` 与 Windows `\`） */
 export function getFileName(filePath: string): string {
-  const parts = filePath.split('/')
+  const normalized = filePath.replace(/\\/g, '/')
+  const parts = normalized.split('/')
   return parts[parts.length - 1] || filePath
 }
 
@@ -112,6 +113,11 @@ export function stripLineCol(filePath: string): { path: string; suffix: string }
 
 /**
  * 检测文本是否为绝对文件路径
+ *
+ * Windows 同时接受：
+ * - 盘符大小写：`C:\` / `c:\`
+ * - 分隔符：`\` / `/`（如 `F:/proj/a.ts`）
+ * - UNC：`\\server\share\...`
  */
 export function isAbsoluteFilePath(text: string): boolean {
   const trimmed = text.trim()
@@ -124,7 +130,11 @@ export function isAbsoluteFilePath(text: string): boolean {
     return true
   }
 
-  if (/^[A-Z]:\\/.test(clean)) return true
+  // Windows 盘符绝对路径（大小写 + 正/反斜杠）
+  if (/^[A-Za-z]:[\\/]/.test(clean)) return true
+
+  // UNC 路径
+  if (clean.startsWith('\\\\')) return true
 
   return false
 }

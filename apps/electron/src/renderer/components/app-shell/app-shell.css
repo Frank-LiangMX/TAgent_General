@@ -15,29 +15,23 @@
   --spatial-rail-pad-top: 10px;
   --spatial-rail-pad-x: 6px;
   --spatial-rail-pad-bottom: 11px;
-  /* 左轨相对窗口左缘的外距 */
+  /* 左轨相对窗口左缘的外�?*/
   --spatial-rail-edge-left: 5px;
   /*
-   * nav | main 结构缝：必须为 0。
-   * 光学缝靠 main 内 --app-shell-session-gutter（16）=
-   *   左轨 pad-x(6) + --app-nav-cluster-gap(10)，与 rail↔sidebar 玻璃边距一致。
-   * 禁止再叠一层 scene gap，否则会变成 26。
-   */
+   * nav | main 结构缝：必须�?0�?   * 光学缝靠 main �?--app-shell-session-gutter�?6�?
+   *   左轨 pad-x(6) + --app-nav-cluster-gap(10)，与 rail↔sidebar 玻璃边距一致�?   * 禁止再叠一�?scene gap，否则会变成 26�?   */
   --shell-island-gap: 0px;
   --spatial-conversation-max: 680px;
   /*
    * float band：仅 nav（rail+sidebar）与 right(--open)
-   * main 是工作场，不进 band；tabs/composer 用变量对齐 band 顶/底
-   * token 占 band 底 ↔ 窗边（--spatial-status-bottom）
-   *
-   * 底 inset 略大于顶：抬高底基线，给 token 栏更多呼吸（顶仍 16）
-   */
+   * main 是工作场，不�?band；tabs/composer 用变量对�?band �?�?   * token �?band �?�?窗边�?-spatial-status-bottom�?   *
+   * �?inset 略大于顶：抬高底基线，给 token 栏更多呼吸（顶仍 16�?   */
   --shell-band-inset-top: var(--spatial-gutter);
   --shell-band-inset-bottom: 24px;
   /* 兼容旧引用：默认当顶 inset */
   --shell-band-inset-y: var(--shell-band-inset-top);
   --shell-band-height: calc(100% - var(--shell-band-inset-top) - var(--shell-band-inset-bottom));
-  /* 底缝 24 - status 7 = 17 → token 12 + 与输入框间距 5 */
+  /* 底缝 24 - status 7 = 17 �?token 12 + 与输入框间距 5 */
   --shell-token-h: 12px;
 
   --app-shell-edge: 0px;
@@ -73,11 +67,10 @@
   --spatial-rail-shadow: var(--surface-role-navigation-shadow);
   --spatial-rail-blur: var(--surface-role-navigation-blur);
   isolation: isolate;
-  /* nav 贴 main；内容与侧栏的光学缝由 session-gutter 承担 */
+  /* nav �?main；内容与侧栏的光学缝�?session-gutter 承担 */
   gap: var(--shell-island-gap, 0px);
   /*
-   * 生产窗 = 原型 .prototype-shell（padding:0 的 grid chassis）
-   * 顶栏 absolute 40px 盖住；内容从 40px 下开始，底边 0
+   * 生产�?= 原型 .prototype-shell（padding:0 �?grid chassis�?   * 顶栏 absolute 40px 盖住；内容从 40px 下开始，底边 0
    */
   padding: var(--spatial-chrome-h) 0 0 0;
   color: var(--spatial-ink);
@@ -222,23 +215,17 @@
 }
 
 /*
- * 几何分工（不要再把 main 塞进 float band）：
+ * 几何分工（不要再�?main 塞进 float band）：
  *
- *  float band（top/bottom = gutter）
- *    · .app-shell-nav          左轨 + sidebar
+ *  float band（top/bottom = gutter�? *    · .app-shell-nav          左轨 + sidebar
  *
- *  右侧：折叠/展开均 absolute
- *    · float：抬升悬空（更深阴影），main 不让宽
- *    · dock：贴 band 同 left sidebar；main 用 --right-inspector-reserve 让宽
- *      reserve 跟 inspectorPhase 同步（opening 撑 / closing 收），与 morph 同拍
- *      float↔dock 时 main margin-right 240ms；float 胶囊开合仍不占位
- *
+ *  右侧：折�?展开�?absolute
+ *    · float：抬升悬空（更深阴影），main 不让�? *    · dock：贴 band �?left sidebar；main �?--right-inspector-reserve 让宽
+ *      reserve �?inspectorPhase 同步（opening �?/ closing 收），与 morph 同拍
+ *      float↔dock �?main margin-right 240ms；float 胶囊开合仍不占�? *
  *  工作场（chrome 以下拉满到窗底）
  *    · .app-shell-main
- *      - 标签顶：padding/margin = band 顶
- *      - 输入框底：对齐 band 底
- *      - token：占 band 底 ↔ 窗边（bottom: status）
- */
+ *      - 标签顶：padding/margin = band �? *      - 输入框底：对�?band �? *      - token：占 band �?�?窗边（bottom: status�? */
 .app-shell-nav {
   position: relative;
   z-index: 10;
@@ -247,7 +234,7 @@
   align-self: flex-start;
   margin-top: var(--shell-band-inset-top);
   margin-bottom: 0;
-  /* 左轨离窗边；与 sidebar 的间距由 --app-nav-cluster-gap 控制 */
+  /* 左轨离窗边；�?sidebar 的间距由 --app-nav-cluster-gap 控制 */
   padding-left: var(--spatial-rail-edge-left, 5px);
   height: var(--shell-band-height);
   max-height: var(--shell-band-height);
@@ -258,7 +245,7 @@
     transform var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out);
 }
 
-/* main = 工作场：不与 sidebar 共 height box；dock 时用 margin-right 让宽 */
+/* main = 工作场：不与 sidebar �?height box；dock 时用 margin-right 让宽 */
 .app-shell-main {
   position: relative;
   z-index: 1;
@@ -272,20 +259,63 @@
   height: 100%;
   max-height: none;
   /*
-   * 默认无 transition：折叠胶囊不占位。
-   * dock / float 开合与 float↔dock 用下方规则 + --right-inspector-layout-ms。
-   */
+   * 默认�?transition：折叠胶囊不占位�?   * dock / float 开合与 float↔dock 用下方规�?+ --right-inspector-layout-ms�?   */
   transition: none;
 }
 
 /*
- * dock：开合与 morph 同相让位（时长由 --right-inspector-layout-ms 注入）。
- * float：仅 float↔dock 切换时过渡；float morph 本身不占位，见下条关掉。
- */
+ * dock：开合与 morph 同相让位（时长由 --right-inspector-layout-ms 注入）�? * float：仅 float↔dock 切换时过渡；float morph 本身不占位，见下条关掉�? */
 .app-shell-scene[data-right-placement='dock'] .app-shell-main,
 .app-shell-scene[data-right-placement='float'] .app-shell-main {
   transition: margin-right var(--right-inspector-layout-ms, 240ms)
     var(--right-inspector-layout-ease, cubic-bezier(0.33, 0, 0.2, 1));
+}
+
+/* 拖拽调宽中：关掉让位 transition，避免每帧和动画�?reflow */
+.app-shell-scene[data-right-resizing='true'] .app-shell-main {
+  transition: none !important;
+}
+
+/**
+ * 拖近 50% 平分点：开启 scene::after 作为中线吸力指引
+ * （默认 .app-shell-scene::after { display:none }，此处覆盖）
+ */
+.app-shell-scene[data-right-resizing='true'][data-half-snap='true']::after {
+  display: block;
+  top: 12%;
+  bottom: 12%;
+  left: 50%;
+  z-index: 45;
+  width: 2px;
+  height: auto;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsl(var(--primary) / 0.55) 18%,
+    hsl(var(--primary) / 0.75) 50%,
+    hsl(var(--primary) / 0.55) 82%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.35);
+}
+
+/*
+ * 右栏独占：隐藏主工作区，右栏宽度�?JS 注入 --right-inspector-width�? * 左导�?rail 保留；dock reserve 归零（main 已隐藏）�? */
+.app-shell-scene[data-inspector-exclusive='true'] .app-shell-main {
+  visibility: hidden;
+  pointer-events: none;
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  margin-right: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.app-shell-scene[data-inspector-exclusive='true'] .app-shell-right-stack--open {
+  z-index: 25;
 }
 
 /* float morph 不占列：关掉让位过渡，避免无意义 reflow */
@@ -296,8 +326,7 @@
 
 /*
  * 右侧 inspector
- * - 折叠/展开均 absolute 贴窗右
- * - 展开高度与左栏同一套 band：显式 height，禁止 height:auto 内容撑矮
+ * - 折叠/展开�?absolute 贴窗�? * - 展开高度与左栏同一�?band：显�?height，禁�?height:auto 内容撑矮
  * - 动画只动 width / opacity / shadow，禁止动 height
  */
 .app-shell-right-stack {
@@ -321,11 +350,9 @@
 }
 
 /*
- * 展开：与 .app-shell-nav 同 band 高度。
- * scene 有 padding-top: chrome，abs 的 100% 相对 padding box（含 chrome），
- * 所以 height = 100% - chrome - topInset - bottomInset
- * （左栏在 content 流里，用 --shell-band-height = 100% - insets，不减 chrome）
- */
+ * 展开：与 .app-shell-nav �?band 高度�? * scene �?padding-top: chrome，abs �?100% 相对 padding box（含 chrome），
+ * 所�?height = 100% - chrome - topInset - bottomInset
+ * （左栏在 content 流里，用 --shell-band-height = 100% - insets，不�?chrome�? */
 .app-shell-right-stack--open {
   top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)));
   bottom: auto;
@@ -355,9 +382,7 @@
 }
 
 /*
- * 展开态 float ↔ dock：几何/阴影短过渡，与 main 让宽同拍。
- * morph 开合时关掉，避免和代理 surface 抢戏。
- */
+ * 展开�?float �?dock：几�?阴影短过渡，�?main 让宽同拍�? * morph 开合时关掉，避免和代理 surface 抢戏�? */
 .app-shell-right-stack--open:not(.app-shell-right-stack--inspector-morphing) {
   transition:
     top 240ms cubic-bezier(0.33, 0, 0.2, 1),
@@ -373,7 +398,7 @@
     border-color 240ms cubic-bezier(0.33, 0, 0.2, 1);
 }
 
-/* 浮层：略抬离 band（±4），高度仍固定，不靠 bottom 拉伸 */
+/* 浮层：略抬离 band（�?），高度仍固定，不靠 bottom 拉伸 */
 .app-shell-right-stack--open.app-shell-right-stack--float {
   top: calc(var(--spatial-chrome-h) + var(--shell-band-inset-top, var(--spatial-gutter)) - 4px);
   height: calc(
@@ -391,7 +416,7 @@
   z-index: 30;
 }
 
-/* 占位：与左栏同 band 贴齐（不额外抬升） */
+/* 占位：与左栏�?band 贴齐（不额外抬升�?*/
 .app-shell-right-stack--open.app-shell-right-stack--dock {
   z-index: 10;
 }
@@ -402,6 +427,27 @@
   pointer-events: none;
 }
 
+/*
+ * 右栏 dock >50%：nav rail 不占布局（peek �?fixed overlay）�? * �?data-presence=hidden 叠加：彻底收掉宽度，main 吃满左缘�? */
+.app-shell-scene[data-shell-chrome-collapsed='true'] .app-shell-nav {
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+  transform: none;
+  pointer-events: none;
+  transition:
+    flex-basis var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out),
+    width var(--motion-duration-control, 240ms) var(--motion-ease-spatial, ease-out),
+    opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in);
+}
+
+.app-shell-scene[data-right-resizing='true'][data-shell-chrome-collapsed='true'] .app-shell-nav {
+  transition: none !important;
+}
 /* The cluster is layout-only. Rail islands and the contextual Sidebar own surfaces. */
 .app-nav-stack {
   position: relative;
@@ -419,10 +465,7 @@
 
 /*
  * 右轨光学层：
- * - 折叠胶囊：与左侧 .app-rail-island 同构（顶/左细边光 + scene 折射）
- * - 展开面板：与左侧 .app-nav-sidebar 同构（纯 panel token，无伪层高光）
- * 禁止沿用 .nav-island-glass::after 的 mask 双渐变（左+顶均亮会叠成一圈白边）。
- */
+ * - 折叠胶囊：与左侧 .app-rail-island 同构（顶/左细边光 + scene 折射�? * - 展开面板：与左侧 .app-nav-sidebar 同构（纯 panel token，无伪层高光�? * 禁止沿用 .nav-island-glass::after �?mask 双渐变（�?顶均亮会叠成一圈白边）�? */
 .app-shell-right-stack .right-nav-island-glass::before,
 .app-shell-right-stack .right-nav-island-glass::after {
   content: '';
@@ -487,7 +530,7 @@
 }
 
 /*
- * band 内：rail 列与 sidebar 列 100% 同高，禁止再 margin/inset
+ * band 内：rail 列与 sidebar �?100% 同高，禁止再 margin/inset
  */
 .app-nav-rail,
 .app-nav-sidebar {
@@ -508,8 +551,8 @@
 }
 
 /*
- * Mac 红绿灯安全区：绝对叠在 rail 顶，不占用文档流
- * （占流会把 rail 内容整体下移，sidebar 仍贴顶 → 上下不对齐）
+ * Mac 红绿灯安全区：绝对叠�?rail 顶，不占用文档流
+ * （占流会�?rail 内容整体下移，sidebar 仍贴�?�?上下不对齐）
  */
 .app-nav-mac-chrome {
   position: absolute;
@@ -540,7 +583,7 @@
   z-index: 1;
   flex: 0 0 auto;
   width: var(--app-nav-sidebar-width);
-  /* 高度/顶底完全交给 band（.app-shell-nav），此处禁止再 inset */
+  /* 高度/顶底完全交给 band�?app-shell-nav），此处禁止�?inset */
   overflow: hidden;
   border: 1px solid var(--spatial-panel-rim);
   border-radius: var(--app-shell-drawer-radius, 22px);
@@ -550,9 +593,7 @@
   backdrop-filter: blur(var(--surface-role-panel-blur)) saturate(var(--surface-saturate));
   transform-origin: left center;
   /*
-   * width 与 rail↔sidebar morph 同相：flex 占位变化驱动右侧 main 让位，
-   * 避免开合时 main 秒切。几何视觉仍由 morph surface 承担。
-   */
+   * width �?rail↔sidebar morph 同相：flex 占位变化驱动右侧 main 让位�?   * 避免开合时 main 秒切。几何视觉仍�?morph surface 承担�?   */
   transition:
     width var(--left-sidebar-layout-ms, 0ms) var(--left-sidebar-layout-ease, ease-out),
     opacity var(--motion-duration-fast, 160ms) var(--motion-ease-exit, ease-in),
@@ -562,7 +603,7 @@
 
 .app-nav-stack:not(.app-nav-stack--expanded) .app-nav-sidebar {
   width: 0;
-  min-width: 0; /* 覆盖 flex 默认 min-width:auto，否则子项 254 会撑开占位 */
+  min-width: 0; /* 覆盖 flex 默认 min-width:auto，否则子�?254 会撑开占位 */
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -575,10 +616,8 @@
 }
 
 /*
- * morph 中：真侧栏退出绘制，几何由 .left-sidebar-morph-surface 承担
- *（对齐右栏 inspector-morphing）
- * width 过渡保留：继续驱动 flex，让 main 与 morph 同步让位。
- */
+ * morph 中：真侧栏退出绘制，几何�?.left-sidebar-morph-surface 承担
+ *（对齐右�?inspector-morphing�? * width 过渡保留：继续驱�?flex，让 main �?morph 同步让位�? */
 .app-nav-stack--sidebar-morphing .app-nav-sidebar {
   visibility: hidden !important;
   opacity: 0 !important;
@@ -590,7 +629,7 @@
   contain: strict;
 }
 
-/* 左栏 morph 层 */
+/* 左栏 morph �?*/
 .left-sidebar-morph-layer {
   position: fixed;
   z-index: 70;
@@ -646,7 +685,7 @@
   background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
   box-shadow: var(--spatial-panel-shadow, 0 8px 24px rgb(23 30 40 / 0.12));
   opacity: 0;
-  /* 几何用 left/top/width/height 插值，勿 size containment */
+  /* 几何�?left/top/width/height 插值，�?size containment */
   contain: layout paint style;
   isolation: isolate;
   transform-origin: top left;
@@ -849,9 +888,7 @@
 }
 
 /*
- * 会话头工具簇：软圆角容器（禁止直角 / 也不要全胶囊）
- * 折叠 + 新会话嵌在同一 soft chip 里，按钮本身透明/轻底，无第二层方框
- */
+ * 会话头工具簇：软圆角容器（禁止直�?/ 也不要全胶囊�? * 折叠 + 新会话嵌在同一 soft chip 里，按钮本身透明/轻底，无第二层方�? */
 .app-nav-sidebar .tool-cluster,
 [data-material] .app-nav-sidebar .tool-cluster,
 .app-nav-sidebar[data-material] .tool-cluster {
@@ -861,7 +898,7 @@
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--surface-role-session-status-rim);
-  /* 略小于全胶囊，贴近 glass-popover */
+  /* 略小于全胶囊，贴�?glass-popover */
   border-radius: var(--radius-glass-popover, 12px);
   background: rgb(255 255 255 / 42%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
@@ -879,7 +916,7 @@
   height: 26px;
   margin: 0;
   border: 0;
-  /* 内钮略小于容器，嵌套不顶边 */
+  /* 内钮略小于容器，嵌套不顶�?*/
   border-radius: calc(var(--radius-glass-popover, 12px) - 2px);
   font-size: 11px;
   font-weight: 650;
@@ -895,7 +932,7 @@
     transform 140ms var(--app-shell-motion);
 }
 
-/* 折叠：透明底，靠图标识别 */
+/* 折叠：透明底，靠图标识�?*/
 .app-nav-sidebar .tool-cluster button.tool-cluster-icon,
 .app-nav-sidebar .tool-cluster .tool-cluster-icon {
   width: 26px;
@@ -905,7 +942,7 @@
   background: transparent;
 }
 
-/* 新会话：胶囊内 accent 段 */
+/* 新会话：胶囊�?accent �?*/
 .app-nav-sidebar .tool-cluster button.tool-cluster-accent,
 .app-nav-sidebar .tool-cluster .tool-cluster-accent {
   width: auto;
@@ -935,7 +972,7 @@
   transform: scale(0.97);
 }
 
-/* 角色库选中：与「在角色库页」态对齐，避免入口被忽略 */
+/* 角色库选中：与「在角色库页」态对齐，避免入口被忽�?*/
 .app-nav-sidebar .tool-cluster .tool-cluster-accent.is-active,
 .app-nav-sidebar .tool-cluster .tool-cluster-accent[aria-pressed='true'] {
   color: var(--spatial-ink);
@@ -1104,18 +1141,16 @@
   border-radius: 10px;
 }
 
-/* 菜单打开时保持与 hover 相同的左右让位（特异性需压过上面的 padding 简写） */
+/* 菜单打开时保持与 hover 相同的左右让位（特异性需压过上面�?padding 简写） */
 .app-nav-sidebar .app-sidebar-project-heading[data-actions-open] .app-sidebar-project-button,
 .app-nav-sidebar .app-sidebar-project-heading[data-actions-open] .app-sidebar-project-rename {
   padding-left: 1rem;
-  /* 对齐 right-1.5 三点 + right-7 加号 的占用宽度 */
+  /* 对齐 right-1.5 三点 + right-7 加号 的占用宽�?*/
   padding-right: 3rem;
 }
 
 /*
- * 侧栏列表行（会话 / 草稿 / 看板等）：三点菜单打开时保持 hover 右让位。
- * 操作钮多为 absolute，仅靠 group-hover:pr-4；菜单打开后 hover 丢失会导致叠层。
- */
+ * 侧栏列表行（会话 / 草稿 / 看板等）：三点菜单打开时保�?hover 右让位�? * 操作钮多�?absolute，仅�?group-hover:pr-4；菜单打开�?hover 丢失会导致叠层�? */
 .session-list-row[data-actions-open] .session-row-actions-pad {
   padding-right: 1rem; /* = pr-4 / group-hover:pr-4 */
 }
@@ -1141,7 +1176,7 @@
 
 .app-nav-sidebar .app-sidebar-session-row {
   min-height: 49px;
-  /* 预留 hover translateX 空间，避免右移裁切三点菜单 */
+  /* 预留 hover translateX 空间，避免右移裁切三点菜�?*/
   margin-right: 2px;
   padding: 8px 9px;
   border: 1px solid transparent;
@@ -1176,9 +1211,7 @@
 }
 
 /*
- * 深色：侧栏 spatial 列表/项目控件原先写死浅色半透白，会整块发灰白。
- * 一律改用 glass-rgb + 轻高光，与 scene/dark glass-rgb token 对齐。
- */
+ * 深色：侧�?spatial 列表/项目控件原先写死浅色半透白，会整块发灰白�? * 一律改�?glass-rgb + 轻高光，�?scene/dark glass-rgb token 对齐�? */
 .dark .app-nav-sidebar .app-sidebar-project-button:hover {
   background: rgb(var(--glass-rgb, 50 52 56) / 0.42);
 }
@@ -1265,9 +1298,8 @@
 }
 
 /*
- * 侧栏底栏（会话「已归档」/ 插件「已安装」共用）
- * 顶线全宽 → 入口也是全行；内容左右铺开，不是贴左小胶囊。
- */
+ * 侧栏底栏（会话「已归档�? 插件「已安装」共用）
+ * 顶线全宽 �?入口也是全行；内容左右铺开，不是贴左小胶囊�? */
 .app-nav-sidebar .sidebar-footer {
   display: flex;
   flex-shrink: 0;
@@ -1327,10 +1359,7 @@
 }
 
 /*
- * left rail 列 = band 全高；水平 6px 居中胶囊。
- * 上下 padding 必须为 0：上胶囊顶 / 下胶囊底 = sidebar 顶 / 底（同一 band 边）。
- * 原型 function-rail 的 10/11 是相对 workspace 行的光学微调；生产三列共 band 后改 0 才能真对齐。
- */
+ * left rail �?= band 全高；水�?6px 居中胶囊�? * 上下 padding 必须�?0：上胶囊�?/ 下胶囊底 = sidebar �?/ 底（同一 band 边）�? * 原型 function-rail �?10/11 是相�?workspace 行的光学微调；生产三列共 band 后改 0 才能真对齐�? */
 .nav-island-rail {
   position: relative;
   display: flex;
@@ -1395,7 +1424,7 @@
     box-shadow 240ms var(--app-shell-motion);
 }
 
-/* 光学折射层：拾取 scene A/B，禁止 primary / 冷蓝硬编码 */
+/* 光学折射层：拾取 scene A/B，禁�?primary / 冷蓝硬编�?*/
 .app-rail-island::before {
   content: '';
   position: absolute;
@@ -1429,12 +1458,12 @@
 
 .dark .app-rail-island {
   border-color: rgb(255 255 255 / 0.06);
-  /* 深色不用浅色顶缘高光模拟；只留环境 drop */
+  /* 深色不用浅色顶缘高光模拟；只留环�?drop */
   box-shadow: 0 12px 28px rgb(0 0 0 / 0.36);
 }
 
 .dark .app-rail-island::before {
-  /* 去掉顶部白斑，只保留 scene 矿物光 */
+  /* 去掉顶部白斑，只保留 scene 矿物�?*/
   background:
     radial-gradient(70% 60% at 16% 88%, rgb(var(--scene-a-rgb) / 0.1), transparent 62%),
     radial-gradient(90% 70% at 80% 92%, rgb(var(--scene-b-rgb) / 0.07), transparent 64%);
@@ -1442,7 +1471,7 @@
 }
 
 .dark .app-rail-island::after {
-  /* 整圈白边高光在深色会像「浅色主题残留」 */
+  /* 整圈白边高光在深色会像「浅色主题残留�?*/
   border-color: transparent;
   box-shadow: none;
   opacity: 0;
@@ -1452,13 +1481,13 @@
   overflow-x: visible;
   overflow-y: auto;
   flex: 0 1 auto;
-  /* 胶囊顶贴基线；内部再 pad，不把整列顶线下移 */
+  /* 胶囊顶贴基线；内部再 pad，不把整列顶线下�?*/
   padding-top: 7px;
   scrollbar-width: none;
 }
 
 .app-nav-rail--mac .app-rail-island--primary {
-  /* 红绿灯不占流；仅内容下沉，胶囊外框仍贴 sidebar 顶 */
+  /* 红绿灯不占流；仅内容下沉，胶囊外框仍�?sidebar �?*/
   padding-top: max(7px, calc(var(--nav-mac-chrome-height, 28px) - 6px));
 }
 
@@ -1469,13 +1498,13 @@
 .app-rail-island--system {
   flex: 0 0 auto;
   margin-bottom: 0;
-  /* 下胶囊底贴 sidebar / main 底基线 */
+  /* 下胶囊底�?sidebar / main 底基�?*/
   padding-bottom: 6px;
 }
 
 /*
  * 原型 .rail-rule：会话区上方细分割线
- * 不是 glass-divider 渐隐条，是 1px 实线短划
+ * 不是 glass-divider 渐隐条，�?1px 实线短划
  */
 .app-rail-rule {
   width: 24px;
@@ -1490,7 +1519,7 @@
   background: var(--spatial-line-strong, rgb(202 213 230 / 17%));
 }
 
-/* brand：跟主题 primary 走（深色下不能再是 ink 白底） */
+/* brand：跟主题 primary 走（深色下不能再�?ink 白底�?*/
 .app-rail-brand {
   display: grid;
   width: 34px;
@@ -1564,9 +1593,7 @@
 }
 
 /*
- * active = 抬升板 + 图标 accent（原型 .rail-button.is-active）
- * 禁止整块 primary 实心染色；深色必须比 rail 底明显更亮，否则看不清
- */
+ * active = 抬升�?+ 图标 accent（原�?.rail-button.is-active�? * 禁止整块 primary 实心染色；深色必须比 rail 底明显更亮，否则看不�? */
 .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
 .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar-btn),
 html:not(.dark) .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
@@ -1588,7 +1615,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   transform: none;
 }
 
-/* 深色：抬升亮面 + primary 细 rim，保证在暗 rail 上可辨 */
+/* 深色：抬升亮�?+ primary �?rim，保证在�?rail 上可�?*/
 .dark .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
 .dark .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar-btn),
 .dark[data-material] .app-nav-stack .rail-island-btn--active:not(.rail-avatar-btn),
@@ -1618,9 +1645,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 头像：不要用 ink 白/黑底覆盖 globals 的主题渐变（--rail-avatar-a/b）。
- * 仅保证圆形与层级；颜色/底由 globals .rail-avatar-btn 统一。
- */
+ * 头像：不要用 ink �?黑底覆盖 globals 的主题渐变（--rail-avatar-a/b）�? * 仅保证圆形与层级；颜�?底由 globals .rail-avatar-btn 统一�? */
 .app-nav-stack .rail-avatar-btn {
   border-radius: 9999px !important;
 }
@@ -1656,7 +1681,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /* MainArea still mounts its legacy plate for compatibility. In the Spatial
- * shell main 必须透出 scene，禁止再铺 ambient / 实色底板。 */
+ * shell main 必须透出 scene，禁止再�?ambient / 实色底板�?*/
 .app-shell-content-stage .content-base-plate--body {
   border: 0;
   background: transparent;
@@ -1696,10 +1721,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 全主区（会话 + 看板/记忆/插件/自动化/…）：content-glass 只做布局。
- * 非会话页直接挂 content-glass，不经 content-main-shell，会吃到全局实底；
- * 这里与会话页对齐，一律透出 scene。
- */
+ * 全主区（会话 + 看板/记忆/插件/自动�?…）：content-glass 只做布局�? * 非会话页直接�?content-glass，不�?content-main-shell，会吃到全局实底�? * 这里与会话页对齐，一律透出 scene�? */
 .app-shell-content-stage .content-glass {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -1715,7 +1737,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 看板工牌浮岛 — 仅忙碌/求助等 live 密度
+ * 看板工牌浮岛 �?仅忙�?求助�?live 密度
  */
 .kanban-crew-badge {
   position: relative;
@@ -1762,18 +1784,17 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * Workspace tabs 顶基线 = float band 顶 = sidebar / 右 inspector 外缘
+ * Workspace tabs 顶基�?= float band �?= sidebar / �?inspector 外缘
  *
- * 错误：64px 高条 + 32px tab 垂直居中 → 芯片顶比侧栏顶缘低 ~16px（截图「main 顶没对上」）
- * 正确：条顶贴 band；条高 hug 标签（原型 header padding 6 + tab 32）
- */
+ * 错误�?4px 高条 + 32px tab 垂直居中 �?芯片顶比侧栏顶缘�?~16px（截图「main 顶没对上」）
+ * 正确：条顶贴 band；条�?hug 标签（原�?header padding 6 + tab 32�? */
 .app-shell-content-stage .app-workspace-tab-strip {
   box-sizing: border-box;
   height: auto;
   min-height: 0;
   margin-top: var(--shell-band-inset-top, var(--spatial-gutter));
   align-items: center;
-  /* 6px 顶垫 ≈ 侧栏 head padding-top，标签芯片顶与「会话」标题带同高 */
+  /* 6px 顶垫 �?侧栏 head padding-top，标签芯片顶与「会话」标题带同高 */
   padding: 6px var(--app-shell-session-gutter);
   border-bottom: 1px solid var(--spatial-line);
   background: transparent;
@@ -1786,10 +1807,8 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 父会话与首个 rail 附属标签之间的绑定锁：
- * 悬浮在两个标签的接缝正中（list gap 4px → 锚在子标签左缘外 2px），
- * 不参与 flex 布局，pointer-events 关闭不挡点击。
- */
+ * 父会话与首个 rail 附属标签之间的绑定锁�? * 悬浮在两个标签的接缝正中（list gap 4px �?锚在子标签左缘外 2px），
+ * 不参�?flex 布局，pointer-events 关闭不挡点击�? */
 .app-shell-content-stage .app-workspace-tab-bind-lock {
   position: absolute;
   top: 50%;
@@ -1816,7 +1835,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
     0 1px 3px rgb(0 0 0 / 0.4);
 }
 
-/* 覆盖 Tailwind 宽条：标签壳更窄（原型 content-hug，非 176 宽） */
+/* 覆盖 Tailwind 宽条：标签壳更窄（原�?content-hug，非 176 宽） */
 .app-shell-content-stage .app-workspace-tab-shell {
   min-width: 72px;
   max-width: 128px;
@@ -1835,7 +1854,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   border: 1px solid var(--surface-role-tab-rim, var(--surface-rim));
   border-radius: var(--app-shell-tab-radius);
   opacity: 0;
-  /* 中性玻璃板 + 极弱 scene-a，随主题变 */
+  /* 中性玻璃板 + 极弱 scene-a，随主题�?*/
   background:
     radial-gradient(120% 140% at 12% 0%, rgb(var(--scene-a-rgb) / 0.06), transparent 64%),
     var(--surface-role-tab-fill, var(--surface-bg-chip));
@@ -1851,7 +1870,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
     border-color 200ms var(--app-shell-motion);
 }
 
-/* 原型无 accent 底条；active 身份由中性板 + 图标 accent 承担 */
+/* 原型�?accent 底条；active 身份由中性板 + 图标 accent 承担 */
 .app-shell-content-stage .app-workspace-tab-active-plate::after {
   display: none;
 }
@@ -1861,7 +1880,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   margin-left: 12px;
 }
 
-/* 会话状态条移除后槽位为空：不占 Tab 区横向空间 */
+/* 会话状态条移除后槽位为空：不占 Tab 区横向空�?*/
 .app-shell-content-stage .app-workspace-session-status-slot:empty {
   display: none;
   margin-left: 0;
@@ -2100,7 +2119,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   min-width: 0;
 }
 
-/* 标签：原型 .workspace-tab — 紧凑 padding + 10px 字 + 14px 图标 */
+/* 标签：原�?.workspace-tab �?紧凑 padding + 10px �?+ 14px 图标 */
 .app-shell-content-stage .app-workspace-tab {
   height: 32px;
   gap: 6px;
@@ -2237,12 +2256,11 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
  * 底栏坐标系（main 已拉满窗底，bottom 相对窗边）：
  *
  * normal:
- *   窗底 ── status(7) ── token ── band 底 ── 输入框底
- * focus（原型 is-composer-expanded）:
+ *   窗底 ── status(7) ── token ── band �?── 输入框底
+ * focus（原�?is-composer-expanded�?
  *   窗底 ── status ── token ── underlay(52) ── 输入框底（自然上抬）
  *
- * 禁止用 focus translateY 改 normal 基线。
- */
+ * 禁止�?focus translateY �?normal 基线�? */
 .app-shell-content-stage .session-bottom-stack {
   right: 0;
   bottom: var(--spatial-status-bottom, 7px);
@@ -2260,7 +2278,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   padding-right: var(--app-shell-session-gutter, 16px);
   padding-bottom: 0;
   padding-left: var(--app-shell-session-gutter, 16px);
-  /* normal：输入框底贴 band 底 */
+  /* normal：输入框底贴 band �?*/
   margin-bottom: max(
     0px,
     calc(
@@ -2271,7 +2289,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   transition: margin-bottom 220ms var(--app-shell-motion);
 }
 
-/* focus 展开：dock 与 underlay 贴紧，间距由 underlay margin 承担 */
+/* focus 展开：dock �?underlay 贴紧，间距由 underlay margin 承担 */
 .app-shell-content-stage
   .session-composer-cluster.is-composer-expanded
   .session-input-dock.content-shell-chrome-bleed {
@@ -2279,11 +2297,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 会话底区 fade：消息滚入底 chrome 前溶进 scene。
- * 放在内容与 bottom-stack 之间。
- * 上半（输入/控制栏一带）保持柔和，让玻璃仍有景深；
- * 最底 token/status 带拉实到接近 scene，避免透明读数区透字。
- */
+ * 会话底区 fade：消息滚入底 chrome 前溶�?scene�? * 放在内容�?bottom-stack 之间�? * 上半（输�?控制栏一带）保持柔和，让玻璃仍有景深�? * 最�?token/status 带拉实到接近 scene，避免透明读数区透字�? */
 .app-shell-content-stage .session-body::after {
   content: '';
   position: absolute;
@@ -2299,17 +2313,14 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
     rgb(var(--scene-base-rgb) / 0.16) 36%,
     rgb(var(--scene-base-rgb) / 0.42) 62%,
     rgb(var(--scene-base-rgb) / 0.72) 78%,
-    /* token 高度附近开始贴 scene，透字消失但仍是地板不是色条 */ rgb(var(--scene-base-rgb) / 0.92)
+    /* token 高度附近开始贴 scene，透字消失但仍是地板不是色�?*/ rgb(var(--scene-base-rgb) / 0.92)
       90%,
     rgb(var(--scene-base-rgb) / 0.98) 100%
   );
 }
 
 /*
- * 原型 .composer-underlay：
- * - 比 composer 左右各多缩 10px → 更窄、垫在下层
- * - chip 玻璃 + 轻 blur + 弱外影（对齐 spatial / layout-direction）
- * collapsed: height 0；expanded: 42px
+ * 原型 .composer-underlay�? * - �?composer 左右各多�?10px �?更窄、垫在下�? * - chip 玻璃 + �?blur + 弱外影（对齐 spatial / layout-direction�? * collapsed: height 0；expanded: 42px
  */
 .app-shell-content-stage .composer-underlay {
   --composer-underlay-inset-x: calc(var(--app-shell-session-gutter, 16px) + 10px);
@@ -2350,7 +2361,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 .app-shell-content-stage .session-composer-cluster.is-composer-expanded .composer-underlay {
   height: var(--composer-underlay-h, 42px);
   min-height: var(--composer-underlay-h, 42px);
-  /* 略压进输入卡下沿，形成「主卡盖在托盘上」 */
+  /* 略压进输入卡下沿，形成「主卡盖在托盘上�?*/
   margin-top: -2px;
   margin-bottom: max(
     0px,
@@ -2372,7 +2383,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   transform: translateY(0) scale(1);
 }
 
-/* 输入卡盖过 underlay → 上一级 */
+/* 输入卡盖�?underlay �?上一�?*/
 .app-shell-content-stage .session-composer-cluster.is-composer-expanded .session-input-dock {
   position: relative;
   z-index: 2;
@@ -2450,10 +2461,8 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * token 栏：status 背景层（对齐 --role-status-*）
- * - 透明、无面板、无 scrim
- * - 读数淡色印在 scene / 底区 fade 上
- * - 常驻占位高度
+ * token 栏：status 背景层（对齐 --role-status-*�? * - 透明、无面板、无 scrim
+ * - 读数淡色印在 scene / 底区 fade �? * - 常驻占位高度
  */
 .app-shell-content-stage .token-stats-bar.content-shell-chrome-bleed {
   position: relative;
@@ -2493,7 +2502,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   height: 12px;
 }
 
-/* composer：抬升浮岛（高于 underlay）；blur + 更实 fill，强调上一级 */
+/* composer：抬升浮岛（高于 underlay）；blur + 更实 fill，强调上一�?*/
 .app-shell-content-stage .chat-input-glass {
   position: relative;
   z-index: 2;
@@ -2512,7 +2521,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
     background-color 280ms var(--app-shell-motion);
 }
 
-/* 输入区：原型 textarea 11px；工具 9px */
+/* 输入区：原型 textarea 11px；工�?9px */
 .app-shell-content-stage .chat-input-glass .ProseMirror,
 .app-shell-content-stage .chat-input-glass .tiptap {
   font-size: 12px !important;
@@ -2525,7 +2534,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   font-size: var(--app-shell-chrome-sm, 9px);
 }
 
-/* 光学折射层：拾取 scene A，不盖内容 */
+/* 光学折射层：拾取 scene A，不盖内�?*/
 .app-shell-content-stage .chat-input-glass::before {
   content: '';
   position: absolute;
@@ -2545,9 +2554,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * focus 只加 rim / ring，禁止 translateY。
- * 底基线按 normal 态对齐；上移会让 normal 比 band 低、压到 token。
- */
+ * focus 只加 rim / ring，禁�?translateY�? * 底基线按 normal 态对齐；上移会让 normal �?band 低、压�?token�? */
 .app-shell-content-stage .chat-input-glass:focus-within {
   border-color: var(--spatial-accent-line);
   box-shadow:
@@ -2643,7 +2650,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   transform: scale(0.94);
 }
 
-/* 占位模式：高亮当前态，避免和「关闭」按钮语义混同 */
+/* 占位模式：高亮当前态，避免和「关闭」按钮语义混�?*/
 .app-inspector-close--active {
   color: hsl(var(--primary));
   background: hsl(var(--primary) / 0.1);
@@ -2662,7 +2669,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   background: hsl(var(--primary) / 0.24);
 }
 
-/* 展开态：原折叠 rail 选项迁到 sidebar 顶栏（对齐 layout-direction-study inspector-tabs） */
+/* 展开态：原折�?rail 选项迁到 sidebar 顶栏（对�?layout-direction-study inspector-tabs�?*/
 .app-inspector-tabs {
   display: flex;
   flex-shrink: 0;
@@ -2712,7 +2719,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   background: rgb(255 255 255 / 0.1);
 }
 
-/* 分页外包层：承接原 tab 的 flex:1，让内部按钮铺满 */
+/* 分页外包层：承接�?tab �?flex:1，让内部按钮铺满 */
 .app-inspector-tab-wrap {
   display: flex;
 }
@@ -2723,9 +2730,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 内容区贴边铺满外层圆角玻璃（对齐左栏 .sidebar-inner）。
- * 子面板根已原生透明、不再自带 header；宽度由外层 island 统一管理。
- */
+ * 内容区贴边铺满外层圆角玻璃（对齐左栏 .sidebar-inner）�? * 子面板根已原生透明、不再自�?header；宽度由外层 island 统一管理�? */
 .app-inspector-body {
   min-height: 0;
   flex: 1 1 auto;
@@ -2751,21 +2756,19 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /* --------------------------------------------------------------------------
- * 右侧 inspector：折叠胶囊 ↔ 展开面板
+ * 右侧 inspector：折叠胶�?�?展开面板
  *
  * 高度布局（硬约束，动画不得改）：
- *  - 展开：stack top/bottom 定 band + island height:100%
- *  - 折叠：island height:auto 贴胶囊
- * 动画只动代理层的 transform / opacity；真实玻璃表面不参与逐帧重排。
- * -------------------------------------------------------------------------- */
+ *  - 展开：stack top/bottom �?band + island height:100%
+ *  - 折叠：island height:auto 贴胶�? * 动画只动代理层的 transform / opacity；真实玻璃表面不参与逐帧重排�? * -------------------------------------------------------------------------- */
 .app-shell-right-stack .right-nav-island-glass {
   pointer-events: auto;
   transform-origin: top right;
-  /* 几何 morph 由独立 surface WAAPI 负责；真面板只切静置态。 */
+  /* 几何 morph 由独�?surface WAAPI 负责；真面板只切静置态�?*/
   transition: none;
 }
 
-/* 折叠：rail 胶囊 — 与左侧 .app-rail-island 同一套 surface */
+/* 折叠：rail 胶囊 �?与左�?.app-rail-island 同一�?surface */
 .app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass,
 .app-shell-right-stack--collapsed
   .right-nav-island-glass.nav-island-glass.nav-island-glass--float:not(
@@ -2779,7 +2782,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   flex-direction: column;
   justify-content: flex-start;
   border: 1px solid var(--spatial-rail-rim, var(--surface-role-navigation-rim));
-  /* 与左侧 .app-rail-island 一致；!important 压过 globals 旧 20px */
+  /* 与左�?.app-rail-island 一致；!important 压过 globals �?20px */
   border-radius: var(--app-shell-composer-radius, 16px) !important;
   background: var(--spatial-rail-fill, var(--surface-role-navigation-fill)) !important;
   box-shadow: var(--spatial-rail-shadow, var(--surface-role-navigation-shadow)) !important;
@@ -2792,11 +2795,11 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 
 .dark .app-shell-right-stack--collapsed .right-nav-island-glass.nav-island-glass {
   border-color: rgb(255 255 255 / 0.06);
-  /* 与 .dark .app-rail-island 一致：无顶缘白 inset */
+  /* �?.dark .app-rail-island 一致：无顶缘白 inset */
   box-shadow: 0 12px 28px rgb(0 0 0 / 0.36) !important;
 }
 
-/* 展开：与左侧 .app-nav-sidebar 同一套 panel token（无伪层边光） */
+/* 展开：与左侧 .app-nav-sidebar 同一�?panel token（无伪层边光�?*/
 .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass {
   display: flex;
   overflow: hidden;
@@ -2817,7 +2820,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   transform: none;
 }
 
-/* 展开态强制关掉伪层（含 globals float 折叠规则误伤） */
+/* 展开态强制关掉伪层（�?globals float 折叠规则误伤�?*/
 .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass::before,
 .app-shell-right-stack--open .right-nav-island-glass.nav-island-glass::after {
   content: none !important;
@@ -2841,9 +2844,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * 浮层抬升：只加环境 drop，禁止顶缘白 inset。
- * 白 inset 是浅色玻璃模拟，深色下会像错位高光；浅色也靠 panel fill 自身的 scene 光即可。
- */
+ * 浮层抬升：只加环�?drop，禁止顶缘白 inset�? * �?inset 是浅色玻璃模拟，深色下会像错位高光；浅色也靠 panel fill 自身�?scene 光即可�? */
 .app-shell-right-stack--open.app-shell-right-stack--float:not(
     .app-shell-right-stack--inspector-morphing
   )
@@ -2865,10 +2866,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 }
 
 /*
- * morph 中：真面板完全退出绘制管线（对齐原型 is-sidebar-morphing）
- * 几何由 .right-inspector-morph-surface WAAPI 负责。
- * 必须关掉 backdrop-filter：opacity:0 的毛玻璃在 Chromium 仍可能参与合成，是卡顿重灾区。
- */
+ * morph 中：真面板完全退出绘制管线（对齐原型 is-sidebar-morphing�? * 几何�?.right-inspector-morph-surface WAAPI 负责�? * 必须关掉 backdrop-filter：opacity:0 的毛玻璃�?Chromium 仍可能参与合成，是卡顿重灾区�? */
 .app-shell-right-stack--inspector-morphing .right-nav-island-glass {
   visibility: hidden !important;
   opacity: 0 !important;
@@ -2886,7 +2884,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   display: none !important;
 }
 
-/* 关闭：内容先淡出（极短）；展开交接不再做 0→1 reveal，避免代理溶掉后空壳再闪 */
+/* 关闭：内容先淡出（极短）；展开交接不再�?0�? reveal，避免代理溶掉后空壳再闪 */
 .app-shell-right-stack--content-leaving
   .nav-island-sidebar
   :is(.app-inspector-header, .app-inspector-tabs, .app-inspector-body) {
@@ -2894,13 +2892,13 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   transition: opacity 16ms linear;
 }
 
-/* 独立 morph 层（对齐原型 .rail-overlay-layer + .sidebar-morph-surface） */
+/* 独立 morph 层（对齐原型 .rail-overlay-layer + .sidebar-morph-surface�?*/
 .right-inspector-morph-layer {
   position: fixed;
   z-index: 80;
   inset: 0;
   pointer-events: none;
-  /* 整层不参与命中与滚动，降低无关合成 */
+  /* 整层不参与命中与滚动，降低无关合�?*/
   contain: strict;
 }
 
@@ -2912,9 +2910,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   border: 1px solid var(--spatial-panel-rim, var(--surface-role-panel-rim));
   border-radius: var(--app-shell-drawer-radius, 22px);
   /*
-   * 尽量贴近真面板填充 token，交接时材质差更小。
-   * 仍禁止 backdrop-filter（scale 时毛玻璃极卡）。
-   */
+   * 尽量贴近真面板填�?token，交接时材质差更小�?   * 仍禁�?backdrop-filter（scale 时毛玻璃极卡）�?   */
   background: var(--spatial-panel-fill, var(--surface-role-panel-fill));
   box-shadow: var(--spatial-panel-shadow, 0 8px 24px rgb(23 30 40 / 0.12));
   opacity: 0;
@@ -2929,7 +2925,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
 
 .right-inspector-morph-surface.is-active {
   display: block;
-  /* border-radius 随 scale 反补偿，需进合成插值 */
+  /* border-radius �?scale 反补偿，需进合成插�?*/
   will-change: transform, opacity, border-radius;
 }
 
@@ -2952,13 +2948,13 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   border-radius: inherit;
 }
 
-/* 展开态不应再出现竖向 rail（双保险：JS 已不挂载） */
+/* 展开态不应再出现竖向 rail（双保险：JS 已不挂载�?*/
 .app-shell-right-stack--open .right-panel-rail,
 .app-shell-right-stack--open .right-panel-rail--peek {
   display: none !important;
 }
 
-/* 折叠胶囊内：竖向图标列 */
+/* 折叠胶囊内：竖向图标�?*/
 .app-shell-right-stack--collapsed .right-panel-rail {
   box-sizing: border-box;
   width: 46px;
@@ -2976,7 +2972,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   background: var(--hover-fill, hsl(var(--foreground) / 0.065));
 }
 
-/* 折叠右 rail 选中态：覆盖低对比 muted 色，沿用上方 dark active 抬升语义 */
+/* 折叠�?rail 选中态：覆盖低对�?muted 色，沿用上方 dark active 抬升语义 */
 .app-shell-right-stack--collapsed
   .right-panel-rail--collapsed
   .rail-island-btn--active:not(.rail-avatar-btn) {
@@ -2995,7 +2991,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
     0 8px 18px rgb(0 0 0 / 0.38);
 }
 
-/* material：折叠胶囊仍走 rail；展开 drawer 跟 left sidebar 一样吃 panel token，勿再洗成实底 */
+/* material：折叠胶囊仍�?rail；展开 drawer �?left sidebar 一样吃 panel token，勿再洗成实�?*/
 [data-material='glass'] .app-nav-stack {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

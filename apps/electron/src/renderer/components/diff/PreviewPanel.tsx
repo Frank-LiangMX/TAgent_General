@@ -16,11 +16,14 @@ import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-pa
 
 import { agentSessionPathMapAtom, currentSessionSidePanelOpenAtom } from '@/atoms/agent-atoms'
 import {
+  getPreviewDisplayTitle,
+  isUrlPreview,
   previewPanelOpenMapAtom,
   previewFileMapAtom,
   previewModePreferenceAtom,
 } from '@/atoms/preview-atoms'
-import { activeTabIdAtom, getPreviewTabTitle, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { activeTabIdAtom, getPreviewTabTitleFromPreview, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import { WebPreviewFrame } from '@/components/agent/WebPreviewFrame'
 import { detectIsWindows } from '@/lib/platform'
 import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
 import { cn } from '@/lib/utils'
@@ -60,7 +63,7 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
     const result = openTab(tabs, {
       type: 'preview',
       sessionId,
-      title: getPreviewTabTitle(currentFile.filePath),
+      title: getPreviewTabTitleFromPreview(currentFile),
     })
     setTabs(result.tabs)
     setActiveTabId(result.activeTabId)
@@ -71,17 +74,18 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
     })
   }, [currentFile, sessionId, setActiveTabId, setOpenMap, setTabs, tabs])
 
-  const fileName = currentFile
-    ? currentFile.filePath.split(/[\\/]/).pop() || currentFile.filePath
-    : '文件预览'
-  const defaultAppTargetPath = currentFile ? getDefaultAppTargetPath(currentFile, sessionPath) : ''
-  const defaultAppAccess = currentFile
-    ? getPreviewFileAccess(sessionId, currentFile, sessionPath)
-    : undefined
+  const fileName = currentFile ? getPreviewDisplayTitle(currentFile) : '预览'
+  const isUrl = currentFile ? isUrlPreview(currentFile) : false
+  const defaultAppTargetPath =
+    currentFile && !isUrl ? getDefaultAppTargetPath(currentFile, sessionPath) : ''
+  const defaultAppAccess =
+    currentFile && !isUrl
+      ? getPreviewFileAccess(sessionId, currentFile, sessionPath)
+      : undefined
 
   const renderPreviewActions = (): React.ReactElement => (
     <div className="ml-auto flex items-center gap-0.5 shrink-0">
-      {currentFile && (
+      {currentFile && !isUrl && (
         <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
       )}
       {currentFile && (
@@ -181,21 +185,38 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
 
       <div className="flex-1 min-h-0 overflow-hidden">
         {currentFile ? (
-          <DiffTabContent
-            key={`${sessionId}:${currentFile.filePath}`}
-            filePath={currentFile.filePath}
-            dirPath={currentFile.dirPath || sessionPath}
-            sessionId={sessionId}
-            gitRoot={currentFile.gitRoot}
-            previewOnly={currentFile.previewOnly}
-            readOnly={currentFile.readOnly}
-            basePaths={currentFile.basePaths}
-            baseRef={currentFile.baseRef}
-            onEmptyDiff={handleClosePanel}
-          />
+          isUrl && currentFile.url ? (
+            <WebPreviewFrame
+              key={`${sessionId}:${currentFile.url}:${currentFile.reloadNonce ?? 0}`}
+              agentSessionId={sessionId}
+              initialUrl={currentFile.url}
+              csvSessionId={currentFile.csvSessionId ?? null}
+              filePath={currentFile.filePath ?? null}
+              title={currentFile.title ?? fileName}
+              reloadNonce={currentFile.reloadNonce}
+              showToolbar={false}
+            />
+          ) : currentFile.filePath ? (
+            <DiffTabContent
+              key={`${sessionId}:${currentFile.filePath}`}
+              filePath={currentFile.filePath}
+              dirPath={currentFile.dirPath || sessionPath}
+              sessionId={sessionId}
+              gitRoot={currentFile.gitRoot}
+              previewOnly={currentFile.previewOnly}
+              readOnly={currentFile.readOnly}
+              basePaths={currentFile.basePaths}
+              baseRef={currentFile.baseRef}
+              onEmptyDiff={handleClosePanel}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+              预览数据不完整
+            </div>
+          )
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-            点击文件查看预览
+            点击文件或看板卡片查看预览
           </div>
         )}
       </div>

@@ -20,6 +20,45 @@
 > **WPS CLI 集成**：`docs/plans/2026-07-08-wps-cli-integration.md`（主动调用 WPS API，与 Bridge 互补）
 > **Agent Runtime 双核与 Pi 迁移（2026-07-18 决策）**：`docs/plans/2026-07-18-agent-runtime-dual-core-pi-migration.md` + ADR [`0008`](./decisions/0008-agent-runtime-dual-core-pi-migration.md)（短期：外网 Pi / kscc 现状；中期分支验证 bare 泵；门禁后全 Pi）
 > **草稿重构**：`docs/plans/2026-06-25-draft-restructure-design.md`（需求草稿 + Chat 清理）
+> **CSV 数据分析看板（Implemented）**：`docs/plans/2026-07-22-csv-analysis-tool-design.md`（prepare/query/dashboard + live_tab/patch/产物记忆/统一预览）
+
+---
+
+## 当前变更（2026-07-22 夜 · CSV 开发收尾）
+
+**设计定稿**：`docs/plans/2026-07-22-csv-analysis-tool-design.md` → **Implemented**（live_tab / patch / 产物记忆 / 统一预览 / 钻取语义写清；砍掉临时 markdown 画布与角色卡）
+
+**测试补齐**：`slice(persist=true)` 落盘 + 同 id replace；`action=patch` 改 `byte_unit`；`csv_prepare` 缓存命中 / mtime 重建
+
+**仓库清理**：删除根目录扫描残留（`.pr-files*` / `.scan-*` / `.proma-*` / `scan-compare.ps1` 等），勿再提交
+
+**本阶段范围外**：临时 markdown 画布、百万行 CI 门槛、全局角色卡
+
+---
+
+## 当前变更（2026-07-22 夜 · 右栏加宽 + 独占）
+
+- **右栏 max 公式**：`getMaxRightPanelWidth ≈ viewport - MIN_MAIN_CHAT_RESERVE`（728px = 680 阅读宽 + 48 边距）；宽屏可远超旧 1100 cap；宽档双击吸附对齐 max
+- **右栏独占**：分界手柄圆形按钮 / `inspectorExclusiveAtom` 隐藏主会话、右栏吃满；Esc 退出（不与 Design 沉浸冲突）
+- **独占按钮仅 >50% 显示**：拖拽中跟手显隐；接近视口一半有平分吸力（±28px 吸住 / ±42px 离开）+ 中线指引
+- **右栏布局按会话持久化**：开合 / 选中项 / 宽度 / float·dock 占位 / 独占模式均按 Agent sessionId 存 localStorage；旧全局 key 作 fallback 迁移
+- **右栏 >50% 收 shell chrome**：dock 占位时自动藏左 FunctionalRail + 会话 Tab 栏（直接隐藏，无角热区 peek）；<45% 恢复（30% 仍只收 sidebar）
+
+---
+
+## 当前变更（2026-07-22 夜 · 聚焦模式删除）
+
+**Inspector 聚焦模式已移除**：右栏拖宽（约 3:7）已等价替代「会话 | 面板」overlay main；保留 Design Preview 沉浸全屏（`designImmersive` / `DesignImmersiveLayout`）。
+
+---
+
+## 当前变更（2026-07-22 夜 · 统一预览）
+
+**分屏 Preview 扩展为「文件 | URL」双模**：
+
+- `PreviewFile` 增加 `kind/url/title/csvSessionId/reloadNonce`；`openUrlPreview` 与 `openPreview` 共用 Tab / 分屏路由
+- 抽取 `WebPreviewFrame`（CSV live ensure、ERR_ABORTED 恢复）；`PreviewPanel` / `PreviewTabContent` 在 url 模式内嵌 webview
+- `openCsvDashboard` 改走分屏预览（不再强制切右栏 browser）；右栏「预览」改为 `UniversalPreviewPanel`，与分屏读同一 `previewFileMapAtom`
 
 ---
 
@@ -36,6 +75,90 @@
 - 设计：`docs/plans/2026-07-18-agent-runtime-dual-core-pi-migration.md`
 - ADR：`docs/decisions/0008-agent-runtime-dual-core-pi-migration.md`
 - **实现未开始**；阶段 1 建议分支名 `feature/agent-runtime-pi-external`
+
+---
+
+## 当前变更（2026-07-22 夜 · CSV AI 内存 Tab）
+
+**CSV 看板产品分流 — 底盘 vs 临时专注页**：
+
+- 新增 `csv_dashboard(action="live_tab")` + `slice` 默认走内存 AI Tab（`persist="true"` 才落盘 add_view）
+- 内存层：`csv-live-tabs.ts` + live server `/api/live-tabs`（GET/POST/DELETE）；**不写** `dashboard.html`
+- 底盘 HTML 固定挂载 `#ai-live-tabs` / `#ai-live-views`；页面 load 时 fetch 内存 Tab 渲染
+- 用户手动刷新（`navigation.type===reload`）清空 AI Tab；程序化 reload 带 `?keep_live=1` 保留刚写入的 Tab
+- 提示词：`CSV_ANALYSIS_INSTRUCTIONS` + 工具 schema 同步分流表；不确定时先问用户
+
+---
+
+## 当前变更（2026-07-22 夜）
+
+**CSV 看板产物记忆 P1**：
+
+- 新增 `csv-artifact-service`：按 Agent 会话持久化最近 5 个看板摘要（session_id / 标题 / 单位 / 视图 / 路径 / 最近 action）
+- `buildDynamicContext` 注入 `<csv_artifacts>`，后续轮次无需 Read HTML；改单位走 patch，改结构走 replace_view
+- 删除 Agent 会话时 `clearAgentSessionCsvCache`：停 live server + 删 artifacts 索引中记录的 `csv-cache/{id}/` 与 `{id}-dashboard/`（不扫全库）
+
+**CSV「改单位」别再重头读**：
+
+- 最新会话用户只说「内存单位换成 MB」，模型却 Read/Grep/Edit 整份 `dashboard.html`（因为工具只有 create，提示词又禁手写）
+- 新增 `csv_dashboard(action="patch", byte_unit="MB")`：不 prepare、不读 HTML，按已有 SQLite 秒级重刷展示
+- 提示词明确：展示微调只允许 patch；禁止再 prepare / 手改 HTML
+- 明细表按 `body[data-byte-unit]` 格式化 compress 列
+
+---
+
+## 当前变更（2026-07-22 晚）
+
+**CSV 看板质量 + 会话隔离**：
+
+1. **交叉堆叠空白**：隐藏 view（`display:none`）下 Chart.js 初始化会空白 + 多 view 共用 `chart-0` id。改为懒加载（切 Tab 再 init）+ 按 view 唯一 canvas id
+2. **分析太简 / 偏场景**：`scoreDimension` 语义打分（owner/fcat/module/geo 优先，scene_count 降权）；总览 KPI/图更密；交叉可出 2 对；明细筛选/列更全
+3. **布局**：连续 chart 收进 2/3 列网格，KPI 更紧凑
+4. **会话隔离**：右栏开合 + 选中 tab（files/browser/…）按 Agent 会话；BrowserPanel `key=sessionId` 切换清空旧页
+
+参考内网看板：`http://10.11.177.224:8002/`（原型备份 `prototypes/ref-stats-dashboard.html`）
+
+---
+
+## 当前变更（2026-07-22）
+
+**CSV 预览 ↔ 会话绑定**：
+
+- **产物身份**绑 Agent 会话：`browserSessionStateFamily`（url / csvSessionId / filePath / title），localhost 仅 ensure 派生
+- **统一入口** `openCsvDashboard()`：ensure live → 切右栏「预览」→ 写会话状态
+- **消息卡片**：`csv_dashboard` 工具结果可点「在预览中打开」/ 点路径 chip 重开（不进 Diff Preview）
+- 自动打开事件改为走同一入口，并带上 `filePath`
+
+**CSV 预览刷新后空白修复**：
+
+- **根因**：`browserPanelUrlAtom` 持久化了 `http://127.0.0.1:PORT/`，但 live server 只在主进程内存 Map；刷新/重启后端口失效，webview 连不上
+- **修复**：
+  - 打开看板时持久化 CSV cache `sessionId`
+  - 新增 IPC `csv:ensure-live-server`；挂载/刷新时按 sessionId 重启服务
+  - `live.json` sticky 端口
+
+**CSV 看板增强收尾**：
+
+- 交叉页 **热力图**（`type=heatmap`，格子/行头点击钻取明细）
+- **多级钻取面包屑**（drill-bar，合并过滤 + 一键清除）
+- Electron 真机冒烟：`bunx esbuild scripts/csv-dashboard-smoke-entry.ts ... && bunx electron scripts/.csv-smoke-bundle.cjs`（采样进包 CSV PASS：三视图 + heatmap + live API）
+
+此前已完成：preset=auto / 硬升级简图 / 堆叠柱 / Chart.js 内联 / live 明细
+
+---
+
+## 当前变更（2026-07-22 较早）
+
+**CSV 数据看板修复（转圈 + 粗糙）**：
+
+- **问题 1：右侧栏转圈**：`BrowserPanel` 用 Electron `<webview>` 渲染本地 file://，但 `main/index.ts:411` 的 `BrowserWindow.webPreferences` 未开 `webviewTag: true`，导致 webview 永不挂载、loading 卡死转圈
+  - **修复**：在 `webPreferences` 加 `webviewTag: true`（1 行）；同时在 `BrowserPanel` 加 loading 10 秒超时兜底（防 props change 但 src 未真变导致永久 loading）
+  - **webview 安全加固**：去掉 `partition="persist:browser-preview"` 共享 session（避免内存增）；`webpreferences` 加固 `webSecurity=yes, allowRunningInsecureContent=no`
+- **问题 2：生成的 HTML 粗糙**：原 `csv-dashboard-tool.ts:buildDashboardHtml` 只能拼 KPI auto-fit grid + 单一 chart.js，与参考项目 F:\StatsCheckBorad 的左栏 + multi-view tab + filter-bar + tip modal 布局差太多
+  - **重写**：拆分 `buildBaseCss / buildSidebar / buildTopbar / renderStatsSection / renderChartSection / renderTableSection / renderFilterBarSection / renderOpportunitySection`（约 400 行新 CSS + JS），对齐 indigo 主题色 + KPI hover 抬升 + chart-card 阴影 + pie-with-legend + sticky 表头 + 5000 页分页 + tip 图标 modal
+  - **新增 section 类型**：`filter_bar`（高亮当前过滤）/ `opportunity_intro`（warning 左 border） / chart 增加 `chart_layout: "pie_with_legend"` / table 增加 `column_tips`（i 图标弹层）
+  - **多视图 tab**：sidebar 边栏导航 + 顶部 nav-tabs 同时联动；切 view 后重叠重新 init 表格分页
+- **引导 agent 出更好看板**：在 `CSV_DASHBOARD_TOOL_META.systemPromptAppend` 加完整的 sections_json 示例（5 个 section 顺序 + 字段语义）+ 多视图 Tab 指引 + KPI 人读单位约定 + 错误信息示例
 
 ---
 
@@ -82,6 +205,20 @@
 - 三条路对比：Claude SDK（当前）→ Pi（目标）→ Kun（自研，仅参考）
 - 上游对齐剩余任务：~~Skill Curator~~（已合 main）、**goal_mode + worker judge**（文档已重校准，待实现）、Monthly 调度待定；协作子会话已废弃（看板+SubAgent 替代）
 - 详见 `docs/plans/2026-07-17-agent-runtime-exploration.md`
+
+- **重启后 BrowserPanel URL 丢失**：`browserPanelUrlAtom` 是裸 `atom()`，重启后重置为 null，即使 rightRailItemAtom 恢复为 'browser' 也显示空状态。**修复**：改为 `atomWithStorage('tagent-browser-panel-url', null)`（1 行，`apps/electron/src/renderer/atoms/app-mode.ts:146`）
+
+---
+
+## 当前变更（2026-07-22）v2：多视图 + 过滤明细页
+
+**CSV 数据看板 v2 丰富化**（同一日第二波）：
+
+- **preset="full"**：csv_dashboard 新增 preset 参数，一次创建 6 视图（manage-summary / maps / reuse / opportunity / detail / ai），sidebar 6 nav-item + 顶部 6 tab 联动。旧 action="create" 无 preset 向后兼容
+- **detail 资产明细视图**：新增 section 类型 `detail_table`（全量客户端分页表，行带 data-* 属性）+ `filter_panel`（侧栏 select 过滤：资源类型/模块/归属/后缀/体积阈值/复用状态/路径搜索），纯客户端 JS 过滤排序，无需后端
+- **KPI 卡点击跳 detail**：新增 `click_filter` 字段，点击 KPI 卡自动跳 detail 视图 + 应用过滤（如 `click_filter:{"fcat":"贴图"}`）；chart 扇区同理（`click_filter_map`）
+- **JS 客户端引擎 window.__csv**：内置 state / allRows / filteredRows / applyFilters / render / navigateToDetail，复用状态与复用率过滤 + 路径模糊搜索 + 300ms 防抖 + chips 显示 + 清除按钮
+- **systemPrompt 扩引导**：增加 preset="full" 完整示例 + filters_config_json 结构 + click_filter / click_filter_map 字段语法
 
 ---
 

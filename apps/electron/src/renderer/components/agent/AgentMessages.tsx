@@ -970,10 +970,15 @@ function AgentMessagesImpl({
                     group={group}
                     allMessages={allSDKMessages}
                     historicalTaskSubjects={historicalTaskSubjects}
-                    basePath={
-                      (attachedDirs?.length ?? 0) > 0 ? undefined : sessionPath || undefined
+                    basePath={sessionPath || undefined}
+                    basePaths={
+                      attachedDirs && attachedDirs.length > 0
+                        ? // 附加目录时仍保留 sessionPath，避免项目内相对路径丢失解析基准
+                          [sessionPath, ...attachedDirs].filter(
+                            (p): p is string => typeof p === 'string' && p.length > 0
+                          )
+                        : undefined
                     }
-                    basePaths={(attachedDirs?.length ?? 0) > 0 ? attachedDirs : undefined}
                     onFork={shouldDisableActions ? undefined : onFork}
                     onRewind={shouldDisableActions ? undefined : onRewind}
                     onRetry={shouldDisableActions ? undefined : onRetry}

@@ -70,11 +70,14 @@ function collectFilePaths(turnMessages: SDKMessage[]): string[] {
 export interface TurnFileChangesSummaryProps {
   turnMessages: SDKMessage[]
   basePath?: string
+  /** 多个候选基础目录（附加目录等），优先于 basePath */
+  basePaths?: string[]
 }
 
 export function TurnFileChangesSummary({
   turnMessages,
   basePath,
+  basePaths,
 }: TurnFileChangesSummaryProps): React.ReactElement | null {
   const paths = React.useMemo(() => collectFilePaths(turnMessages), [turnMessages])
 
@@ -85,7 +88,12 @@ export function TurnFileChangesSummary({
       <div className="pt-3 border-t-2 border-dashed border-border/60">
         <div className="flex flex-wrap gap-1.5">
           {paths.map((filePath) => (
-            <FilePathChip key={filePath} filePath={filePath} basePath={basePath} />
+            <FilePathChip
+              key={filePath}
+              filePath={filePath}
+              basePath={basePath}
+              basePaths={basePaths}
+            />
           ))}
         </div>
       </div>

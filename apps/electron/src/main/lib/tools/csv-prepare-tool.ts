@@ -34,7 +34,9 @@ export const CSV_PREPARE_TOOL_META: ChatToolMeta = {
 加载 CSV 文件到 SQLite，返回列信息和统计摘要。
 支持任意格式的 CSV（自动检测编码和分隔符）。
 
-加载成功后，你可以使用 csv_query 查询数据，使用 csv_dashboard 生成看板。
+加载成功后，**下一步必须**调用：
+\`csv_dashboard(action="create", preset="auto", live="true", title="...")\`
+不要只做单页一维图。查询列名用返回的 sql_name。
 </csv_prepare_instructions>`,
 }
 
@@ -63,10 +65,18 @@ export function isCsvPrepareToolCall(toolName: string): boolean {
   return CSV_PREPARE_TOOL_NAMES.has(toolName)
 }
 
-// ===== 缓存管理 =====
+// ===== 缓存管理（与 csv-dashboard 共享 ~/.tagent-dev/csv-cache/） =====
+
+function getCacheRoot(): string {
+  const isDev = process.env.TAGENT_DEV === '1'
+  const dirName = isDev ? '.tagent-dev' : '.tagent'
+  const dir = path.join(os.homedir(), dirName, 'csv-cache')
+  fs.mkdirSync(dir, { recursive: true })
+  return dir
+}
 
 function getCacheDir(sessionId: string): string {
-  const base = path.join(os.tmpdir(), 'TAgent', 'csv-cache', sessionId)
+  const base = path.join(getCacheRoot(), sessionId)
   fs.mkdirSync(base, { recursive: true })
   return base
 }
@@ -107,6 +117,8 @@ function writeCacheMeta(sessionId: string, meta: CacheMeta): void {
 
 interface ColumnInfo {
   name: string
+  /** SQLite 列名（净化后），查询时必须用此字段 */
+  sql_name: string
   type: 'text' | 'integer' | 'real'
   role: 'dimension' | 'metric'
   unique_count?: number
@@ -146,6 +158,7 @@ function inferColumnTypeFromSample(values: (string | number | null)[]): ColumnIn
 
     return {
       name: '',
+      sql_name: '',
       type: isInteger ? 'integer' : 'real',
       role: 'metric',
       min,
@@ -158,6 +171,7 @@ function inferColumnTypeFromSample(values: (string | number | null)[]): ColumnIn
   // 分类列
   const info: ColumnInfo = {
     name: '',
+    sql_name: '',
     type: 'text',
     role: 'dimension',
     unique_count: unique.size,
@@ -414,6 +428,7 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
       const values = sampleRows.map((r) => r[col] ?? null)
       const info = inferColumnTypeFromSample(values)
       info.name = col
+      info.sql_name = col.replace(/[^a-zA-Z0-9_]/g, '_')
       return info
     })
 

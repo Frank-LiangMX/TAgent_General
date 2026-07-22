@@ -29,6 +29,7 @@ import {
   KANBAN_IPC_CHANNELS,
   AGENT_ROLE_IPC_CHANNELS,
   COMMAND_IPC_CHANNELS,
+  CSV_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -492,6 +493,9 @@ export interface ElectronAPI {
     id: string,
     updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>
   ) => Promise<AgentSessionMeta>
+
+  /** 触发自动归档 */
+  runAutoArchive: () => Promise<number>
 
   /** 删除 Agent 会话 */
   deleteAgentSession: (id: string) => Promise<void>
@@ -1375,6 +1379,15 @@ export interface ElectronAPI {
     migrateLegacy: () => Promise<import('@tagent/shared').DraftDocument | null>
   }
 
+  // ===== CSV 看板 =====
+
+  csv: {
+    /** 确保 CSV live 查询服务在跑（页面刷新后恢复预览） */
+    ensureLiveServer: (
+      sessionId: string
+    ) => Promise<import('@tagent/shared').EnsureCsvLiveServerResult>
+  }
+
   // ===== Kanban 看板 =====
 
   kanban: {
@@ -2046,6 +2059,10 @@ const electronAPI: ElectronAPI = {
     updates: Partial<Pick<AgentSessionMeta, 'channelId' | 'modelId'>>
   ) => {
     return ipcRenderer.invoke(AGENT_IPC_CHANNELS.UPDATE_SESSION_META, id, updates)
+  },
+
+  runAutoArchive: () => {
+    return ipcRenderer.invoke(AGENT_IPC_CHANNELS.RUN_AUTO_ARCHIVE)
   },
 
   deleteAgentSession: (id: string) => {
@@ -3724,6 +3741,14 @@ const electronAPI: ElectronAPI = {
     update: (id, partial) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.UPDATE, id, partial),
     delete: (id: string) => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.DELETE, id),
     migrateLegacy: () => ipcRenderer.invoke(DRAFT_IPC_CHANNELS.MIGRATE_LEGACY),
+  },
+
+  // ===== CSV 看板 =====
+
+  csv: {
+    ensureLiveServer: (sessionId: string) => {
+      return ipcRenderer.invoke(CSV_IPC_CHANNELS.ENSURE_LIVE_SERVER, sessionId)
+    },
   },
 
   // ===== Kanban 看板 =====

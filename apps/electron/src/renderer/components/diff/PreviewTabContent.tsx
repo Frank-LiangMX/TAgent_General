@@ -15,13 +15,17 @@ import { tearOffPreviewToSplit } from './preview-opener'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
 import { agentSessionPathMapAtom } from '@/atoms/agent-atoms'
-import { previewFileMapAtom } from '@/atoms/preview-atoms'
+import {
+  getPreviewDisplayTitle,
+  isUrlPreview,
+  previewFileMapAtom,
+} from '@/atoms/preview-atoms'
 import {
   createPreviewTabId,
-  getFileBaseName,
-  getPreviewTabTitle,
+  getPreviewTabTitleFromPreview,
   tabsAtom,
 } from '@/atoms/tab-atoms'
+import { WebPreviewFrame } from '@/components/agent/WebPreviewFrame'
 
 interface PreviewTabContentProps {
   sessionId: string
@@ -63,11 +67,12 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
 
   const currentFile = fileMap.get(sessionId) ?? null
   const sessionPath = sessionPathMap.get(sessionId) ?? ''
-  const fileName = currentFile ? getFileBaseName(currentFile.filePath) : '文件预览'
+  const fileName = currentFile ? getPreviewDisplayTitle(currentFile) : '预览'
+  const isUrl = currentFile ? isUrlPreview(currentFile) : false
 
   React.useEffect(() => {
     const previewTabId = createPreviewTabId(sessionId)
-    const title = getPreviewTabTitle(fileName)
+    const title = currentFile ? getPreviewTabTitleFromPreview(currentFile) : '预览'
     setTabs((prev) => {
       let changed = false
       const next = prev.map((tab) => {
@@ -77,7 +82,7 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
       })
       return changed ? next : prev
     })
-  }, [fileName, sessionId, setTabs])
+  }, [currentFile, fileName, sessionId, setTabs])
 
   if (!currentFile) {
     return (
@@ -86,22 +91,61 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
           <div className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">预览已关闭</div>
         </div>
         <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
-          当前会话没有可预览的文件
+          当前会话没有可预览的内容
         </div>
       </div>
     )
   }
 
   const dirPath =
-    currentFile.dirPath || sessionPath || getFallbackDirPath(currentFile.filePath, sessionPath)
-  const defaultAppTargetPath = getDefaultAppTargetPath(currentFile, sessionPath)
-  const defaultAppAccess = getPreviewFileAccess(sessionId, currentFile, sessionPath)
+    currentFile.dirPath ||
+    sessionPath ||
+    (currentFile.filePath ? getFallbackDirPath(currentFile.filePath, sessionPath) : sessionPath)
+  const defaultAppTargetPath =
+    !isUrl && currentFile.filePath
+      ? getDefaultAppTargetPath(currentFile, sessionPath)
+      : ''
+  const defaultAppAccess =
+    !isUrl && currentFile.filePath
+      ? getPreviewFileAccess(sessionId, currentFile, sessionPath)
+      : undefined
   const toolbarActions = (
     <>
-      <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
+      {!isUrl && currentFile.filePath && (
+        <DefaultAppOpenButton filePath={defaultAppTargetPath} access={defaultAppAccess} />
+      )}
       <TearOffButton sessionId={sessionId} />
     </>
   )
+
+  if (isUrl && currentFile.url) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-content-area">
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <WebPreviewFrame
+            key={`${sessionId}:${currentFile.url}:${currentFile.reloadNonce ?? 0}`}
+            agentSessionId={sessionId}
+            initialUrl={currentFile.url}
+            csvSessionId={currentFile.csvSessionId ?? null}
+            filePath={currentFile.filePath ?? null}
+            title={currentFile.title ?? fileName}
+            reloadNonce={currentFile.reloadNonce}
+            showToolbar={false}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentFile.filePath) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-content-area">
+        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+          预览数据不完整
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-content-area">

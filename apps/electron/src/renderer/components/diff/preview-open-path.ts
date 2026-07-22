@@ -26,6 +26,7 @@ function uniqueTruthyPaths(paths: Array<string | null | undefined>): string[] {
  * Diff 服务需要相对 git 路径；系统默认 App 打开文件则必须使用实际文件路径。
  */
 export function getDefaultAppTargetPath(file: PreviewFile, sessionPath: string): string {
+  if (!file.filePath) return ''
   if (isAbsoluteFilePath(file.filePath)) return file.filePath
 
   const basePath = file.previewOnly

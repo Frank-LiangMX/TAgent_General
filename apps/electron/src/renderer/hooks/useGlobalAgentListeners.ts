@@ -74,13 +74,18 @@ import {
   agentDiffUnseenChangesAtom,
   agentDiffUnseenFilesAtom,
   agentDiffPanelTabAtom,
-  agentSidePanelOpenAtom,
+  getAgentSidePanelOpenForSession,
+  setAgentSidePanelOpenForSession,
   sessionTokenStatsAtom,
   sessionReadFilesAtom,
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { appModeAtom, rightRailItemAtom, browserPanelUrlAtom } from '@/atoms/app-mode'
+import {
+  appModeAtom,
+  setRightRailItemForSession,
+} from '@/atoms/app-mode'
+import { openCsvDashboard } from '@/lib/open-csv-dashboard'
 import {
   setDesignHtmlAtom,
   setDesignDeviceAtom,
@@ -735,8 +740,9 @@ export function useGlobalAgentListeners(): void {
             device?: string
           }
           store.set(toggleDesignEnabledAtom, true)
-          store.set(rightRailItemAtom, 'design')
-          store.set(agentSidePanelOpenAtom, true)
+          // chrome 绑到产生事件的会话；切到该会话时才会看到右栏 design
+          setRightRailItemForSession(store, sessionId, 'design')
+          setAgentSidePanelOpenForSession(store, sessionId, true)
 
           if (evt.shapeOps && Array.isArray(evt.shapeOps) && evt.shapeOps.length > 0) {
             // v3：节点树模式 - agent 输出 shape ops
@@ -754,15 +760,30 @@ export function useGlobalAgentListeners(): void {
           )
         }
 
-        // CSV Dashboard 事件：Agent 调用 csv_dashboard 工具后在 Inspector 中显示看板
+        // CSV Dashboard：绑到产生事件的 Agent 会话；URL 由 ensure 派生
         if (payload.kind === 'tagent_event' && payload.event.type === 'csv_dashboard_open') {
-          const evt = payload.event as { url?: string; title?: string }
-          if (evt.url) {
-            // 切换到 BrowserPanel 并加载看板 URL
-            store.set(rightRailItemAtom, 'browser')
-            store.set(agentSidePanelOpenAtom, true)
-            store.set(browserPanelUrlAtom, evt.url)
-            console.log(`[CSV Dashboard] 打开看板: ${evt.title ?? '数据看板'}`)
+          const evt = payload.event as {
+            url?: string
+            title?: string
+            sessionId?: string
+            filePath?: string
+            activeView?: string
+          }
+          const csvSessionId = evt.sessionId
+          if (csvSessionId || evt.url) {
+            void openCsvDashboard(store, sessionId, {
+              csvSessionId: csvSessionId || evt.url || '',
+              url: evt.url,
+              title: evt.title,
+              filePath: evt.filePath,
+              activeView: evt.activeView,
+            }).then((r) => {
+              if (r.ok) {
+                console.log(`[CSV Dashboard] 打开看板: ${evt.title ?? '数据看板'}`)
+              } else {
+                console.warn(`[CSV Dashboard] 打开失败: ${r.error}`)
+              }
+            })
           }
         }
 
@@ -1037,7 +1058,7 @@ export function useGlobalAgentListeners(): void {
                     })
 
                     // 只有当前文件确实能显示 git diff 时，才切到「文件改动」。
-                    if (autoPreviewEnabled && store.get(agentSidePanelOpenAtom)) {
+                    if (autoPreviewEnabled && getAgentSidePanelOpenForSession(store, sessionId)) {
                       store.set(agentDiffPanelTabAtom, (prev) => {
                         if (prev.get(sessionId) === 'changes') return prev
                         const m = new Map(prev)
@@ -1595,7 +1616,7 @@ export function useGlobalAgentListeners(): void {
       if (!activeSessionId) return
 
       const previewFile = store.get(previewFileMapAtom).get(activeSessionId)
-      if (!previewFile || previewFile.previewOnly !== true) {
+      if (!previewFile || previewFile.previewOnly !== true || !previewFile.filePath) {
         bumpDiffRefresh(activeSessionId)
         return
       }

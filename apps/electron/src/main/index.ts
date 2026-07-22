@@ -412,6 +412,8 @@ function createWindow(): void {
       preload: join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      // 开启 webviewTag，BrowserPanel 中的 <webview> 才能实例化（用于右侧栏渲染 CSV 看板）
+      webviewTag: true,
     },
     ...titleBarOptions,
   })

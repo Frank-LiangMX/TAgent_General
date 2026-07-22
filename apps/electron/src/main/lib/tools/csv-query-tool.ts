@@ -2,27 +2,38 @@
  * CSV 查询工具
  *
  * 对已加载的 CSV 数据进行聚合、筛选、排序查询。
- * 所有查询通过 SQLite 执行，确保数据严谨性。
+ * 支持多列 groupby（交叉维度），所有查询走 SQLite。
  */
 
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta } from '@tagent/shared'
-import Database from 'better-sqlite3'
 import * as fs from 'fs'
-import * as path from 'path'
-import * as os from 'os'
+import {
+  getCsvDbPath,
+  parseGroupByColumns,
+  runCsvQuery,
+  type CsvFilter,
+} from './csv-shared'
 
 // ===== 工具元数据 =====
 
 export const CSV_QUERY_TOOL_META: ChatToolMeta = {
   id: 'csv-query',
   name: 'CSV 数据查询',
-  description: '对已加载的 CSV 数据进行聚合、筛选、排序查询',
+  description: '对已加载的 CSV 数据进行聚合、筛选、排序查询（支持多列交叉 groupby）',
   params: [
     { name: 'session_id', type: 'string', description: '会话 ID', required: true },
-    { name: 'groupby', type: 'string', description: '分组字段（可选）' },
+    {
+      name: 'groupby',
+      type: 'string',
+      description: '分组字段，单列或多列逗号分隔，如 "fcat" 或 "fcat,module"',
+    },
     { name: 'agg', type: 'string', description: '聚合函数，逗号分隔，如 "count,sum(compress),avg(compress)"' },
-    { name: 'filters', type: 'string', description: '筛选条件 JSON 数组，如 [{"column":"fcat","op":"=","value":"贴图"}]' },
+    {
+      name: 'filters',
+      type: 'string',
+      description: '筛选条件 JSON 数组，如 [{"column":"fcat","op":"=","value":"贴图"}]',
+    },
     { name: 'select', type: 'string', description: '选择字段，逗号分隔（不填则返回所有）' },
     { name: 'sort', type: 'string', description: '排序字段' },
     { name: 'sort_dir', type: 'string', description: '排序方向 asc/desc' },
@@ -39,10 +50,16 @@ export const CSV_QUERY_TOOL_META: ChatToolMeta = {
 **csv_query — 数据查询：**
 对已加载的 CSV 数据执行 SQL 聚合/筛选查询。
 
+**多维交叉（重要）：**
+- groupby 支持多列：\`groupby="fcat,module"\` → 得到「类型 × 模块」交叉表
+- 先 filter 再 groupby：\`filters=[{"column":"module","op":"=","value":"植被"}], groupby="fcat"\` → 植被下的类型分布
+- 反过来：\`filters=[{"column":"fcat","op":"=","value":"贴图"}], groupby="module"\` → 贴图在各模块的分布
+
 查询结果天然是严谨的，你必须：
 - 在回答中引用查询结果
 - 不得使用"大概"、"估计"等模糊词
 - 无法回答时说"需要查询数据"
+- 列名使用 csv_prepare 返回的 sql_name（或净化后的 name）
 </csv_query_instructions>`,
 }
 
@@ -52,12 +69,15 @@ export const CSV_QUERY_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'csv_query',
     description:
-      'Query aggregated/filtered data from loaded CSV. Supports groupby, aggregation, filtering, sorting.',
+      'Query aggregated/filtered data from loaded CSV. Supports multi-column groupby, aggregation, filtering, sorting.',
     parameters: {
       type: 'object',
       properties: {
         session_id: { type: 'string', description: 'Session ID' },
-        groupby: { type: 'string', description: 'Group by column name' },
+        groupby: {
+          type: 'string',
+          description: 'Group by column(s), comma-separated for cross-dim. e.g. "fcat" or "fcat,module"',
+        },
         agg: {
           type: 'string',
           description: 'Aggregation functions, comma-separated. e.g. "count,sum(compress)"',
@@ -86,79 +106,6 @@ export function isCsvQueryToolCall(toolName: string): boolean {
   return CSV_QUERY_TOOL_NAMES.has(toolName)
 }
 
-// ===== 缓存路径 =====
-
-function getDbPath(sessionId: string): string {
-  return path.join(os.tmpdir(), 'TAgent', 'csv-cache', sessionId, 'data.sqlite3')
-}
-
-// ===== SQL 构建 =====
-
-interface Filter {
-  column: string
-  op: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN'
-  value: string | number
-}
-
-function sanitizeColumnName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_]/g, '_')
-}
-
-function buildWhereClause(filters: Filter[]): { sql: string; params: (string | number)[] } {
-  if (!filters || filters.length === 0) return { sql: '', params: [] }
-
-  const conditions: string[] = []
-  const params: (string | number)[] = []
-
-  for (const f of filters) {
-    const col = sanitizeColumnName(f.column)
-    const op = f.op.toUpperCase()
-
-    if (op === 'IN' && typeof f.value === 'string') {
-      const values = f.value.split(',').map((v) => v.trim())
-      const placeholders = values.map(() => '?').join(',')
-      conditions.push(`${col} IN (${placeholders})`)
-      params.push(...values)
-    } else if (op === 'LIKE') {
-      conditions.push(`${col} LIKE ?`)
-      params.push(`%${f.value}%`)
-    } else {
-      conditions.push(`${col} ${op} ?`)
-      params.push(f.value)
-    }
-  }
-
-  return { sql: conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '', params }
-}
-
-function buildAggSelect(groupby: string | undefined, agg: string | undefined): string {
-  if (!agg) return groupby ? `${sanitizeColumnName(groupby)}, COUNT(*) AS count` : '*'
-
-  const parts: string[] = []
-  if (groupby) {
-    parts.push(sanitizeColumnName(groupby))
-  }
-
-  const aggExprs = agg.split(',').map((a) => a.trim())
-  for (const expr of aggExprs) {
-    // 解析 agg 表达式: "count", "sum(compress)", "avg(compress)"
-    const match = expr.match(/^(\w+)\((\w+)\)$/)
-    if (match && match[1] && match[2]) {
-      const func = match[1]
-      const col = match[2]
-      const safeFunc = func.toLowerCase()
-      const safeCol = sanitizeColumnName(col)
-      parts.push(`${safeFunc}(${safeCol}) AS ${safeFunc}_${safeCol}`)
-    } else if (expr === 'count') {
-      parts.push('COUNT(*) AS count')
-    } else {
-      parts.push(sanitizeColumnName(expr))
-    }
-  }
-
-  return parts.join(', ')
-}
-
 // ===== 核心实现 =====
 
 export function executeCsvQuery(toolCall: ToolCall): ToolResult {
@@ -168,7 +115,7 @@ export function executeCsvQuery(toolCall: ToolCall): ToolResult {
       return { toolCallId: toolCall.id, content: '参数缺失: session_id', isError: true }
     }
 
-    const dbPath = getDbPath(sessionId)
+    const dbPath = getCsvDbPath(sessionId)
     if (!fs.existsSync(dbPath)) {
       return {
         toolCallId: toolCall.id,
@@ -177,18 +124,7 @@ export function executeCsvQuery(toolCall: ToolCall): ToolResult {
       }
     }
 
-    const db = new Database(dbPath, { readonly: true })
-
-    const groupby = toolCall.arguments.groupby as string | undefined
-    const agg = toolCall.arguments.agg as string | undefined
-    const selectCols = toolCall.arguments.select as string | undefined
-    const sort = toolCall.arguments.sort as string | undefined
-    const sortDir = (toolCall.arguments.sort_dir as string) || 'desc'
-    const limit = parseInt(toolCall.arguments.limit as string, 10) || 100
-    const offset = parseInt(toolCall.arguments.offset as string, 10) || 0
-
-    // 解析 filters
-    let filters: Filter[] = []
+    let filters: CsvFilter[] = []
     const filtersStr = toolCall.arguments.filters as string | undefined
     if (filtersStr) {
       try {
@@ -198,65 +134,26 @@ export function executeCsvQuery(toolCall: ToolCall): ToolResult {
       }
     }
 
-    // 构建 SQL
-    let select: string
-    if (groupby || agg) {
-      select = buildAggSelect(groupby, agg)
-    } else if (selectCols) {
-      select = selectCols
-        .split(',')
-        .map((c) => sanitizeColumnName(c.trim()))
-        .join(', ')
-    } else {
-      select = '*'
-    }
+    const groupbyRaw = toolCall.arguments.groupby as string | undefined
+    const groupbyCols = parseGroupByColumns(groupbyRaw)
 
-    const { sql: whereSql, params: whereParams } = buildWhereClause(filters)
-    let groupBySql = groupby ? ` GROUP BY ${sanitizeColumnName(groupby)}` : ''
-    let orderBy = ''
-
-    if (sort) {
-      // 检查 sort 是否是聚合结果字段
-      const sortCol = sort.startsWith('count') || sort.startsWith('sum_') || sort.startsWith('avg_')
-        ? sort
-        : sanitizeColumnName(sort)
-      orderBy = ` ORDER BY ${sortCol} ${sortDir.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'}`
-    }
-
-    const limitSql = ` LIMIT ${limit}`
-    const offsetSql = offset > 0 ? ` OFFSET ${offset}` : ''
-
-    const sql = `SELECT ${select} FROM assets${whereSql}${groupBySql}${orderBy}${limitSql}${offsetSql}`
-
-    // 先获取总数（如果有 groupby，需要特殊处理）
-    let totalBeforeLimit = 0
-    if (groupby) {
-      const countSql = `SELECT COUNT(*) as cnt FROM (SELECT ${sanitizeColumnName(groupby)} FROM assets${whereSql} GROUP BY ${sanitizeColumnName(groupby)})`
-      const countRow = db.prepare(countSql).get(...whereParams) as { cnt: number } | undefined
-      totalBeforeLimit = countRow?.cnt || 0
-    } else {
-      const countSql = `SELECT COUNT(*) as cnt FROM assets${whereSql}`
-      const countRow = db.prepare(countSql).get(...whereParams) as { cnt: number } | undefined
-      totalBeforeLimit = countRow?.cnt || 0
-    }
-
-    // 执行查询
-    const stmt = db.prepare(sql)
-    const rows = stmt.all(...whereParams)
-    db.close()
-
-    // 提取列名
-    const columns = rows.length > 0 ? Object.keys(rows[0] as object) : []
+    const result = runCsvQuery(sessionId, {
+      groupby: groupbyCols,
+      agg: toolCall.arguments.agg as string | undefined,
+      filters,
+      select: toolCall.arguments.select as string | undefined,
+      sort: toolCall.arguments.sort as string | undefined,
+      sort_dir: (toolCall.arguments.sort_dir as string) || 'desc',
+      limit: parseInt(toolCall.arguments.limit as string, 10) || 100,
+      offset: parseInt(toolCall.arguments.offset as string, 10) || 0,
+    })
 
     return {
       toolCallId: toolCall.id,
       content: JSON.stringify(
         {
-          query: sql,
-          row_count: rows.length,
-          columns,
-          rows,
-          total_before_limit: totalBeforeLimit,
+          ...result,
+          groupby_columns: groupbyCols,
         },
         null,
         2

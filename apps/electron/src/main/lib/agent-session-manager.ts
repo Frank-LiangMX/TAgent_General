@@ -45,6 +45,7 @@ import {
   getSdkConfigDir,
 } from './config-paths'
 import { getConversationMessages } from './conversation-manager'
+import { clearAgentSessionCsvCache } from './csv-artifact-service'
 import { writeJsonFileAtomic, readJsonFileSafe } from './safe-file'
 
 // 在模块加载时一次性设置 SDK 配置目录，避免在 forkSession 等异步调用中临时修改/恢复
@@ -521,6 +522,9 @@ export function deleteAgentSession(id: string): void {
 
   // 清理 Nano Banana 生图历史
   clearNanoBananaAgentHistory(id)
+
+  // 清理 CSV 看板缓存（仅 artifacts 索引中记录的 csvSessionId）
+  clearAgentSessionCsvCache(id)
 
   // 清理 SDK 关联数据（file-history 和 projects 下的 session JSONL）
   const sdkSessionIds = [removed.sdkSessionId, removed.forkSourceSdkSessionId].filter(

@@ -6,7 +6,7 @@
 
 import { existsSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve, sep } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 import {
   IPC_CHANNELS,
@@ -32,6 +32,7 @@ import {
   AUTOMATION_IPC_CHANNELS,
   DRAFT_IPC_CHANNELS,
   COMMAND_IPC_CHANNELS,
+  CSV_IPC_CHANNELS,
 } from '@tagent/shared'
 import type {
   NudgeCandidate,
@@ -164,6 +165,7 @@ import {
   getAgentSessionMeta,
   getAgentSessionSDKMessages,
   updateAgentSessionMeta,
+  autoArchiveAgentSessions,
   deleteAgentSession,
   migrateChatToAgentSession,
   forkAgentSession,
@@ -320,6 +322,7 @@ import {
 import { wpsUserAuthManager } from './lib/wps-user-auth'
 import { getDecryptedWpsSecretKey, getWpsConfig, saveWpsConfig } from './lib/wps-config'
 
+import { isPathInsideResolved } from './lib/path-guard'
 import type { CleanupOptions } from './lib/storage-service'
 
 /** 文件浏览器中需要隐藏的系统文件 */
@@ -364,7 +367,11 @@ function getAuthorizedRoots(options?: FileAccessOptions): string[] {
       roots.push(...meta.attachedDirectories)
     }
     if (meta?.attachedFiles) {
-      roots.push(...meta.attachedFiles)
+      // 附加文件本身 + 其父目录（Agent 常在附件同目录生成 sibling 文件，如 Downloads 下的分析结果）
+      for (const file of meta.attachedFiles) {
+        roots.push(file)
+        roots.push(dirname(file))
+      }
     }
     if (meta?.workspaceId) {
       const workspace = getAgentWorkspace(meta.workspaceId)
@@ -382,7 +389,10 @@ function getAuthorizedRoots(options?: FileAccessOptions): string[] {
   for (const slug of workspaceSlugs) {
     roots.push(getWorkspaceFilesDir(slug))
     roots.push(...getWorkspaceAttachedDirectories(slug))
-    roots.push(...getWorkspaceAttachedFiles(slug))
+    for (const file of getWorkspaceAttachedFiles(slug)) {
+      roots.push(file)
+      roots.push(dirname(file))
+    }
     // 项目模式下加入 projectDirectory
     for (const ws of listAgentWorkspaces()) {
       if (ws.slug === slug && ws.projectDirectory) {
@@ -392,17 +402,21 @@ function getAuthorizedRoots(options?: FileAccessOptions): string[] {
     }
   }
 
+  // UI 传入的 candidateBasePaths 视为用户授权目录（与 attachedDirectories / SDK additionalDirectories 同权）
+  // 设计意图：附加目录 / 消息附件父目录允许访问 workspaces 外路径；攻击者需先控制 renderer
+  if (options?.candidateBasePaths?.length) {
+    roots.push(...options.candidateBasePaths)
+  }
+
   return roots
 }
 
 function isWithinWorkspacesOrProjects(filePath: string): boolean {
   const resolved = resolve(filePath)
-  const workspacesRoot = resolve(getAgentWorkspacesDir())
-  if (resolved.startsWith(workspacesRoot + sep) || resolved === workspacesRoot) return true
+  if (isPathInsideResolved(resolved, resolve(getAgentWorkspacesDir()))) return true
   for (const ws of listAgentWorkspaces()) {
     if (ws.projectDirectory) {
-      const pd = resolve(ws.projectDirectory)
-      if (resolved.startsWith(pd + sep) || resolved === pd) return true
+      if (isPathInsideResolved(resolved, resolve(ws.projectDirectory))) return true
     }
   }
   return false
@@ -415,8 +429,8 @@ function ensureWithinWorkspacesOrProjects(filePath: string): void {
 }
 
 function isUnderRoot(resolvedPath: string, root: string): boolean {
-  const resolvedRoot = realpathOrResolve(root)
-  return resolvedPath === resolvedRoot || resolvedPath.startsWith(resolvedRoot + sep)
+  // Windows 上 realpath 保留输入盘符大小写；用 path.relative 做大小写不敏感包含判断
+  return isPathInsideResolved(resolvedPath, realpathOrResolve(root))
 }
 
 function isPathAllowed(filePath: string, options?: FileAccessOptions): boolean {
@@ -1736,6 +1750,13 @@ export function registerIpcHandlers(): void {
       return rewindAgentSession(input.sessionId, input.assistantMessageUuid)
     }
   )
+
+  // 触发自动归档
+  ipcMain.handle(AGENT_IPC_CHANNELS.RUN_AUTO_ARCHIVE, async (): Promise<number> => {
+    const settings = getSettings()
+    const days = settings.archiveAfterDays ?? 7
+    return autoArchiveAgentSessions(days)
+  })
 
   // ===== Agent 工作区管理相关 =====
 
@@ -4725,6 +4746,34 @@ export function registerIpcHandlers(): void {
     async (_, input: ListCommandsInput | undefined): Promise<CommandMeta[]> => {
       const { listCommands } = await import('./lib/command-registry')
       return listCommands(input?.category)
+    }
+  )
+
+  // ===== CSV 看板 live server（刷新后恢复预览） =====
+
+  ipcMain.handle(
+    CSV_IPC_CHANNELS.ENSURE_LIVE_SERVER,
+    async (
+      _,
+      sessionId: string
+    ): Promise<import('@tagent/shared').EnsureCsvLiveServerResult> => {
+      const { ensureCsvLiveServer, findSessionIdByLiveUrl } = await import(
+        './lib/tools/csv-live-server'
+      )
+      let id = typeof sessionId === 'string' ? sessionId.trim() : ''
+      // 兼容旧版：只存了 URL 没存 sessionId
+      if (!id) {
+        return { ok: false, url: '', port: 0, error: 'sessionId 为空' }
+      }
+      // 若误传了完整 URL，尝试反查
+      if (id.startsWith('http://') || id.startsWith('https://')) {
+        const found = findSessionIdByLiveUrl(id)
+        if (!found) {
+          return { ok: false, url: '', port: 0, error: '无法从 URL 解析 CSV sessionId' }
+        }
+        id = found
+      }
+      return ensureCsvLiveServer(id)
     }
   )
 }

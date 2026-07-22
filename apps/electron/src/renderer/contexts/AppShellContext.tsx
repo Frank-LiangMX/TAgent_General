@@ -1,8 +1,8 @@
 import * as React from 'react'
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AppShellContextType {
-  // Placeholder - context values will be added as needed
+  /** 右栏过宽时由布局收起的 shell chrome（rail + 会话 Tab 栏）；无角热区 peek */
+  shellChromeCollapsed?: boolean
 }
 
 const AppShellContext = React.createContext<AppShellContextType | undefined>(undefined)

@@ -286,6 +286,16 @@ export function getPreviewTabTitle(filePath: string): string {
   return `预览：${getFileBaseName(filePath)}`
 }
 
+/** 从 PreviewFile（文件或 URL）生成 Tab 标题 */
+export function getPreviewTabTitleFromPreview(preview: PreviewFile): string {
+  if (preview.kind === 'url' || (preview.url && !preview.filePath)) {
+    const label = preview.title?.trim() || '网页预览'
+    return `预览：${label}`
+  }
+  if (preview.filePath) return getPreviewTabTitle(preview.filePath)
+  return '预览'
+}
+
 export function isPreviewTab(tab: TabItem): boolean {
   return tab.type === 'preview' || tab.id.startsWith(PREVIEW_TAB_PREFIX)
 }
@@ -508,7 +518,7 @@ export function buildOpenTabRestore(
   if (!viewState?.previewTabOpen || !previewFile) return undefined
   return {
     previewTabOpen: true,
-    previewTitle: getPreviewTabTitle(previewFile.filePath),
+    previewTitle: getPreviewTabTitleFromPreview(previewFile),
     lastView: viewState.lastView,
   }
 }

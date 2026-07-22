@@ -1,14 +1,14 @@
 /**
  * 统一预览入口 — 按 previewModePreferenceAtom 路由到 Tab 或右侧分屏。
  *
- * 用户仍可通过拖拽 preview Tab 出 TabBar、PreviewPanel / PreviewTabContent 顶栏按钮即时切换；
- * 本模块仅控制「下次打开」的默认行为。
+ * 支持本地文件（DiffTabContent）与网页 URL（WebPreviewFrame，含 CSV live dashboard）。
  */
 
 import * as React from 'react'
 import { useStore } from 'jotai'
 
 import {
+  getPreviewDisplayTitle,
   previewFileMapAtom,
   previewModePreferenceAtom,
   previewPanelOpenMapAtom,
@@ -17,7 +17,7 @@ import {
 import {
   activeTabIdAtom,
   closeTab,
-  getPreviewTabTitle,
+  getPreviewTabTitleFromPreview,
   isPreviewTab,
   openTab,
   sessionViewStateMapAtom,
@@ -26,11 +26,24 @@ import {
 
 type JotaiStore = ReturnType<typeof useStore>
 
-/** 按用户偏好打开预览（供非 Hook 组件通过 store 调用） */
-export function openPreview(store: JotaiStore, sessionId: string, file: PreviewFile): void {
+export interface UrlPreviewInput {
+  url: string
+  title?: string | null
+  csvSessionId?: string | null
+  filePath?: string | null
+  reloadNonce?: number
+}
+
+/** 打开预览面板（Tab 或分屏，取决于用户偏好） */
+function openPreviewState(
+  store: JotaiStore,
+  sessionId: string,
+  preview: PreviewFile,
+  tabTitle: string
+): void {
   store.set(previewFileMapAtom, (prev) => {
     const m = new Map(prev)
-    m.set(sessionId, file)
+    m.set(sessionId, preview)
     return m
   })
 
@@ -53,10 +66,57 @@ export function openPreview(store: JotaiStore, sessionId: string, file: PreviewF
   const result = openTab(store.get(tabsAtom), {
     type: 'preview',
     sessionId,
-    title: getPreviewTabTitle(file.filePath),
+    title: tabTitle,
   })
   store.set(tabsAtom, result.tabs)
   store.set(activeTabIdAtom, result.activeTabId)
+}
+
+/** 按用户偏好打开本地文件预览 */
+export function openPreview(store: JotaiStore, sessionId: string, file: PreviewFile): void {
+  const preview: PreviewFile = {
+    ...file,
+    kind: 'file',
+  }
+  if (!preview.filePath) {
+    console.warn('[openPreview] 缺少 filePath')
+    return
+  }
+  openPreviewState(store, sessionId, preview, getPreviewTabTitleFromPreview(preview))
+}
+
+/** 打开网页 / CSV live dashboard 预览（与会话分屏或 Tab 同一壳） */
+export function openUrlPreview(
+  store: JotaiStore,
+  sessionId: string,
+  input: UrlPreviewInput
+): void {
+  const url = input.url.trim()
+  if (!sessionId || !url) {
+    console.warn('[openUrlPreview] 缺少 sessionId 或 url')
+    return
+  }
+
+  const prev = store.get(previewFileMapAtom).get(sessionId)
+  const reloadNonce =
+    input.reloadNonce ??
+    (prev?.csvSessionId === input.csvSessionId && prev?.reloadNonce != null
+      ? prev.reloadNonce + 1
+      : 1)
+
+  const preview: PreviewFile = {
+    kind: 'url',
+    url,
+    title: input.title?.trim() || undefined,
+    csvSessionId: input.csvSessionId ?? undefined,
+    filePath: input.filePath ?? undefined,
+    reloadNonce,
+    previewOnly: true,
+    readOnly: true,
+  }
+
+  const tabTitle = `预览：${getPreviewDisplayTitle(preview)}`
+  openPreviewState(store, sessionId, preview, tabTitle)
 }
 
 export function useOpenPreview(): (sessionId: string, file: PreviewFile) => void {
@@ -69,7 +129,6 @@ export function useOpenPreview(): (sessionId: string, file: PreviewFile) => void
   )
 }
 
-/** 把 preview Tab 即时切换为右侧分屏（拖拽 tear-off / 顶栏按钮共用） */
 export function tearOffPreviewToSplit(store: JotaiStore, tabId: string): void {
   const tabs = store.get(tabsAtom)
   const tab = tabs.find((t) => t.id === tabId)
