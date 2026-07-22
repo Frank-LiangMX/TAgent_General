@@ -9,6 +9,7 @@ const nativeModuleTests = [
   'apps/electron/src/main/lib/kanban-db.test.ts',
   'apps/electron/src/main/lib/kanban-dispatcher.test.ts',
   'apps/electron/src/main/lib/memory-layer-service.test.ts',
+  // csv 集成段内部会 skip；文件本身含纯逻辑测试，不整文件 exclude
 ]
 
 const isCI = !!process.env.CI

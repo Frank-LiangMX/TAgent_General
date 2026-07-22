@@ -8,6 +8,7 @@
 import * as React from 'react'
 
 import { BashResultRenderer } from './bash-result'
+import { CsvDashboardResultRenderer } from './csv-dashboard-result'
 import { DefaultResultRenderer } from './default-result'
 import { EditResultRenderer } from './edit-result'
 import { GlobResultRenderer } from './glob-result'
@@ -18,6 +19,11 @@ import { TaskListResultRenderer } from './task-list-result'
 import { WebFetchResultRenderer } from './web-fetch-result'
 import { WebSearchResultRenderer } from './web-search-result'
 import { WriteResultRenderer } from './write-result'
+
+/** 匹配 csv_dashboard（含 MCP 前缀 mcp__…__csv_dashboard） */
+function isCsvDashboardTool(toolName: string): boolean {
+  return toolName === 'csv_dashboard' || toolName.endsWith('__csv_dashboard')
+}
 
 export interface ToolResultRendererProps {
   toolName: string
@@ -34,6 +40,10 @@ export function ToolResultRenderer({
   isError,
   basePath,
 }: ToolResultRendererProps): React.ReactElement {
+  if (isCsvDashboardTool(toolName)) {
+    return <CsvDashboardResultRenderer result={result} isError={isError} input={input} />
+  }
+
   switch (toolName) {
     case 'Bash':
       return <BashResultRenderer result={result} isError={isError} input={input} />

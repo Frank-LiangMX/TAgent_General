@@ -1,16 +1,15 @@
 /**
  * AppShell - 应用主布局容器
  *
- * Design Preview 两种扩展布局（覆盖层 + 轻量进退场动画）：
- * - 放大模式（fullscreen）：覆盖主内容区，仍露出左侧导航浮岛
+ * Design Preview 沉浸全屏（覆盖层 + 轻量进退场动画）：
  * - 沉浸全屏（immersive）：盖住整个壳层，只留会话 + 画布
  */
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Minimize2 } from 'lucide-react'
+import { PanelLeft, PanelLeftClose } from 'lucide-react'
 import * as React from 'react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 
 import { FunctionalRail } from './FunctionalRail'
 import { InertRegion, useInertElement } from './InertRegion'
@@ -25,6 +24,18 @@ import {
   INSPECTOR_MOTION_EASE,
   type InspectorMotionRect,
 } from './right-inspector-motion'
+import {
+  applyHalfSplitMagnet,
+  clampRightPanelWidth,
+  getInspectorExclusiveWidth,
+  getMaxRightPanelWidth,
+  shouldAutoCollapseLeftSidebar,
+  shouldAutoHideShellChrome,
+  shouldAutoRestoreLeftSidebar,
+  shouldAutoShowShellChrome,
+  shouldShowInspectorExclusiveControl,
+  toggleRightPanelSnap,
+} from './right-panel-width'
 import { deriveShellLayout } from './shell-layout'
 import { SpatialTopBar } from './SpatialTopBar'
 
@@ -39,20 +50,17 @@ import {
   appModeAtom,
   topLevelModeAtom,
   activeRailItemAtom,
+  inspectorExclusiveAtom,
   navigationSidebarOpenAtom,
   rightRailItemAtom,
-  inspectorMagnifiedAtom,
-  focusSplitRatioAtom,
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import {
-  designFullscreenAtom,
   designEnabledAtom,
   designImmersiveAtom,
 } from '@/atoms/design-preview-atoms'
 import { DesignImmersiveLayout } from '@/components/design-preview/DesignImmersiveLayout'
-import { RailItemContent } from '@/components/app-shell/RightSidePanel'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
@@ -74,8 +82,6 @@ const OfficeImmersiveShell = React.lazy(() =>
   }))
 )
 
-const MIN_RIGHT_PANEL_WIDTH = 300
-const MAX_RIGHT_PANEL_WIDTH = 420
 /** 覆盖层 / design 退场时长 */
 const DESIGN_MODE_EXIT_MS = 260
 /**
@@ -97,8 +103,9 @@ const RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK = 188
 
 type InspectorPhase = 'collapsed' | 'opening' | 'open' | 'closing'
 
-function clampRightPanelWidth(width: number): number {
-  return Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, width))
+function getViewportWidth(): number {
+  if (typeof window === 'undefined') return 1280
+  return window.innerWidth
 }
 
 function prefersReducedMotion(): boolean {
@@ -190,17 +197,15 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const setRightPanelOpen = useSetAtom(agentSidePanelOpenAtom)
   const rightPanelPlacement = useAtomValue(agentSidePanelPlacementAtom)
   const sidebarRequestedOpen = useAtomValue(navigationSidebarOpenAtom)
+  const setNavigationSidebarOpen = useSetAtom(navigationSidebarOpenAtom)
   const rightRailItem = useAtomValue(rightRailItemAtom)
   const activeRailItem = useAtomValue(activeRailItemAtom)
   const activeTab = useAtomValue(activeTabAtom)
   const globalOfficeMode = useAtomValue(globalOfficeModeAtom)
-  const designFullscreen = useAtomValue(designFullscreenAtom)
   const designEnabled = useAtomValue(designEnabledAtom)
   const designImmersive = useAtomValue(designImmersiveAtom)
-  const inspectorMagnified = useAtomValue(inspectorMagnifiedAtom)
-  const setInspectorMagnified = useSetAtom(inspectorMagnifiedAtom)
-  const setDesignFullscreen = useSetAtom(designFullscreenAtom)
   const setDesignImmersive = useSetAtom(designImmersiveAtom)
+  const [inspectorExclusive, setInspectorExclusive] = useAtom(inspectorExclusiveAtom)
 
   const officeShellSessionId =
     activeTab?.type === 'agent' && globalOfficeMode ? activeTab.sessionId : null
@@ -213,64 +218,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     sidebarRequestedOpen,
     rightPanelRequestedOpen,
     rightRailItem,
-    inspectorMagnified,
     globalOfficeMode,
     hasOfficeSession: Boolean(officeShellSessionId),
     designEnabled,
-    designFullscreen,
     designImmersive,
   })
-
-  const exitMagnify = React.useCallback(() => {
-    setInspectorMagnified(false)
-    setDesignFullscreen(false)
-  }, [setDesignFullscreen, setInspectorMagnified])
-
-  // 聚焦模式：会话列 / 面板分界线拖拽
-  const [focusSplitRatio, setFocusSplitRatio] = useAtom(focusSplitRatioAtom)
-  const focusDragging = React.useRef(false)
-  const handleFocusSplitDrag = React.useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault()
-      const containerEl = (e.currentTarget as HTMLElement).closest(
-        '[data-focus-split]'
-      ) as HTMLElement | null
-      if (!containerEl) return
-      focusDragging.current = true
-      const rect = containerEl.getBoundingClientRect()
-      let rafId = 0
-
-      document.body.style.userSelect = 'none'
-      document.body.style.cursor = 'col-resize'
-      // 拖拽期间避免 iframe / webview 吞掉 mousemove
-      document.querySelectorAll('iframe, webview').forEach((f) => {
-        ;(f as HTMLElement).style.pointerEvents = 'none'
-      })
-
-      const onMouseMove = (ev: MouseEvent) => {
-        if (!focusDragging.current || rafId) return
-        rafId = requestAnimationFrame(() => {
-          rafId = 0
-          const ratio = (ev.clientX - rect.left) / Math.max(1, rect.width)
-          setFocusSplitRatio(Math.max(0.28, Math.min(0.62, ratio)))
-        })
-      }
-      const onMouseUp = () => {
-        focusDragging.current = false
-        if (rafId) cancelAnimationFrame(rafId)
-        document.body.style.userSelect = ''
-        document.body.style.cursor = ''
-        document.querySelectorAll('iframe, webview').forEach((f) => {
-          ;(f as HTMLElement).style.pointerEvents = ''
-        })
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
-      }
-      document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
-    },
-    [setFocusSplitRatio]
-  )
 
   const showLeftSidebar = shellLayout.sidebar === 'open'
   const showRightPanel = shellLayout.inspector !== 'hidden'
@@ -287,8 +239,47 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
   const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
   const [rightPanelWidth, setRightPanelWidth] = useAtom(agentSidePanelWidthAtom)
+  /** 视口宽度：右栏 max 随 resize 重算，超界时写入 atom 纠正 */
+  const [viewportWidth, setViewportWidth] = React.useState(getViewportWidth)
   const dragging = React.useRef(false)
-  const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth)
+  const clampedRightPanelWidth = clampRightPanelWidth(rightPanelWidth, viewportWidth)
+
+  /** 右栏 >50% 时由我们收起 rail + 会话 tabs（与用户手动关 sidebar 独立）；无角热区 peek */
+  const [chromeCollapsedByRight, setChromeCollapsedByRight] = React.useState(false)
+  const chromeCollapsedByRightRef = React.useRef(false)
+  /** 独占按钮显隐：拖拽中跟手更新（不依赖松手后的 atom） */
+  const [exclusiveControlVisible, setExclusiveControlVisible] = React.useState(() =>
+    shouldShowInspectorExclusiveControl(clampedRightPanelWidth, viewportWidth, false)
+  )
+  const exclusiveControlVisibleRef = React.useRef(exclusiveControlVisible)
+  exclusiveControlVisibleRef.current = exclusiveControlVisible
+
+
+  const shellChromeCollapsedForLayout =
+    (chromeCollapsedByRight || inspectorExclusive) &&
+    inspectorOpen &&
+    rightPanelPlacement === 'dock'
+  const effectiveNavClusterWidth = shellChromeCollapsedForLayout ? 0 : navClusterWidth
+  const exclusiveRightWidth = getInspectorExclusiveWidth(viewportWidth, effectiveNavClusterWidth)
+  const inspectorExclusiveActive = inspectorExclusive && inspectorOpen
+  const layoutTargetWidth = inspectorExclusiveActive
+    ? exclusiveRightWidth
+    : clampedRightPanelWidth
+  /** 拖拽中只改 DOM，松手再写 atom，避免整树重渲导致卡顿 */
+  const sceneRef = React.useRef<HTMLDivElement>(null)
+  const liveRightWidthRef = React.useRef(clampedRightPanelWidth)
+  // 拖拽中禁止用 atom 覆盖 live 宽度（中途 setState 会把条打回去）
+  if (!dragging.current) {
+    liveRightWidthRef.current = layoutTargetWidth
+  }
+  /**
+   * 拖拽中若触发左栏收起会产生一次重渲：此处必须继续用 live 宽度，
+   * 否则 React 会把 island / reserve 打回松手前的 atom 旧值。
+   */
+  const layoutRightWidth = dragging.current ? liveRightWidthRef.current : layoutTargetWidth
+  const sidebarOpenRef = React.useRef(sidebarRequestedOpen)
+  sidebarOpenRef.current = sidebarRequestedOpen
+  const dockReserveActiveRef = React.useRef(false)
 
   const rightStackRef = React.useRef<HTMLDivElement>(null)
   const islandRef = React.useRef<HTMLDivElement>(null)
@@ -300,7 +291,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const wasInspectorOpenRef = React.useRef(inspectorOpen)
   const collapsedRailHeightRef = React.useRef(RIGHT_RAIL_COLLAPSED_HEIGHT_FALLBACK)
   const rightPanelWidthRef = React.useRef(clampedRightPanelWidth)
-  rightPanelWidthRef.current = clampedRightPanelWidth
+  rightPanelWidthRef.current = layoutTargetWidth
   /** morph 中隐藏真面板，由 surface 承担视觉（对齐原型 is-sidebar-morphing） */
   const [inspectorPhase, setInspectorPhase] = React.useState<InspectorPhase>(
     inspectorOpen ? 'open' : 'collapsed'
@@ -317,6 +308,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
    */
   const dockReserveActive =
     rightPanelPlacement === 'dock' && (inspectorPhase === 'open' || inspectorPhase === 'opening')
+  dockReserveActiveRef.current = dockReserveActive
   const rightLayoutMotionMs =
     rightPanelPlacement === 'dock' && inspectorPhase === 'opening'
       ? INSPECTOR_OPEN_MS
@@ -596,32 +588,281 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   }, [resetMorphSurface])
 
   React.useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  React.useEffect(() => {
+    if (inspectorExclusiveActive) {
+      if (rightPanelWidth !== exclusiveRightWidth) {
+        setRightPanelWidth(exclusiveRightWidth)
+      }
+      return
+    }
     if (clampedRightPanelWidth !== rightPanelWidth) {
       setRightPanelWidth(clampedRightPanelWidth)
     }
-  }, [clampedRightPanelWidth, rightPanelWidth, setRightPanelWidth])
+  }, [
+    clampedRightPanelWidth,
+    exclusiveRightWidth,
+    inspectorExclusiveActive,
+    rightPanelWidth,
+    setRightPanelWidth,
+  ])
 
-  const handleMouseDown = React.useCallback(
+  /** 右栏关闭或切到浮层时退出独占（浮层不占列，无分界/独占语义） */
+  React.useEffect(() => {
+    if ((!inspectorOpen || rightPanelPlacement === 'float') && inspectorExclusive) {
+      setInspectorExclusive(false)
+    }
+  }, [inspectorExclusive, inspectorOpen, rightPanelPlacement, setInspectorExclusive])
+
+  /**
+   * 右栏超过视口 30% 时收起左 sidebar，缩回 28% 以下再恢复。
+   * 仅 dock 占位：浮层不让宽，拖宽/占比无布局意义。
+   * 拖拽中不跑（dragging.current），避免与 DOM 调宽抢同一帧 React 提交。
+   */
+  const autoCollapsedLeftByRightRef = React.useRef(false)
+  const userPinnedLeftWhileWideRef = React.useRef(false)
+
+  React.useEffect(() => {
+    if (dragging.current) return
+
+    if (!inspectorOpen || rightPanelPlacement !== 'dock') {
+      if (autoCollapsedLeftByRightRef.current) {
+        setNavigationSidebarOpen(true)
+        autoCollapsedLeftByRightRef.current = false
+      }
+      userPinnedLeftWhileWideRef.current = false
+      return
+    }
+
+    if (shouldAutoCollapseLeftSidebar(clampedRightPanelWidth, viewportWidth)) {
+      if (sidebarRequestedOpen) {
+        if (autoCollapsedLeftByRightRef.current) {
+          userPinnedLeftWhileWideRef.current = true
+          autoCollapsedLeftByRightRef.current = false
+          return
+        }
+        if (!userPinnedLeftWhileWideRef.current) {
+          setNavigationSidebarOpen(false)
+          autoCollapsedLeftByRightRef.current = true
+        }
+      }
+      return
+    }
+
+    if (shouldAutoRestoreLeftSidebar(clampedRightPanelWidth, viewportWidth)) {
+      userPinnedLeftWhileWideRef.current = false
+      if (autoCollapsedLeftByRightRef.current) {
+        setNavigationSidebarOpen(true)
+        autoCollapsedLeftByRightRef.current = false
+      }
+    }
+  }, [
+    clampedRightPanelWidth,
+    inspectorOpen,
+    rightPanelPlacement,
+    setNavigationSidebarOpen,
+    sidebarRequestedOpen,
+    viewportWidth,
+  ])
+
+  /**
+   * 右栏 dock 超过视口 50% 时收起 rail + 会话 tabs，缩回 45% 以下再恢复。
+   * 仅 dock 占位；浮层不启用。拖拽中不跑 effect（与 sidebar 同模式）。
+   */
+  React.useEffect(() => {
+    if (dragging.current) return
+
+    if (!inspectorOpen || rightPanelPlacement !== 'dock') {
+      if (chromeCollapsedByRightRef.current) {
+        chromeCollapsedByRightRef.current = false
+        setChromeCollapsedByRight(false)
+      }
+      return
+    }
+
+    if (shouldAutoHideShellChrome(clampedRightPanelWidth, viewportWidth)) {
+      if (!chromeCollapsedByRightRef.current) {
+        chromeCollapsedByRightRef.current = true
+        setChromeCollapsedByRight(true)
+      }
+      return
+    }
+
+    if (shouldAutoShowShellChrome(clampedRightPanelWidth, viewportWidth)) {
+      if (chromeCollapsedByRightRef.current) {
+        chromeCollapsedByRightRef.current = false
+        setChromeCollapsedByRight(false)
+      }
+    }
+  }, [clampedRightPanelWidth, inspectorOpen, rightPanelPlacement, viewportWidth])
+
+  /** 非拖拽时：独占按钮跟 atom 宽度；拖拽中由 mousemove 跟手更新 */
+  React.useEffect(() => {
+    if (dragging.current) return
+    const next = shouldShowInspectorExclusiveControl(
+      clampedRightPanelWidth,
+      viewportWidth,
+      inspectorExclusiveActive
+    )
+    exclusiveControlVisibleRef.current = next
+    setExclusiveControlVisible(next)
+  }, [clampedRightPanelWidth, inspectorExclusiveActive, viewportWidth])
+
+  /** 拖拽帧：只写 CSS 变量 + island width，不 setState */
+  const applyLiveRightPanelWidth = React.useCallback((width: number, viewport: number) => {
+    const next = clampRightPanelWidth(width, viewport)
+    liveRightWidthRef.current = next
+    const scene = sceneRef.current
+    if (scene) {
+      scene.style.setProperty('--right-inspector-width', `${next}px`)
+      if (dockReserveActiveRef.current) {
+        scene.style.setProperty(
+          '--right-inspector-reserve',
+          `calc(${next}px + var(--spatial-gutter))`
+        )
+      }
+    }
+    const island = islandRef.current
+    if (island) {
+      island.style.width = `${next}px`
+    }
+    return next
+  }, [])
+
+  // 左栏 / shell chrome 收起引起的重渲之后，把 live 宽度写回 DOM（防止被 React style 覆盖）
+  React.useLayoutEffect(() => {
+    if (!dragging.current) return
+    applyLiveRightPanelWidth(liveRightWidthRef.current, window.innerWidth)
+  }, [
+    applyLiveRightPanelWidth,
+    sidebarRequestedOpen,
+    layoutRightWidth,
+    chromeCollapsedByRight,
+    exclusiveControlVisible,
+  ])
+
+  const releaseRightPanelDrag = React.useCallback(() => {
+    document.body.style.userSelect = ''
+    document.body.style.cursor = ''
+    sceneRef.current?.removeAttribute('data-right-resizing')
+    sceneRef.current?.removeAttribute('data-half-snap')
+    document.querySelectorAll('iframe, webview').forEach((frame) => {
+      ;(frame as HTMLElement).style.pointerEvents = ''
+    })
+  }, [])
+
+  /**
+   * 右栏左缘拖拽：宽度走 DOM；越过 30% / 回到 28% 时各触发一次左栏收起/展开（带现有侧栏动画）。
+   * 接近 50% 有平分吸力；独占按钮随宽度实时显隐。松手再写 atom。
+   */
+  const handleRightPanelResizeDrag = React.useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
+      // 浮层不占列，禁止拖分界
+      if (rightPanelPlacement !== 'dock' || inspectorExclusiveActive) return
       dragging.current = true
       const startX = e.clientX
-      const startWidth = clampedRightPanelWidth
+      const startWidth = liveRightWidthRef.current
       let rafId = 0
+      /** 本段拖拽是否已因越线收起过左栏（可在缩回后再次收起） */
+      let wideCollapseArmed = true
+
+      /** 本段拖拽是否已因越线收起过 shell chrome（可在缩回后再次收起） */
+      let chromeHideArmed = true
+
+      /** 是否正吸在 50% 平分点 */
+      let halfSnapped = false
+
+      sceneRef.current?.setAttribute('data-right-resizing', 'true')
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+      document.querySelectorAll('iframe, webview').forEach((frame) => {
+        ;(frame as HTMLElement).style.pointerEvents = 'none'
+      })
+
+      const syncExclusiveControlVisible = (width: number, viewport: number) => {
+        const show = shouldShowInspectorExclusiveControl(width, viewport, false)
+        if (show === exclusiveControlVisibleRef.current) return
+        exclusiveControlVisibleRef.current = show
+        setExclusiveControlVisible(show)
+      }
+
+      const syncHalfSnapAttr = (snapped: boolean) => {
+        const scene = sceneRef.current
+        if (!scene) return
+        if (snapped) scene.setAttribute('data-half-snap', 'true')
+        else scene.removeAttribute('data-half-snap')
+      }
 
       const onMouseMove = (ev: MouseEvent) => {
-        if (!dragging.current) return
-        if (rafId) return
+        if (!dragging.current || rafId) return
         rafId = requestAnimationFrame(() => {
           rafId = 0
-          const delta = startX - ev.clientX
-          setRightPanelWidth(clampRightPanelWidth(startWidth + delta))
+          const liveViewport = window.innerWidth
+          const raw = startWidth + (startX - ev.clientX)
+          const magnet = applyHalfSplitMagnet(raw, liveViewport, halfSnapped)
+          halfSnapped = magnet.snapped
+          syncHalfSnapAttr(halfSnapped)
+          const next = applyLiveRightPanelWidth(magnet.width, liveViewport)
+          syncExclusiveControlVisible(next, liveViewport)
+
+          if (userPinnedLeftWhileWideRef.current) return
+
+          if (
+            wideCollapseArmed &&
+            !autoCollapsedLeftByRightRef.current &&
+            sidebarOpenRef.current &&
+            shouldAutoCollapseLeftSidebar(next, liveViewport)
+          ) {
+            wideCollapseArmed = false
+            autoCollapsedLeftByRightRef.current = true
+            setNavigationSidebarOpen(false)
+            return
+          }
+
+          if (
+            autoCollapsedLeftByRightRef.current &&
+            shouldAutoRestoreLeftSidebar(next, liveViewport)
+          ) {
+            autoCollapsedLeftByRightRef.current = false
+            wideCollapseArmed = true
+            setNavigationSidebarOpen(true)
+          }
+
+          if (
+            chromeHideArmed &&
+            !chromeCollapsedByRightRef.current &&
+            shouldAutoHideShellChrome(next, liveViewport)
+          ) {
+            chromeHideArmed = false
+            chromeCollapsedByRightRef.current = true
+            setChromeCollapsedByRight(true)
+          }
+
+          if (
+            chromeCollapsedByRightRef.current &&
+            shouldAutoShowShellChrome(next, liveViewport)
+          ) {
+            chromeCollapsedByRightRef.current = false
+            chromeHideArmed = true
+            setChromeCollapsedByRight(false)
+          }
         })
       }
 
       const onMouseUp = () => {
         dragging.current = false
         if (rafId) cancelAnimationFrame(rafId)
+        const finalWidth = liveRightWidthRef.current
+        const liveViewport = window.innerWidth
+        releaseRightPanelDrag()
+        setViewportWidth(liveViewport)
+        setRightPanelWidth(finalWidth)
+        syncExclusiveControlVisible(finalWidth, liveViewport)
         document.removeEventListener('mousemove', onMouseMove)
         document.removeEventListener('mouseup', onMouseUp)
       }
@@ -629,33 +870,96 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
       document.addEventListener('mousemove', onMouseMove)
       document.addEventListener('mouseup', onMouseUp)
     },
-    [clampedRightPanelWidth, setRightPanelWidth]
+    [
+      applyLiveRightPanelWidth,
+      inspectorExclusiveActive,
+      releaseRightPanelDrag,
+      rightPanelPlacement,
+      setNavigationSidebarOpen,
+      setRightPanelWidth,
+    ]
   )
 
-  const wantMagnify = shellLayout.canvas === 'magnify'
+  /** 双击手柄：工具窄栏 ↔ 预览宽栏（仅 dock） */
+  const handleRightPanelResizeDoubleClick = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      if (rightPanelPlacement !== 'dock' || inspectorExclusiveActive) return
+      setRightPanelWidth(toggleRightPanelSnap(clampedRightPanelWidth, viewportWidth))
+    },
+    [
+      clampedRightPanelWidth,
+      inspectorExclusiveActive,
+      rightPanelPlacement,
+      setRightPanelWidth,
+      viewportWidth,
+    ]
+  )
+
+  /** 切换右栏独占：隐藏主会话区，右栏吃满可用宽度（仅 dock） */
+  const handleToggleInspectorExclusive = React.useCallback(() => {
+    if (rightPanelPlacement !== 'dock') return
+    if (inspectorExclusive) {
+      setInspectorExclusive(false)
+      setRightPanelWidth(clampRightPanelWidth(rightPanelWidth, viewportWidth))
+      return
+    }
+    setInspectorExclusive(true)
+    setRightPanelWidth(getInspectorExclusiveWidth(viewportWidth, effectiveNavClusterWidth))
+  }, [
+    effectiveNavClusterWidth,
+    inspectorExclusive,
+    rightPanelPlacement,
+    rightPanelWidth,
+    setInspectorExclusive,
+    setRightPanelWidth,
+    viewportWidth,
+  ])
+
   const wantImmersive = shellLayout.canvas === 'immersive'
 
-  const magnify = useDelayedMount(wantMagnify)
+  const shellContextValue = React.useMemo(
+    () => ({ ...contextValue, shellChromeCollapsed: shellChromeCollapsedForLayout }),
+    [contextValue, shellChromeCollapsedForLayout]
+  )
+
   const immersive = useDelayedMount(wantImmersive)
   // Office 模式但 activeTab 还没恢复时，显示 loading
   const officeLoading = shellLayout.office === 'loading'
 
-  // Esc 退出沉浸全屏 / 放大模式
+  // Esc 退出 Design 沉浸全屏
   React.useEffect(() => {
-    if (!wantImmersive && !wantMagnify) return
+    if (!wantImmersive) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       const t = e.target as HTMLElement | null
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
-      if (wantImmersive) {
-        setDesignImmersive(false)
-        return
-      }
-      exitMagnify()
+      setDesignImmersive(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [wantImmersive, wantMagnify, setDesignImmersive, exitMagnify])
+  }, [wantImmersive, setDesignImmersive])
+
+  // Esc 退出右栏独占（不与 Design 沉浸冲突）
+  React.useEffect(() => {
+    if (!inspectorExclusiveActive || wantImmersive) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      setInspectorExclusive(false)
+      setRightPanelWidth(clampRightPanelWidth(rightPanelWidth, viewportWidth))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [
+    inspectorExclusiveActive,
+    rightPanelWidth,
+    setInspectorExclusive,
+    setRightPanelWidth,
+    viewportWidth,
+    wantImmersive,
+  ])
 
   if (officeLoading) {
     return (
@@ -695,8 +999,9 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   }
 
   return (
-    <AppShellProvider value={contextValue}>
+    <AppShellProvider value={shellContextValue}>
       <div
+        ref={sceneRef}
         className={cn(
           'app-shell-scene relative flex h-screen w-screen overflow-hidden',
           isMac ? 'app-shell-scene--mac' : 'app-shell-scene--win'
@@ -705,14 +1010,19 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         data-canvas-presentation={shellLayout.canvas}
         data-composer-placement={shellLayout.composer}
         data-right-placement={rightPlacementAttr}
+        data-inspector-exclusive={inspectorExclusiveActive ? 'true' : undefined}
+        data-shell-chrome-collapsed={shellChromeCollapsedForLayout ? 'true' : undefined}
         style={{
           ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
           /* dock 占位：跟 phase 同步过渡，与 morph / 左栏让位同拍 */
-          ['--right-inspector-width' as string]: `${clampedRightPanelWidth}px`,
-          ['--right-inspector-reserve' as string]: dockReserveActive
-            ? `calc(${clampedRightPanelWidth}px + var(--spatial-gutter))`
-            : '0px',
+          ['--right-inspector-width' as string]: `${layoutRightWidth}px`,
+          ['--right-inspector-reserve' as string]:
+            inspectorExclusiveActive
+              ? '0px'
+              : dockReserveActive
+                ? `calc(${layoutRightWidth}px + var(--spatial-gutter))`
+                : '0px',
           ['--right-inspector-layout-ms' as string]: `${rightLayoutMotionMs}ms`,
           ['--right-inspector-layout-ease' as string]: INSPECTOR_MOTION_EASE,
         }}
@@ -721,8 +1031,10 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         <InertRegion
           className="app-shell-nav"
-          data-presence={shellLayout.navigation}
-          inactive={shellLayout.navigation === 'hidden'}
+          data-presence={
+            shellChromeCollapsedForLayout ? 'hidden' : shellLayout.navigation
+          }
+          inactive={shellLayout.navigation === 'hidden' || shellChromeCollapsedForLayout}
         >
           <NavIsland
             sidebarPresence={shellLayout.sidebar}
@@ -740,7 +1052,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         <main
           ref={workspaceRef}
           className="app-shell-main"
-          aria-hidden={workspaceInactive || undefined}
+          aria-hidden={workspaceInactive || inspectorExclusiveActive || undefined}
         >
           <div
             className="app-shell-content-stage relative h-full min-h-0"
@@ -757,49 +1069,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             </div>
           </div>
         </main>
-
-        {/* 聚焦模式：收起导航，只留 main（会话 | 面板）浮在场景渐变上 */}
-        {magnify.mounted && (
-          <div
-            className="design-mode-overlay design-mode-overlay--magnify"
-            data-open={magnify.open ? 'true' : 'false'}
-            aria-hidden={!magnify.open}
-          >
-            <div className="focus-stage flex min-h-0 flex-1" data-focus-split>
-              <div
-                className="design-theater-chat focus-stage-chat flex h-full shrink-0 flex-col"
-                style={{ width: `${focusSplitRatio * 100}%` }}
-              >
-                <div className="design-theater-chat-inner app-shell-content-stage min-h-0 flex-1">
-                  <MainArea />
-                </div>
-              </div>
-              <div
-                className="focus-split-handle titlebar-no-drag"
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="拖拽调整会话与面板宽度"
-                onMouseDown={handleFocusSplitDrag}
-              />
-              <div className="focus-stage-panel relative min-w-0 flex-1 overflow-hidden">
-                <RailItemContent item={rightRailItem} />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="focus-exit-btn titlebar-no-drag absolute right-3 top-3 z-20"
-                      onClick={exitMagnify}
-                      aria-label="退出聚焦模式"
-                    >
-                      <Minimize2 size={15} strokeWidth={1.5} aria-hidden />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">退出聚焦（Esc）</TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 沉浸全屏覆盖层（盖住整个壳层；操作在 Dock） */}
         {immersive.mounted && <DesignImmersiveLayout open={immersive.open} />}
@@ -832,13 +1101,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             }
             aria-label={inspectorOpen ? '上下文检查器' : '上下文快捷入口'}
           >
-            {inspectorOpen && !isInspectorMorphing && (
-              <div
-                className="app-shell-right-resize-handle absolute bottom-0 left-0 top-0 z-20 w-[8px] -translate-x-1/2 cursor-col-resize transition-colors hover:bg-primary/30 active:bg-primary/50"
-                onMouseDown={handleMouseDown}
-              />
-            )}
-
             <div
               ref={islandRef}
               data-session-transition-enter="rail"
@@ -852,7 +1114,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                 isMac && inspectorShellExpanded && 'right-nav-island-glass--mac'
               )}
               style={{
-                width: inspectorShellExpanded ? clampedRightPanelWidth : RIGHT_RAIL_COLLAPSED_WIDTH,
+                width: inspectorShellExpanded ? layoutRightWidth : RIGHT_RAIL_COLLAPSED_WIDTH,
                 ['--nav-island-outer-radius' as string]: `${NAV_ISLAND_OUTER_RADIUS}px`,
                 ['--nav-rail-width' as string]: `${RIGHT_PANEL_RAIL_WIDTH}px`,
               }}
@@ -876,6 +1138,63 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                 <RightPanelRail panelOpen={false} className="right-panel-rail--peek" />
               )}
             </div>
+
+            {/* 仅 dock 占位：分界拖宽 + 独占。浮层不占列，无分界语义 */}
+            {inspectorOpen && !isInspectorMorphing && rightPanelPlacement === 'dock' && (
+              <>
+                {!inspectorExclusiveActive && (
+                  <div
+                    className="app-shell-right-resize-handle titlebar-no-drag absolute bottom-0 top-0"
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="拖拽调整右栏宽度，双击在窄栏与宽栏间切换"
+                    aria-valuemin={300}
+                    aria-valuemax={getMaxRightPanelWidth(viewportWidth)}
+                    aria-valuenow={clampedRightPanelWidth}
+                    onMouseDown={handleRightPanelResizeDrag}
+                    onDoubleClick={handleRightPanelResizeDoubleClick}
+                  />
+                )}
+                {(exclusiveControlVisible || inspectorExclusiveActive) && (
+                  <div
+                    className={cn(
+                      'app-shell-right-exclusive-control titlebar-no-drag absolute',
+                      inspectorExclusiveActive && 'app-shell-right-exclusive-control--active'
+                    )}
+                  >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            'size-[36px] shrink-0 rounded-full',
+                            'text-foreground/60 hover:text-foreground',
+                            'bg-background/80 shadow-sm backdrop-blur-sm',
+                            'border border-border/40'
+                          )}
+                          onClick={handleToggleInspectorExclusive}
+                          aria-pressed={inspectorExclusiveActive}
+                          aria-label={
+                            inspectorExclusiveActive ? '显示会话' : '隐藏会话，右栏全宽'
+                          }
+                        >
+                          {inspectorExclusiveActive ? (
+                            <PanelLeft className="size-4" aria-hidden />
+                          ) : (
+                            <PanelLeftClose className="size-4" aria-hidden />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>{inspectorExclusiveActive ? '显示会话' : '隐藏会话，右栏全宽'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>

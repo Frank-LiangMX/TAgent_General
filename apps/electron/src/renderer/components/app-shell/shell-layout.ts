@@ -4,7 +4,7 @@ import type { TabType } from '@/atoms/tab-atoms'
 export type ShellScene = 'standard' | 'focus' | 'canvas' | 'office'
 export type PanelPresence = 'hidden' | 'collapsed' | 'open'
 export type ComposerPlacement = 'default' | 'expanded' | 'dock'
-export type CanvasPresentation = 'none' | 'magnify' | 'immersive'
+export type CanvasPresentation = 'none' | 'immersive'
 export type OfficePresentation = 'inactive' | 'loading' | 'ready'
 
 export interface ShellLayoutInput {
@@ -16,12 +16,9 @@ export interface ShellLayoutInput {
   sidebarRequestedOpen: boolean
   rightPanelRequestedOpen: boolean
   rightRailItem: RightRailItem
-  /** Inspector 通用放大（会话 | 功能面板 左右同屏） */
-  inspectorMagnified: boolean
   globalOfficeMode: boolean
   hasOfficeSession: boolean
   designEnabled: boolean
-  designFullscreen: boolean
   designImmersive: boolean
 }
 
@@ -133,24 +130,6 @@ export function deriveShellLayout(input: ShellLayoutInput): ShellLayout {
       inspector: 'hidden',
       composer: 'dock',
       canvas: 'immersive',
-      office: 'inactive',
-    }
-  }
-
-  // 通用放大：任意右栏功能；Design 旧 fullscreen 字段兼容并入
-  const magnify =
-    inspectorAvailable &&
-    (input.inspectorMagnified ||
-      (input.designEnabled && input.designFullscreen && input.rightRailItem === 'design'))
-
-  if (magnify) {
-    return {
-      scene: 'canvas',
-      navigation: 'hidden',
-      sidebar: 'hidden',
-      inspector: 'hidden',
-      composer: 'dock',
-      canvas: 'magnify',
       office: 'inactive',
     }
   }

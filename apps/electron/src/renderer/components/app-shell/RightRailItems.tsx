@@ -18,7 +18,7 @@ import {
 } from '@/atoms/agent-atoms'
 import { btwChannelIdAtom, btwModelIdAtom, btwSourceSessionIdAtom } from '@/atoms/btw-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { inspectorMagnifiedAtom, rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
+import { rightRailItemAtom, type RightRailItem } from '@/atoms/app-mode'
 import { sessionCrewBoardIdAtomFamily, useKanbanBoardById } from '@/atoms/kanban-atoms'
 import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { registerShortcut } from '@/lib/shortcut-registry'
@@ -51,8 +51,6 @@ export function RightRailItems({
 }: RightRailItemsProps): React.ReactElement {
   const currentSessionId = useAtomValue(currentAgentSessionIdAtom)
   const setPanelOpen = useSetAtom(agentSidePanelOpenAtom)
-  const inspectorMagnified = useAtomValue(inspectorMagnifiedAtom)
-  const setInspectorMagnified = useSetAtom(inspectorMagnifiedAtom)
   const unseenChangesMap = useAtomValue(agentDiffUnseenChangesAtom)
   const unseenFilesMap = useAtomValue(agentDiffUnseenFilesAtom)
 
@@ -92,16 +90,6 @@ export function RightRailItems({
 
   const activateOrCollapse = React.useCallback(
     (item: RightRailItem, prepare?: () => void) => {
-      // 放大模式下：点当前项退出放大；点其他项只切换分页
-      if (inspectorMagnified) {
-        if (rightRailItem === item) {
-          setInspectorMagnified(false)
-          return
-        }
-        prepare?.()
-        setRightRailItem(item)
-        return
-      }
       if (panelOpen && rightRailItem === item) {
         setPanelOpen(false)
         return
@@ -110,14 +98,7 @@ export function RightRailItems({
       setRightRailItem(item)
       setPanelOpen(true)
     },
-    [
-      inspectorMagnified,
-      panelOpen,
-      rightRailItem,
-      setInspectorMagnified,
-      setPanelOpen,
-      setRightRailItem,
-    ]
+    [panelOpen, rightRailItem, setPanelOpen, setRightRailItem]
   )
 
   const toggleFiles = React.useCallback(() => {
@@ -212,7 +193,7 @@ export function RightRailItems({
     >
       {visibleEntries.map((entry) => {
         const Icon = entry.icon
-        const active = (panelOpen || inspectorMagnified) && rightRailItem === entry.id
+        const active = panelOpen && rightRailItem === entry.id
         const title =
           entry.id === 'files' ? '文件面板' : entry.id === 'design' ? 'Design Preview' : entry.label
 

@@ -79,6 +79,11 @@ extraResources:
     to: theme-icons
     filter:
       - '**/*.png'
+  # Chart.js（CSV 看板内联用，生成 HTML 时读取）
+  - from: resources/vendor
+    to: vendor
+    filter:
+      - '**/*'
   # TA MCP Server 离线 wheelhouse（一键安装依赖）
   - from: ta-agent-mcp-wheels
     to: ta-agent-mcp-wheels

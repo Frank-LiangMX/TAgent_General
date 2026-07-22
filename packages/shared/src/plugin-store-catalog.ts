@@ -132,6 +132,58 @@ const INLINE_STORE_SKILLS: PluginStoreSkillInstallSpec[] = [
 2. 标注破坏性变更、迁移步骤与已知风险。
 3. 语言简洁可扫读，避免堆砌内部实现细节。`,
   },
+  {
+    slug: 'csv-analysis',
+    name: 'CSV 数据分析',
+    description: '读取 CSV 文件，建立 SQLite 索引，生成交互式数据看板。',
+    version: '1.0.0',
+    category: 'workflow',
+    tier: 'recommended',
+    installKind: 'inline',
+    body: `# CSV 数据分析
+
+分析 CSV 数据时使用本 Skill。
+
+## 工作流程
+
+1. **加载数据** — 调用 csv_prepare 加载 CSV 文件到 SQLite，获取列结构和统计摘要。
+2. **查询分析** — 调用 csv_query 按维度聚合/筛选/排序，获取分析结果。
+3. **生成看板** — 调用 csv_dashboard 生成交互式 HTML 看板。
+
+## 数据严谨性
+
+- 所有涉及数据的问题必须调用 csv_query 查询，不得估算或猜测数字。
+- 回答中必须引用查询结果和查询语句。
+- 不确定时说"需要查询数据"而不是猜测。
+
+## csv_dashboard sections_json 字段结构
+
+**stats 卡片**（data 是 label→value 扁平对象）:
+\`\`\`json
+{"type":"stats", "data":{"资源总数":"999,999","总体积":"40.6 GB","最大引用":"399次"}}
+\`\`\`
+
+**chart 饼图/水平柱图**（data 是 label→number 扁平对象）:
+\`\`\`json
+{"type":"chart", "chart_type":"pie", "title":"分类分布", "data":{"贴图":25.97,"模型":5.97,"烘焙":6.37}}
+\`\`\`
+
+**chart 柱状图**（data 是 [{name,value}] 数组）:
+\`\`\`json
+{"type":"chart", "chart_type":"bar", "title":"模块体积", "data":[{"name":"地形","value":8.29},{"name":"建筑","value":4.67}]}
+\`\`\`
+
+**table 表格**（columns + rows）:
+\`\`\`json
+{"type":"table", "title":"明细", "columns":["分类","数量","体积"], "rows":[{"分类":"贴图","数量":664879,"体积":"25.97GB"}], "sortable":true, "paginated":true}
+\`\`\`
+
+## 看板类型
+
+- **总览看板** — 调用 csv_dashboard(action="create") 生成包含统计卡片、图表、表格的完整看板。
+- **聚焦视图** — 调用 csv_dashboard(action="add_view") 追加特定分类的聚焦分析视图。
+- **临时查询** — 维度少时直接用 markdown 表格回答，不需要生成看板。`,
+  },
 ]
 
 /** bundled Skill 元数据（目录在 apps/electron/default-skills/） */
@@ -401,6 +453,17 @@ export const BUILTIN_MCP_CATALOG: BuiltinMcpCatalogEntry[] = [
     ],
     docsUrl:
       'https://github.com/Frank-LiangMX/TAgent_General/tree/main/apps/electron/default-mcp/ta-agent-mcp',
+  },
+  {
+    name: 'tagent-csv',
+    displayName: 'TAgent CSV 数据分析',
+    description: '读取 CSV 文件，建立 SQLite 索引，生成交互式数据看板（图表+可排序表格）。',
+    category: 'workflow',
+    tier: 'recommended',
+    installCommand: 'builtin',
+    installArgs: [],
+    docsUrl:
+      'https://github.com/Frank-LiangMX/TAgent_General/tree/main/apps/electron/src/main/lib/tools/csv-prepare-tool.ts',
   },
 ]
 

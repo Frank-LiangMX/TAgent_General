@@ -31,6 +31,7 @@
     "build": "bun run build:main && bun run build:preload && bun run build:renderer && bun run build:resources",
     "start": "bun run build && bunx electron .",
     "typecheck": "tsc --noEmit",
+    "smoke:csv": "bunx esbuild scripts/csv-dashboard-smoke-entry.ts --bundle --platform=node --format=cjs --outfile=scripts/.csv-smoke-bundle.cjs --external:electron --external:better-sqlite3 && bunx electron scripts/.csv-smoke-bundle.cjs",
     "generate:icons": "cd resources && ./generate-icons.sh",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
@@ -58,6 +59,7 @@
     "@phosphor-icons/react": "2.1.10",
     "@pierre/diffs": "^1.1.20",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/papaparse": "^5.5.2",
     "@xmldom/xmldom": "^0.8.11",
     "adm-zip": "^0.5.17",
     "better-sqlite3": "^12.10.0",
@@ -66,6 +68,7 @@
     "dompurify": "^3.4.5",
     "iconv-lite": "^0.6.3",
     "mammoth": "^1.12.0",
+    "papaparse": "^5.5.4",
     "pdfjs-dist": "^4.10.38",
     "pixi.js": "^8.18.1",
     "reicon-react": "1.1.2"

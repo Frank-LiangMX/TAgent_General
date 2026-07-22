@@ -99,7 +99,11 @@ export function SidePanel({
 }: SidePanelProps): React.ReactElement {
   // Tab 系统
   const previewFileMap = useAtomValue(previewFileMapAtom)
-  const selectedFilePath = previewFileMap.get(sessionId)?.filePath
+  const previewEntry = previewFileMap.get(sessionId)
+  const selectedFilePath =
+    previewEntry && previewEntry.filePath && previewEntry.kind !== 'url'
+      ? previewEntry.filePath
+      : undefined
   const openPreviewForFile = useOpenPreview()
 
   // 预览面板 atoms

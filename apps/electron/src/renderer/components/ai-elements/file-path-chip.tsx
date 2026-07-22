@@ -6,6 +6,7 @@
 
 import { useStore } from 'jotai'
 
+import { isAbsoluteFilePath } from '@tagent/shared'
 import { FilePathChip as BaseFilePathChip } from '@tagent/ui'
 
 import type { ComponentProps } from 'react'
@@ -13,8 +14,23 @@ import type { ComponentProps } from 'react'
 import { currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
 import { openPreview } from '@/components/diff/preview-opener'
 import { FileTypeIcon } from '@/components/file-browser/FileTypeIcon'
+import { getFileParentPath } from '@/lib/file-utils'
 
 export type FilePathChipProps = ComponentProps<typeof BaseFilePathChip>
+
+/** 合并候选 base，并为绝对路径附上父目录（Agent 写在附件旁的文件可预览） */
+function mergeBasePaths(path: string, bases?: string[]): string[] | undefined {
+  const merged: string[] = []
+  const seen = new Set<string>()
+  const push = (p: string | null | undefined) => {
+    if (!p || seen.has(p)) return
+    seen.add(p)
+    merged.push(p)
+  }
+  for (const b of bases ?? []) push(b)
+  if (isAbsoluteFilePath(path)) push(getFileParentPath(path))
+  return merged.length > 0 ? merged : undefined
+}
 
 export function FilePathChip(props: FilePathChipProps) {
   const store = useStore()
@@ -23,7 +39,7 @@ export function FilePathChip(props: FilePathChipProps) {
     const sessionId = store.get(currentAgentSessionIdAtom)
     const result = await window.electronAPI.resolveFilePath(path, {
       sessionId: sessionId ?? undefined,
-      candidateBasePaths: bases,
+      candidateBasePaths: mergeBasePaths(path, bases),
     })
     return typeof result === 'string' ? result : (result?.url ?? null)
   }
@@ -34,7 +50,7 @@ export function FilePathChip(props: FilePathChipProps) {
     openPreview(store, sessionId, {
       filePath,
       previewOnly: true,
-      basePaths: options?.basePaths,
+      basePaths: mergeBasePaths(filePath, options?.basePaths),
     })
   }
 

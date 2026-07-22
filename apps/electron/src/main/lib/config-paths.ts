@@ -264,6 +264,32 @@ export function getAgentSessionAskMessagesPath(id: string): string {
 }
 
 /**
+ * 获取 Agent 会话 CSV 看板产物记忆目录
+ *
+ * @returns ~/.tagent/agent-sessions/csv-artifacts/
+ */
+export function getCsvArtifactsDir(): string {
+  const dir = join(getAgentSessionsDir(), 'csv-artifacts')
+
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+    console.log(`[配置] 已创建 CSV 产物记忆目录: ${dir}`)
+  }
+
+  return dir
+}
+
+/**
+ * 获取指定 Agent 会话的 CSV 看板产物记忆文件路径
+ *
+ * @param id Agent 会话 ID
+ * @returns ~/.tagent/agent-sessions/csv-artifacts/{id}.json
+ */
+export function getAgentSessionCsvArtifactsPath(id: string): string {
+  return join(getCsvArtifactsDir(), `${id}.json`)
+}
+
+/**
  * 获取 Agent 工作区索引文件路径
  *
  * @returns ~/.tagent/agent-workspaces.json

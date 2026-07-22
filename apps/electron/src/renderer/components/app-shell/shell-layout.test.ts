@@ -16,11 +16,9 @@ const BASE_INPUT: ShellLayoutInput = {
   sidebarRequestedOpen: true,
   rightPanelRequestedOpen: false,
   rightRailItem: 'files',
-  inspectorMagnified: false,
   globalOfficeMode: false,
   hasOfficeSession: false,
   designEnabled: false,
-  designFullscreen: false,
   designImmersive: false,
 }
 
@@ -35,8 +33,6 @@ describe('deriveShellLayout', () => {
         globalOfficeMode: true,
         hasOfficeSession: ready,
         designEnabled: true,
-        designFullscreen: true,
-        inspectorMagnified: true,
         designImmersive: true,
         rightPanelRequestedOpen: true,
         rightRailItem: 'design',
@@ -61,46 +57,10 @@ describe('deriveShellLayout', () => {
       composer: 'dock',
       canvas: 'immersive',
     })
+  })
+
+  test('does not enter immersive when Design is disabled', () => {
     expect(derive({ designEnabled: false, designImmersive: true }).canvas).toBe('none')
-  })
-
-  test('magnify works for any inspector page via inspectorMagnified', () => {
-    expect(
-      derive({
-        inspectorMagnified: true,
-        rightRailItem: 'files',
-      })
-    ).toMatchObject({
-      scene: 'canvas',
-      navigation: 'hidden',
-      sidebar: 'hidden',
-      inspector: 'hidden',
-      composer: 'dock',
-      canvas: 'magnify',
-    })
-  })
-
-  test('legacy designFullscreen still magnifies when on design page', () => {
-    expect(
-      derive({
-        designEnabled: true,
-        designFullscreen: true,
-        rightRailItem: 'design',
-      })
-    ).toMatchObject({
-      canvas: 'magnify',
-      inspector: 'hidden',
-    })
-  })
-
-  test.each([
-    [
-      'legacy fullscreen on wrong item',
-      { designFullscreen: true, rightRailItem: 'files' as const },
-    ],
-    ['inspector unavailable', { activeRailItem: 'skills' as const, inspectorMagnified: true }],
-  ])('does not magnify when %s', (_label, overrides) => {
-    expect(derive(overrides).canvas).toBe('none')
   })
 
   test.each([

@@ -359,6 +359,15 @@ export function getToolPhrase(toolName: string, input: Record<string, unknown>):
     }
 
     default: {
+      // CSV 看板（含 MCP 名 mcp__tagent-csv__csv_dashboard）
+      if (toolName === 'csv_dashboard' || toolName.endsWith('__csv_dashboard')) {
+        const title = input.title
+        if (typeof title === 'string' && title.trim()) {
+          return phrase(`生成数据看板 ${truncate(title.trim(), 40)}`)
+        }
+        return phrase('生成数据看板')
+      }
+
       // MCP 工具：mcp__serverName__toolName
       const mcpParts = toolName.split('__')
       if (mcpParts[0] === 'mcp' && mcpParts.length >= 3 && mcpParts[1]) {

@@ -11,9 +11,23 @@ import { currentAgentSessionIdAtom } from './agent-atoms'
 
 // ===== 类型定义 =====
 
-/** 当前预览的文件信息 */
+/** 预览载体：本地文件或网页（含 CSV live dashboard） */
+export type PreviewKind = 'file' | 'url'
+
+/** 当前预览的文件或 URL 信息 */
 export interface PreviewFile {
-  filePath: string
+  /** 预览类型；有 url 且无 filePath 时默认为 url */
+  kind?: PreviewKind
+  /** 本地文件路径（file 模式必填） */
+  filePath?: string
+  /** 网页 URL（url 模式必填，CSV live dashboard 走 http://127.0.0.1:…） */
+  url?: string
+  /** 展示标题（url 模式常用，如 CSV 看板名） */
+  title?: string
+  /** CSV cache session id（url 模式可选，用于 ensure / reload） */
+  csvSessionId?: string
+  /** 每次 openCsvDashboard 成功递增；URL 不变时也强制 webview reload */
+  reloadNonce?: number
   dirPath?: string
   gitRoot?: string
   /** true = 纯文件预览（不显示 diff 控件），false/undefined = diff 模式 */
@@ -26,6 +40,36 @@ export interface PreviewFile {
   inDiffScope?: boolean
   /** 基准 ref（如 "origin/main"），用于 worktree vs main 模式的 diff 对比 */
   baseRef?: string
+}
+
+/** 解析预览类型（兼容旧数据：仅有 filePath 视为 file） */
+export function getPreviewKind(file: PreviewFile): PreviewKind {
+  if (file.kind) return file.kind
+  if (file.url && !file.filePath) return 'url'
+  return 'file'
+}
+
+export function isUrlPreview(file: PreviewFile): boolean {
+  return getPreviewKind(file) === 'url'
+}
+
+function basenameFromPath(filePath: string): string {
+  return filePath.split(/[\\/]/).filter(Boolean).pop() || filePath
+}
+
+/** 预览面板 / Tab 顶栏展示名 */
+export function getPreviewDisplayTitle(file: PreviewFile): string {
+  if (file.title?.trim()) return file.title.trim()
+  if (file.filePath) return basenameFromPath(file.filePath)
+  if (file.url) {
+    try {
+      const parsed = new URL(file.url)
+      return parsed.hostname + (parsed.pathname === '/' ? '' : parsed.pathname)
+    } catch {
+      return '网页预览'
+    }
+  }
+  return '预览'
 }
 
 // ===== Atoms =====

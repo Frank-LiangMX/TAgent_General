@@ -804,6 +804,17 @@ export type TAgentEvent =
       name?: string
       device?: string
     }
+  | {
+      type: 'csv_dashboard_open'
+      url: string
+      title?: string
+      /** CSV 缓存会话 id，刷新后用于重启 live server */
+      sessionId?: string
+      /** dashboard.html 绝对路径（会话内可点重开） */
+      filePath?: string
+      /** 打开后默认激活的 view id（#view-{id}） */
+      activeView?: string
+    }
 
 /** 外部入口触发 Agent 运行的来源 */
 export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'
@@ -1748,6 +1759,9 @@ export const AGENT_IPC_CHANNELS = {
   STOP_TASK: 'agent:stop-task',
 
   // 工作区能力（MCP + Skill）
+  /** 触发自动归档 */
+  RUN_AUTO_ARCHIVE: 'agent:run-auto-archive',
+
   /** 获取工作区能力摘要 */
   GET_CAPABILITIES: 'agent:get-capabilities',
   /** 获取工作区 MCP 配置 */
@@ -1979,6 +1993,22 @@ export const AGENT_IPC_CHANNELS = {
   /** 获取 L3 纠错记录 */
   GET_MEMORY_CORRECTIONS: 'agent:get-memory-corrections',
 } as const
+
+/** CSV 看板相关 IPC */
+export const CSV_IPC_CHANNELS = {
+  /** 确保 session 的 live 查询服务在跑（刷新/重启后恢复预览） */
+  ENSURE_LIVE_SERVER: 'csv:ensure-live-server',
+} as const
+
+/** csv:ensure-live-server 返回值 */
+export interface EnsureCsvLiveServerResult {
+  ok: boolean
+  url: string
+  port: number
+  /** 实际使用的 CSV cache sessionId（URL 反查时有用） */
+  sessionId?: string
+  error?: string
+}
 
 /**
  * P1-3: 客户端压缩会话的输入参数

@@ -15,6 +15,7 @@ import type { TAgentPermissionMode, AgentDefinition } from '@tagent/shared'
 import { DEEPSEEK_SUBAGENT_MODEL_ID } from './agent-model-routing'
 import { getWorkspaceMcpConfig } from './agent-workspace-manager'
 import { getConfigDirName, getSoulPath, getTaSoulPath } from './config-paths'
+import { buildCsvArtifactsContextBlock } from './csv-artifact-service'
 import { getUserProfile } from './user-profile-service'
 
 // ===== SOUL.md 默认内容 =====
@@ -497,29 +498,106 @@ draft（使用≥5→active）→ active（30 天不用→stale）→ stale（90
 
 const DESIGN_PREVIEW_INSTRUCTIONS = `## Design Preview 功能
 
-系统内置了 **Design Preview** 功能，用于预览你生成的 HTML/CSS 前端 UI 原型。
+系统内置了 **Design Preview（画布）**，只用于预览你生成的 **前端 UI 原型**（登录页、设置页、产品界面等）。
 
 ### 工作方式
-1. 当你生成了 HTML/CSS 前端代码时，**必须**调用 \`design_preview_update\` 工具将代码推送到画布
-2. 推送后，用户可以在右侧面板实时预览效果
-3. 用户**点击画布中的元素**时，系统会在你的提示词末尾附加 \`<design-context>\` 块，里面包含该元素的 CSS 选择器路径、标签、类名、文本内容等信息
-4. 当你看到 \`<design-context>\` 中的 **CSS 选择器**（如 \`div.page > form > button.login-btn\`）时，**不要全量重写 HTML**，而是用选择器精确定位到该元素，只修改用户要求的部分，保留其余 HTML 不变
+1. 当你生成了 **UI 原型** HTML/CSS 时，调用 \`design_preview_update\` 推送到画布
+2. 推送后，用户可在右侧「Design Preview」实时预览并框选元素反馈
+3. 用户点击画布元素时，提示词末尾会附加 \`<design-context>\`（含 CSS 选择器等）
+4. 看到 \`<design-context>\` 时不要全量重写，用选择器只改目标元素，再 \`design_preview_update\`
 
-### 精确修改指南
-当用户要求修改某个元素时：
-1. 读取 \`<design-context>\` 中的 CSS 选择器（\`selector\` 字段）
-2. 在当前 HTML 中找到该选择器对应的元素
-3. **只修改这个元素的属性/内容/样式**，其他代码保持不变
-4. 调用 \`design_preview_update\` 推送修改后的完整 HTML
+### 使用场景（仅限 UI 原型）
+- 用户要你做页面/组件/交互原型 → 用 Design Preview
+- 用户点选画布元素要求改样式/文案 → 用 Design Preview
 
-这样用户就能精确控制修改范围，不会因为改一个按钮颜色而导致整个页面布局变化。
+### 禁止推到 Design Preview 的内容
+- **CSV / 数据看板 / 分析报表 HTML** → 必须用 \`csv_dashboard\`，系统打开右侧「预览」（BrowserPanel）
+- 任意数据看板 URL（file:// 或 http://）→ 不要塞进画布
+- 不要把 \`csv_dashboard\` 的产物再抄一份用 \`design_preview_update\` 推送
 
-### 使用场景
-- 用户要求你生成 UI 页面 → 生成的 HTML/CSS 立即推送
-- 用户点击某个元素并描述修改 → 用 CSS 选择器定位，只改目标元素
-- 用户框选了某个区域并描述修改 → 结合框选坐标和 HTML 内容，精准修改
+注意：推送 UI 原型时只要 body 内 HTML + 可选 CSS，不要 html/head/body 包裹。`
 
-注意：推送时只要核心 HTML（body 内的内容）和 CSS，不需要 html/head/body 包裹标签。`
+const CSV_ANALYSIS_INSTRUCTIONS = `## CSV 数据分析功能
+
+系统内置了 **CSV 数据分析**工具，用于读取 CSV、查询数据、生成交互式多维看板。
+
+### 展示位置（重要）
+\`csv_dashboard\` 成功后，系统自动打开右侧栏 **「预览」**（BrowserPanel / webview）加载看板。
+- ✅ 数据看板 → 右侧「预览」
+- ❌ 数据看板 → Design Preview 画布
+- ❌ 手写看板 HTML 再调 \`design_preview_update\`
+问数/追问继续在本对话用 \`csv_query\`，不要在看板里做聊天框。
+
+### 工具列表
+
+| 工具 | 用途 |
+|------|------|
+| \`csv_prepare\` | 加载 CSV 到 SQLite，返回列结构（含 sql_name）与统计摘要 |
+| \`csv_query\` | 聚合/筛选/排序；**支持多列 groupby**（如 \`fcat,module\`）做交叉分析 |
+| \`csv_dashboard\` | 生成多视图看板并打开「预览」 |
+
+### 何时使用
+
+当用户提供 CSV 路径，或要求分析表格/出看板时，**必须**使用 CSV 工具。
+
+### 工作流程（必须）
+
+1. \`csv_prepare(path, session_id)\`
+2. **立刻** \`csv_dashboard(action="create", preset="auto", live="true", title="...")\`
+3. 用户追问某切片时，按下方「追问切片路由」选路径
+
+### 追问切片路由（如「加个贴图页」「单独看植被」）
+
+按用户意图选路径，**禁止** Read/Edit/Write \`dashboard.html\`；**不确定时先问用户**（改底盘 vs 开临时专注页）：
+
+| 用户意图 | 路径 |
+|----------|------|
+| 改单位/标题/刷新展示 | \`csv_dashboard(action="patch", byte_unit=...)\` |
+| 对落盘底盘不满意（总览/交叉/默认明细） | \`replace_view\` / 必要时合法 \`create\` |
+| 「我想看贴图」「专注植被」「单独看某某」 | **内存 AI Tab**：\`csv_dashboard(action="live_tab")\` 或 \`action="slice"\`（默认不落盘） |
+| 明确「固化到看板里」 | \`csv_dashboard(action="slice", persist="true")\` |
+
+**1. 分析问答（优先）** — 用户问数量、体积、占比、Top N 等，且**不要**在预览里浏览
+- \`csv_query(session_id, filters=[{"column":"fcat","op":"=","value":"植被"}], groupby=..., agg=...)\`
+- 用文字或简表回答
+- **不要**为此改看板
+
+**2. 在看板里单独看该切片（内存 AI Tab）** — 用户说「我想看贴图」「专注植被」「单独看某某」
+- \`csv_dashboard(action="live_tab", session_id="...", filter_value="贴图")\` 或 \`action="slice"\`（等价，默认内存）
+- 可选 \`label="贴图"\`、\`filter_column="fcat"\`；\`live_tab_action="remove"\` / \`"clear_all"\` 管理 Tab
+- **禁止** add_view 做贴图页（除非 \`persist="true"\` 固化）
+- AI Tab 刷新预览或退出 TAgent 后消失；无看板时会先内部 create auto 底盘
+- **禁止**已有看板后再 \`create\` 整页覆盖（除非用户明确要求重建）
+
+**3. 导出 markdown 报告** — 仅当用户**明确**说「导出 markdown / 写报告 / 生成文档」
+- 才输出 markdown 图表/表格
+- 默认不要主动给 markdown
+
+### 展示微调（禁止重跑）
+
+用户只说「单位改成 MB / 改标题 / 刷新展示」时：
+\`csv_dashboard(action="patch", session_id="...", byte_unit="MB")\`
+- **禁止**再 \`csv_prepare\`
+- **禁止** Read/Grep/Edit \`dashboard.html\`
+- **禁止**为改单位再走一遍完整 create
+- patch 只改展示单位/标题，**不能**用来加切片页——专注页用 \`live_tab\` / \`slice\`
+
+### 手工多视图（仅用户要求定制时）
+
+\`preset="standard"\` + overview_json / cross_json / detail_json；明细用 dimensions 通用筛选 + detail_table(live:true)。
+
+### 数据严谨性
+
+- 数字必须来自查询或 preset=auto 的实查结果；禁止估算
+- 手工查询列名用 prepare 返回的 \`sql_name\`
+
+### 禁止
+
+- 禁止手写 HTML / bash 绕过 \`csv_dashboard\`（create/slice/live_tab/add_view/replace_view/patch 由工具写盘或内存 API）
+- **禁止** Read/Edit/Write \`dashboard.html\`（预览走 live server，手改不触发刷新且可能被工具覆盖）
+- **禁止**把数据看板推到 \`design_preview_update\` / Design Preview 画布
+- 禁止只生成「KPI + 几张一维饼/柱图」就声称完成分析
+- 调用失败必须告知用户，不得静默 fallback`
 
 // ===== 语言指令常量 =====
 
@@ -644,6 +722,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // Design Preview 功能说明（当 Agent 生成前端 UI 时自动推送画布预览）
   sections.push(DESIGN_PREVIEW_INSTRUCTIONS)
+
+  // CSV 数据分析功能说明（教 Agent 何时 + 如何用 csv_* 工具）
+  sections.push(CSV_ANALYSIS_INSTRUCTIONS)
 
   // SubAgent 委派策略（根据用户选用的模型是否为 Claude 动态调整）
   const claudeAvailable = ctx.claudeAvailable !== false
@@ -1082,6 +1163,8 @@ interface DynamicContext {
   workspaceName?: string
   workspaceSlug?: string
   agentCwd?: string
+  /** Agent 会话 ID，用于注入 CSV 看板产物记忆 */
+  agentSessionId?: string
 }
 
 /**
@@ -1140,6 +1223,14 @@ export function buildDynamicContext(ctx: DynamicContext): string {
   // 工作目录
   if (ctx.agentCwd) {
     sections.push(`<working_directory>${ctx.agentCwd}</working_directory>`)
+  }
+
+  // CSV 看板产物记忆（仅 user message 动态上下文，不改 system prompt）
+  if (ctx.agentSessionId) {
+    const csvBlock = buildCsvArtifactsContextBlock(ctx.agentSessionId)
+    if (csvBlock) {
+      sections.push(csvBlock)
+    }
   }
 
   return sections.join('\n\n')

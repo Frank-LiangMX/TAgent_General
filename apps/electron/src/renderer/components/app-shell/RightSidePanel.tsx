@@ -5,9 +5,7 @@
  * 宽度由外层 island 统一管理，标题 chrome 由 RightInspectorFrame 提供，
  * 本层只做纯路由，不再透传 width / 包壳。
  *
- * RailItemContent 是纯内容路由，可被两处复用：
- * - 右栏检查器（本组件）
- * - 放大模式覆盖层右侧（AppShell magnify）
+ * RailItemContent 是纯内容路由，供右栏检查器（本组件）使用。
  */
 
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -21,9 +19,9 @@ import {
   agentDiffPanelTabAtom,
 } from '@/atoms/agent-atoms'
 import { rightRailItemAtom } from '@/atoms/app-mode'
-import { SidePanel } from '@/components/agent/SidePanel'
 import { BtwPanel } from '@/components/agent/BtwPanel'
-import { BrowserPanel } from '@/components/agent/BrowserPanel'
+import { SidePanel } from '@/components/agent/SidePanel'
+import { UniversalPreviewPanel } from '@/components/agent/UniversalPreviewPanel'
 import { DesignPreviewPanel } from '@/components/design-preview/DesignPreviewPanel'
 import { KanbanCrewPanel } from '@/components/kanban/KanbanCrewPanel'
 
@@ -56,7 +54,7 @@ export function RailItemContent({ item }: { item: RightRailItem }): React.ReactE
   }
 
   if (item === 'browser') {
-    return <BrowserPanel />
+    return <UniversalPreviewPanel />
   }
 
   if (item === 'design') {

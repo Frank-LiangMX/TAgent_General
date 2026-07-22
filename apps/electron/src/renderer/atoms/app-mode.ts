@@ -11,10 +11,14 @@
  * - draft: 需求草稿模式
  */
 
-import { atom } from 'jotai'
-import { atomWithStorage } from 'jotai/utils'
+import { atom, type createStore } from 'jotai'
+import { atomFamily, atomWithStorage } from 'jotai/utils'
 
+import { currentAgentSessionIdAtom } from './agent-atoms'
 import { activeTabIdAtom, activeTabIdByModeAtom, isTabVisibleInMode, tabsAtom } from './tab-atoms'
+
+/** jotai store（createStore / useStore 返回值），供非 React 写指定会话 chrome */
+export type JotaiStore = ReturnType<typeof createStore>
 
 /** 顶层模式：通用 / TA */
 export type TopLevelMode = 'general' | 'ta'
@@ -125,19 +129,189 @@ export const activeRailItemAtom = atom<RailItem, [RailItem], void>(
 /** 左侧 Sidebar 展开状态；Rail 始终保留，Sidebar 可回收到当前 Rail 项。 */
 export const navigationSidebarOpenAtom = atom<boolean>(true)
 
-// ===== Right Rail Item Atoms（右侧边栏功能切换，镜像左侧） =====
+const INSPECTOR_EXCLUSIVE_BY_SESSION_KEY = 'tagent-inspector-exclusive-by-session'
+const LEGACY_INSPECTOR_EXCLUSIVE_KEY = 'tagent-inspector-exclusive'
+
+/** 校验并规范化持久化的右栏独占开关 */
+export function migrateInspectorExclusive(raw: unknown): boolean {
+  return typeof raw === 'boolean' ? raw : false
+}
+
+function readLegacyInspectorExclusive(): boolean | undefined {
+  if (typeof localStorage === 'undefined') return undefined
+  try {
+    const raw = localStorage.getItem(LEGACY_INSPECTOR_EXCLUSIVE_KEY)
+    if (raw == null) return undefined
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'boolean' ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** 按 sessionId 持久化的右栏独占模式 */
+const inspectorExclusiveBySessionStorageAtom = atomWithStorage<Record<string, boolean>>(
+  INSPECTOR_EXCLUSIVE_BY_SESSION_KEY,
+  {}
+)
+
+const writeInspectorExclusiveBySessionAtom = atom(
+  null,
+  (_get, set, update: (prev: Map<string, boolean>) => Map<string, boolean>) => {
+    const stored = _get(inspectorExclusiveBySessionStorageAtom)
+    const prev = new Map(
+      Object.entries(stored).map(([k, v]) => [k, migrateInspectorExclusive(v)] as const)
+    )
+    const next = update(prev)
+    const obj: Record<string, boolean> = {}
+    next.forEach((value, key) => {
+      obj[key] = value
+    })
+    set(inspectorExclusiveBySessionStorageAtom, obj)
+  }
+)
+
+/** 按 Agent sessionId 读写右栏独占；无 per-session 记录时 fallback 旧全局 key */
+export const inspectorExclusiveFamily = atomFamily((sessionId: string) =>
+  atom(
+    (get) => {
+      const stored = get(inspectorExclusiveBySessionStorageAtom)
+      if (Object.hasOwn(stored, sessionId)) {
+        return migrateInspectorExclusive(stored[sessionId])
+      }
+      return readLegacyInspectorExclusive() ?? false
+    },
+    (_get, set, exclusive: boolean) => {
+      set(writeInspectorExclusiveBySessionAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(sessionId, migrateInspectorExclusive(exclusive))
+        return map
+      })
+    }
+  )
+)
+
+/**
+ * 右栏独占模式：隐藏主会话区，右栏吃满可用宽度（预览 / Design Preview 交互用）。
+ * 与 Design 沉浸全屏（designImmersive）独立；Esc 可退出（非 design immersive 时）。
+ *
+ * 当前 Agent 会话的读写 facade；无当前会话时读 false；写入在无会话时 no-op。
+ */
+export const inspectorExclusiveAtom = atom(
+  (get) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return false
+    return get(inspectorExclusiveFamily(sessionId))
+  },
+  (get, set, exclusive: boolean) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(inspectorExclusiveFamily(sessionId), exclusive)
+  }
+)
+
+// ===== Right Rail Item Atoms（右侧边栏功能切换，按 Agent 会话隔离） =====
 
 /** 右侧边栏功能项：文件面板 / 旁注 / 浏览器预览 / Design 预览 / 班组墙 */
 export type RightRailItem = 'files' | 'btw' | 'browser' | 'design' | 'crew'
 
-/** 右侧边栏功能项 atom */
-export const rightRailItemAtom = atomWithStorage<RightRailItem>('tagent-right-rail', 'files')
+const VALID_RIGHT_RAIL_ITEMS: ReadonlySet<string> = new Set([
+  'files',
+  'btw',
+  'browser',
+  'design',
+  'crew',
+])
+
+/** 未记录过的会话默认落在「文件」 */
+export const DEFAULT_RIGHT_RAIL_ITEM: RightRailItem = 'files'
+
+const RIGHT_RAIL_BY_SESSION_KEY = 'tagent-right-rail-by-session'
+
+function migrateRightRailItem(raw: unknown): RightRailItem {
+  return typeof raw === 'string' && VALID_RIGHT_RAIL_ITEMS.has(raw)
+    ? (raw as RightRailItem)
+    : DEFAULT_RIGHT_RAIL_ITEM
+}
+
+/** 按 sessionId 持久化的右栏选中项 */
+const rightRailBySessionStorageAtom = atomWithStorage<Record<string, RightRailItem>>(
+  RIGHT_RAIL_BY_SESSION_KEY,
+  {}
+)
+
+const writeRightRailBySessionAtom = atom(
+  null,
+  (
+    _get,
+    set,
+    update: (prev: Map<string, RightRailItem>) => Map<string, RightRailItem>
+  ) => {
+    const stored = _get(rightRailBySessionStorageAtom)
+    const prev = new Map(
+      Object.entries(stored).map(([k, v]) => [k, migrateRightRailItem(v)] as const)
+    )
+    const next = update(prev)
+    const obj: Record<string, RightRailItem> = {}
+    next.forEach((value, key) => {
+      obj[key] = value
+    })
+    set(rightRailBySessionStorageAtom, obj)
+  }
+)
+
+/** 按 Agent sessionId 读写右栏功能项 */
+export const rightRailItemFamily = atomFamily((sessionId: string) =>
+  atom(
+    (get) => {
+      const stored = get(rightRailBySessionStorageAtom)
+      return migrateRightRailItem(stored[sessionId])
+    },
+    (_get, set, item: RightRailItem) => {
+      set(writeRightRailBySessionAtom, (prev) => {
+        const map = new Map(prev)
+        map.set(sessionId, migrateRightRailItem(item))
+        return map
+      })
+    }
+  )
+)
 
 /**
- * Inspector 聚焦模式：会话在左、当前右栏功能面板占右侧大半屏。
- * 对 files / btw / browser / design / crew 通用（Design 原先的 magnify 并入此机制）。
+ * 为指定 Agent 会话设置右栏选中项（不必是当前会话）。
+ * UI 侧订阅当前会话请继续用 rightRailItemAtom。
  */
-export const inspectorMagnifiedAtom = atomWithStorage<boolean>('tagent-inspector-magnified', false)
+export function setRightRailItemForSession(
+  store: JotaiStore,
+  sessionId: string,
+  item: RightRailItem
+): void {
+  if (!sessionId) return
+  store.set(rightRailItemFamily(sessionId), migrateRightRailItem(item))
+}
 
-/** 聚焦模式：会话列占宽比例（0.28–0.62），拖拽分界线调整并持久化 */
-export const focusSplitRatioAtom = atomWithStorage<number>('tagent-focus-split-ratio', 0.42)
+/**
+ * 当前 Agent 会话的右栏功能项（读写 facade，兼容旧调用点）。
+ * 无当前会话时读默认 'files'；写入在无会话时 no-op。
+ */
+export const rightRailItemAtom = atom(
+  (get) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return DEFAULT_RIGHT_RAIL_ITEM
+    return get(rightRailItemFamily(sessionId))
+  },
+  (get, set, item: RightRailItem) => {
+    const sessionId = get(currentAgentSessionIdAtom)
+    if (!sessionId) return
+    set(rightRailItemFamily(sessionId), migrateRightRailItem(item))
+  }
+)
+
+// Browser 预览（CSV 看板等）已改为按 Agent 会话隔离 — 见 browser-panel-atoms.ts
+export {
+  browserPanelUrlAtom,
+  browserPanelCsvSessionIdAtom,
+  browserSessionStateFamily,
+  currentBrowserSessionAtom,
+  type BrowserSessionState,
+} from './browser-panel-atoms'

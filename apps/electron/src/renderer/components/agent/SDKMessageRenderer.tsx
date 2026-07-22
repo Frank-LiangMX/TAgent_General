@@ -845,7 +845,11 @@ export function AssistantTurnRenderer({
         </div>
       </MessageContent>
       {!isStreaming && (
-        <TurnFileChangesSummary turnMessages={turn.turnMessages} basePath={basePath} />
+        <TurnFileChangesSummary
+          turnMessages={turn.turnMessages}
+          basePath={basePath}
+          basePaths={basePaths}
+        />
       )}
       {isStreaming && (
         <div className="agent-turn-footer">

@@ -840,14 +840,14 @@ export class AgentOrchestrator {
         tools: [
           sdk.tool(
             'design_preview_update',
-            `更新 Design Preview 画布的显示内容。
+            `更新 Design Preview 画布（仅用于前端 UI 原型预览）。
 
-当你生成了 UI 设计（HTML/CSS）时，调用此工具将代码推送到画布。
-用户可以在右侧面板实时预览效果。`,
+适用：登录页/设置页/产品界面等 UI 原型 HTML/CSS。
+禁止：CSV 数据看板、分析报表、任意数据可视化看板——这些必须用 csv_dashboard，会打开右侧「预览」面板，不要调用本工具。`,
             {
               html: z
                 .string()
-                .describe('完整的 HTML 内容（含 body 内的标记，不含 html/head/body 包裹标签）'),
+                .describe('UI 原型 HTML（body 内标记，不含 html/head/body 包裹）'),
               css: z.string().optional().describe('可选的 CSS 样式内容'),
               name: z.string().optional().describe('页面名称（如"登录页"、"仪表盘"），用于标识'),
               device: z
@@ -861,6 +861,28 @@ export class AgentOrchestrator {
               name?: string
               device?: 'mobile' | 'tablet' | 'desktop'
             }) => {
+              // 粗拦截：明显是 CSV 看板产物时拒绝进画布
+              const htmlLower = (args.html || '').toLowerCase()
+              const nameLower = (args.name || '').toLowerCase()
+              const looksLikeCsvDashboard =
+                htmlLower.includes('live-detail-table') ||
+                htmlLower.includes('heatmap-table') ||
+                htmlLower.includes('csv 数据看板') ||
+                htmlLower.includes('id="drill-bar"') ||
+                /数据看板|资源分析|交叉分析/.test(args.name || '') ||
+                nameLower.includes('csv')
+              if (looksLikeCsvDashboard) {
+                return {
+                  content: [
+                    {
+                      type: 'text' as const,
+                      text: '❌ 这是数据看板内容，请使用 csv_dashboard 工具；系统会打开右侧「预览」，不要推送到 Design Preview 画布。',
+                    },
+                  ],
+                  isError: true,
+                }
+              }
+
               this.eventBus.emit(sessionId, {
                 kind: 'tagent_event',
                 event: {
@@ -977,6 +999,170 @@ export class AgentOrchestrator {
       console.log(`[Agent 编排] 已注入 TA 工具集 (tagent-ta) for session ${sessionId}`)
     } catch (err) {
       console.error(`[Agent 编排] 注入 TA 工具集失败:`, err)
+    }
+  }
+
+  /**
+   * 注入 CSV 数据分析工具集
+   *
+   * 始终注入，不限 TA 模式。
+   */
+  private async injectCsvTools(
+    sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
+    mcpServers: Record<string, Record<string, unknown>>,
+    sessionId: string
+  ): Promise<void> {
+    try {
+      const { z } = await import('zod')
+      const csvPrepare = await import('./tools/csv-prepare-tool')
+      const csvQuery = await import('./tools/csv-query-tool')
+      const csvDashboard = await import('./tools/csv-dashboard-tool')
+
+      const wrap =
+        (executeFn: (toolCall: Parameters<typeof csvPrepare.executeCsvPrepare>[0]) => Promise<{ content: string; isError?: boolean }> | { content: string; isError?: boolean }) =>
+        async (args: Record<string, unknown>) => {
+          const toolCall = {
+            id: `csv-${Date.now()}`,
+            name: '',
+            arguments: args,
+          } as Parameters<typeof csvPrepare.executeCsvPrepare>[0]
+          const result = await executeFn(toolCall)
+          return { content: [{ type: 'text' as const, text: result.content }] }
+        }
+
+      const csvServer = sdk.createSdkMcpServer({
+        name: 'tagent-csv',
+        version: '1.0.0',
+        tools: [
+          sdk.tool(
+            'csv_prepare',
+            'Load a CSV file into SQLite, return column structure and summary statistics.',
+            {
+              path: z.string().describe('Path to the CSV file'),
+              session_id: z.string().describe('Session ID for cache isolation'),
+            },
+            wrap(csvPrepare.executeCsvPrepare)
+          ),
+          sdk.tool(
+            'csv_query',
+            'Query aggregated/filtered CSV data. Supports multi-column groupby (e.g. "fcat,module"), filters, sorting.',
+            {
+              session_id: z.string().describe('Session ID'),
+              groupby: z
+                .string()
+                .optional()
+                .describe('Group by column(s), comma-separated for cross-dim. e.g. "fcat" or "fcat,module"'),
+              agg: z.string().optional().describe('Aggregation functions, comma-separated. e.g. "count,sum(compress)"'),
+              filters: z.string().optional().describe('JSON array of filter objects. e.g. [{"column":"fcat","op":"=","value":"贴图"}]'),
+              select: z.string().optional().describe('Columns to select, comma-separated'),
+              sort: z.string().optional().describe('Sort column'),
+              sort_dir: z.string().optional().describe('Sort direction: asc or desc'),
+              limit: z.string().optional().describe('Max rows to return'),
+              offset: z.string().optional().describe('Offset for pagination'),
+            },
+            wrap(csvQuery.executeCsvQuery)
+          ),
+          sdk.tool(
+            'csv_dashboard',
+            'Generate multi-view HTML dashboard with cross-dim charts and live filterable detail table.',
+            {
+              session_id: z.string().describe('Session ID'),
+              action: z
+                .enum(['create', 'slice', 'live_tab', 'add_view', 'replace_view', 'patch'])
+                .describe('Action: create | slice | live_tab | add_view | replace_view | patch'),
+              filter_column: z
+                .string()
+                .optional()
+                .describe('slice: filter column sql_name (optional, server guesses)'),
+              filter_value: z.string().optional().describe('slice: filter value e.g. 贴图 / 植被'),
+              slice_query: z
+                .string()
+                .optional()
+                .describe('slice: natural language query, server finds dimension match'),
+              label: z.string().optional().describe('slice/live_tab: tab label, defaults to matched value'),
+              tab_id: z.string().optional().describe('live_tab: tab ID'),
+              tab_label: z.string().optional().describe('live_tab: tab display name'),
+              live_tab_action: z
+                .string()
+                .optional()
+                .describe('live_tab sub-action: upsert | remove | clear_all'),
+              persist: z
+                .string()
+                .optional()
+                .describe('slice: true to persist to disk (default false = memory live_tab)'),
+              title: z.string().optional().describe('Dashboard title'),
+              byte_unit: z
+                .string()
+                .optional()
+                .describe('Byte display unit: auto | B | KB | MB | GB | TB (use action=patch to change)'),
+              view_id: z.string().optional().describe('View ID for add_view/replace_view'),
+              view_label: z.string().optional().describe('View display name'),
+              sections_json: z.string().optional().describe('JSON array of sections for single view'),
+              views_json: z
+                .string()
+                .optional()
+                .describe('JSON array of {id,label,sections} for multi-view create'),
+              preset: z.string().optional().describe('auto (recommended) | standard | full'),
+              overview_json: z.string().optional().describe('Overview sections JSON'),
+              cross_json: z.string().optional().describe('Cross-analysis sections JSON'),
+              detail_json: z.string().optional().describe('Detail+filter sections JSON'),
+              maps_json: z.string().optional().describe('Optional maps view'),
+              reuse_json: z.string().optional().describe('Optional reuse view'),
+              opportunity_json: z.string().optional().describe('Optional opportunity view'),
+              live: z.string().optional().describe('true to enable local /api/rows server (auto implies true)'),
+              allow_simple: z
+                .string()
+                .optional()
+                .describe('true to allow single-page simple dashboard (default upgrades to auto)'),
+            },
+            async (args: Record<string, unknown>) => {
+              const toolCall = {
+                id: `csv-dashboard-${Date.now()}`,
+                name: 'csv_dashboard',
+                arguments: args,
+              } as Parameters<typeof csvDashboard.executeCsvDashboard>[0]
+              const result = await csvDashboard.executeCsvDashboard(toolCall, {
+                agentSessionId: sessionId,
+              })
+
+              // 当看板生成成功时，发送事件让前端在 Inspector 中显示
+              if (!result.isError) {
+                try {
+                  const parsed = JSON.parse(result.content)
+                  if (parsed.url) {
+                    this.eventBus.emit(sessionId, {
+                      kind: 'tagent_event',
+                      event: {
+                        type: 'csv_dashboard_open',
+                        url: parsed.url,
+                        title:
+                          (typeof parsed.title === 'string' && parsed.title.trim()) ||
+                          (typeof args.title === 'string' && args.title.trim()) ||
+                          'CSV 数据看板',
+                        // 工具侧可能返回 session_id；否则用当前 Agent session（CSV cache 按此命名）
+                        sessionId:
+                          (typeof parsed.session_id === 'string' && parsed.session_id) || sessionId,
+                        filePath:
+                          typeof parsed.file_path === 'string' ? parsed.file_path : undefined,
+                        activeView:
+                          typeof parsed.active_view === 'string' ? parsed.active_view : undefined,
+                      },
+                    })
+                  }
+                } catch {
+                  // 忽略解析错误
+                }
+              }
+
+              return { content: [{ type: 'text' as const, text: result.content }] }
+            }
+          ),
+        ],
+      })
+      mcpServers['tagent-csv'] = csvServer as unknown as Record<string, unknown>
+      console.log(`[Agent 编排] 已注入 CSV 工具集 (tagent-csv) for session ${sessionId}`)
+    } catch (err) {
+      console.error(`[Agent 编排] 注入 CSV 工具集失败:`, err)
     }
   }
 
@@ -1965,6 +2151,9 @@ export class AgentOrchestrator {
       }
       markPhase('injectTA')
 
+      // CSV 数据分析工具（始终注入，不限模式）
+      await this.injectCsvTools(sdk, mcpServers, sessionId)
+
       // 合并外部注入的自定义 MCP 服务器（如飞书群聊工具）
       if (customMcpServers) {
         Object.assign(mcpServers, customMcpServers)
@@ -1978,6 +2167,7 @@ export class AgentOrchestrator {
         workspaceName: workspace?.name,
         workspaceSlug,
         agentCwd,
+        agentSessionId: sessionId,
       })
 
       // 11.5 注入 mention 引用指令（Skill/MCP/会话）— 仅影响 prompt，不影响持久化
@@ -2502,6 +2692,19 @@ export class AgentOrchestrator {
             sessionMeta,
             workspaceSlug,
           })
+          // 持久化到会话：预览/打开文件时 getAuthorizedRoots 才能访问 Agent 写出的 sibling 文件
+          // （例如消息附件在 Downloads，Agent 在同目录生成 .py / .html）
+          if (allDirs.length > 0) {
+            const existing = sessionMeta?.attachedDirectories ?? []
+            const merged = [...new Set([...existing, ...allDirs])]
+            if (merged.length !== existing.length) {
+              try {
+                updateAgentSessionMeta(sessionId, { attachedDirectories: merged }, true)
+              } catch (err) {
+                console.warn('[Agent 编排] 持久化 additionalDirectories 失败:', err)
+              }
+            }
+          }
           return allDirs.length > 0 ? { additionalDirectories: allDirs } : {}
         })(),
         // 启用文件检查点，支持 rewindFiles 回退
