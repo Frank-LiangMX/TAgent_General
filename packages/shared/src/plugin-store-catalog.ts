@@ -441,6 +441,17 @@ export const BUILTIN_MCP_CATALOG: BuiltinMcpCatalogEntry[] = [
     docsUrl:
       'https://github.com/Frank-LiangMX/TAgent_General/tree/main/apps/electron/default-mcp/ta-agent-mcp',
   },
+  {
+    name: 'tagent-csv',
+    displayName: 'TAgent CSV 数据分析',
+    description: '读取 CSV 文件，建立 SQLite 索引，生成交互式数据看板（图表+可排序表格）。',
+    category: 'workflow',
+    tier: 'recommended',
+    installCommand: 'builtin',
+    installArgs: [],
+    docsUrl:
+      'https://github.com/Frank-LiangMX/TAgent_General/tree/main/apps/electron/src/main/lib/tools/csv-prepare-tool.ts',
+  },
 ]
 
 export interface PluginStoreCatalog {

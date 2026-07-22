@@ -148,7 +148,7 @@ export const TAGENT_STORE_PLUGIN_BUNDLES: readonly StorePluginBundle[] = [
     description: '读取任意 CSV 文件，自动推断列结构，生成交互式数据看板（图表+可排序表格）。',
     category: 'workflow',
     tier: 'recommended',
-    mcps: [],
+    mcps: ['tagent-csv'],
     skills: ['csv-analysis'],
     logo: 'csv-analysis',
     publisher: 'TAgent',
