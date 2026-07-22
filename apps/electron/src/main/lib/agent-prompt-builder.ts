@@ -535,16 +535,51 @@ const CSV_ANALYSIS_INSTRUCTIONS = `## CSV 数据分析功能
 
 ### 何时使用
 
-当用户提到以下关键词时，**必须**使用 CSV 工具，不要自己写 Python 脚本解析：
+当用户提到以下关键词时，**必须**使用 CSV 工具：
 - 用户提供了 CSV 文件路径
 - 用户要求分析表格数据、数据看板、数据统计
 - 用户问"帮我看看这个 CSV"、"分析这个数据"、"出个看板"
 
-### 工作流程
+### 工作流程（必须按顺序执行）
 
 1. **加载数据** — 调用 \`csv_prepare(path="文件路径", session_id="会话ID")\`
 2. **查询分析** — 调用 \`csv_query\` 按维度聚合/筛选
-3. **生成看板** — 调用 \`csv_dashboard\` 生成 HTML 文件
+3. **生成看板** — 调用 \`csv_dashboard\` 生成 HTML 文件（必须调用此工具，不得跳过）
+
+### csv_dashboard sections_json 格式
+
+每个 section 是一个对象，必须包含 \`type\` 字段。支持的 type：
+
+**stats 统计卡片** — data 是 {label: value} 扁平对象：
+\`\`\`json
+{"type":"stats", "data":{"资源总数":"999,999","总体积":"40.6GB"}}
+\`\`\`
+
+**chart 图表** — data 格式取决于 chart_type：
+- pie / horizontal_bar: data 是 {label: number} 扁平对象
+- bar: data 是 [{name:"标签", value:数字}] 数组
+
+\`\`\`json
+{"type":"chart", "chart_type":"pie", "title":"分类分布", "data":{"贴图":25.9,"模型":5.9}}
+\`\`\`
+\`\`\`json
+{"type":"chart", "chart_type":"bar", "title":"模块体积", "data":[{"name":"地形","value":12},{"name":"建筑","value":8}]}
+\`\`\`
+
+**table 表格** — columns 是列名数组，rows 是数据行数组：
+\`\`\`json
+{"type":"table", "title":"明细", "columns":["分类","数量","体积"], "rows":[{"分类":"贴图","数量":664879,"体积":"25.9GB"}], "sortable":true}
+\`\`\`
+
+完整 sections_json 示例：
+\`\`\`json
+[
+  {"type":"stats", "data":{"总资源":"999,999","总体积":"40.6GB"}},
+  {"type":"chart", "chart_type":"pie", "title":"分类分布", "data":{"贴图":25.9,"模型":5.9,"烘焙":6.4}},
+  {"type":"chart", "chart_type":"bar", "title":"模块体积TOP", "data":[{"name":"地形","value":12},{"name":"建筑","value":8}]},
+  {"type":"table", "title":"分类明细", "columns":["分类","数量","体积"], "rows":[{"分类":"贴图","数量":"664,879","体积":"25.9GB"}], "sortable":true}
+]
+\`\`\`
 
 ### 数据严谨性
 
@@ -552,7 +587,12 @@ const CSV_ANALYSIS_INSTRUCTIONS = `## CSV 数据分析功能
 - 不得使用"大概"、"估计"、"可能"等模糊词描述数据
 - 回答中必须引用查询依据
 
-注意：不要用 bash 执行 Python 脚本来解析 CSV，直接使用内置的 CSV 工具。`
+### 禁止事项
+
+- **禁止**自己用 Write 工具手写 HTML 看板文件
+- **禁止**用 bash 执行 Python 脚本
+- **禁止**绕过 csv_dashboard 工具
+- 如果 csv_dashboard 调用失败，**必须**告知用户并请求指示，不得自主 fallback 到其他方案`
 
 // ===== 语言指令常量 =====
 

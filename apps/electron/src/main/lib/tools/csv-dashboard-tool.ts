@@ -106,6 +106,61 @@ interface DashboardSection {
   page_size?: number
 }
 
+/**
+ * 自动推断和修正 section 格式
+ * 处理 agent 常见的字段名错误
+ */
+function normalizeSection(raw: Record<string, unknown>): DashboardSection {
+  const r = raw as Record<string, any>
+
+  // 自动推断 type
+  let type = r.type as string
+  if (!type) {
+    if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)) {
+      type = 'stats'
+    } else if (r.data && Array.isArray(r.data)) {
+      type = 'chart'
+    } else if (r.columns || r.rows) {
+      type = 'table'
+    } else {
+      type = 'stats'
+    }
+  }
+
+  // 自动推断 chart_type
+  let chartType = r.chart_type as string | undefined
+  if (type === 'chart' && !chartType) {
+    if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)) {
+      chartType = 'pie'
+    } else {
+      chartType = 'bar'
+    }
+  }
+
+  // 兼容常见字段名错误
+  let data = r.data
+  if (!data) {
+    data = r.items || r.values || r.series || r.dataPoints || {}
+  }
+
+  // 兼容 chart 字段名
+  if (type === 'chart' && !chartType) {
+    chartType = r.chartType || r.chart || r.kind || r.type_name || 'pie'
+  }
+
+  return {
+    type: type as 'stats' | 'chart' | 'table',
+    chart_type: chartType as 'pie' | 'bar' | 'horizontal_bar' | 'stacked_bar' | undefined,
+    title: r.title as string | undefined,
+    data,
+    columns: r.columns as string[] | undefined,
+    rows: r.rows as Array<Record<string, unknown>> | undefined,
+    sortable: r.sortable as boolean | undefined,
+    paginated: r.paginated as boolean | undefined,
+    page_size: r.page_size as number | undefined,
+  }
+}
+
 // ===== HTML 生成 =====
 
 function renderStatsSection(section: DashboardSection): string {
@@ -354,14 +409,16 @@ export function executeCsvDashboard(toolCall: ToolCall): ToolResult {
       let sections: DashboardSection[] = []
       if (sectionsJson) {
         try {
-          sections = JSON.parse(sectionsJson)
-          if (!Array.isArray(sections)) {
+          const rawSections = JSON.parse(sectionsJson)
+          if (!Array.isArray(rawSections)) {
             return {
               toolCallId: toolCall.id,
               content: 'sections_json 必须是 JSON 数组。示例: [{"type":"stats","data":{"key":"value"}}]',
               isError: true,
             }
           }
+          // 自动推断和修正每个 section 的格式
+          sections = rawSections.map((s: Record<string, unknown>) => normalizeSection(s))
         } catch (e) {
           return {
             toolCallId: toolCall.id,
