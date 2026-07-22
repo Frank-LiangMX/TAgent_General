@@ -33,6 +33,18 @@ import {
   isTAToolCall,
   executeTATool,
 } from './ta-tools'
+import {
+  CSV_PREPARE_TOOL_META,
+  CSV_PREPARE_TOOL_DEFINITIONS,
+} from './tools/csv-prepare-tool'
+import {
+  CSV_QUERY_TOOL_META,
+  CSV_QUERY_TOOL_DEFINITIONS,
+} from './tools/csv-query-tool'
+import {
+  CSV_DASHBOARD_TOOL_META,
+  CSV_DASHBOARD_TOOL_DEFINITIONS,
+} from './tools/csv-dashboard-tool'
 
 // ===== 内置工具注册 =====
 
@@ -64,6 +76,21 @@ const BUILTIN_TOOLS: BuiltinToolEntry[] = [
     meta: TA_TOOL_META,
     getDefinitions: () => TA_TOOL_DEFINITIONS,
     checkAvailable: isTAToolAvailable,
+  },
+  {
+    meta: CSV_PREPARE_TOOL_META,
+    getDefinitions: () => CSV_PREPARE_TOOL_DEFINITIONS,
+    checkAvailable: () => true,
+  },
+  {
+    meta: CSV_QUERY_TOOL_META,
+    getDefinitions: () => CSV_QUERY_TOOL_DEFINITIONS,
+    checkAvailable: () => true,
+  },
+  {
+    meta: CSV_DASHBOARD_TOOL_META,
+    getDefinitions: () => CSV_DASHBOARD_TOOL_DEFINITIONS,
+    checkAvailable: () => true,
   },
 ]
 

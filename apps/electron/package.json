@@ -58,6 +58,7 @@
     "@phosphor-icons/react": "2.1.10",
     "@pierre/diffs": "^1.1.20",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/papaparse": "^5.5.2",
     "@xmldom/xmldom": "^0.8.11",
     "adm-zip": "^0.5.17",
     "better-sqlite3": "^12.10.0",
@@ -66,6 +67,7 @@
     "dompurify": "^3.4.5",
     "iconv-lite": "^0.6.3",
     "mammoth": "^1.12.0",
+    "papaparse": "^5.5.4",
     "pdfjs-dist": "^4.10.38",
     "pixi.js": "^8.18.1",
     "reicon-react": "1.1.2"

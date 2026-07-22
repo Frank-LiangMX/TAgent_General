@@ -981,6 +981,85 @@ export class AgentOrchestrator {
   }
 
   /**
+   * 注入 CSV 数据分析工具集
+   *
+   * 始终注入，不限 TA 模式。
+   */
+  private async injectCsvTools(
+    sdk: typeof import('@anthropic-ai/claude-agent-sdk'),
+    mcpServers: Record<string, Record<string, unknown>>,
+    sessionId: string
+  ): Promise<void> {
+    try {
+      const { z } = await import('zod')
+      const csvPrepare = await import('./tools/csv-prepare-tool')
+      const csvQuery = await import('./tools/csv-query-tool')
+      const csvDashboard = await import('./tools/csv-dashboard-tool')
+
+      const wrap =
+        (executeFn: (toolCall: Parameters<typeof csvPrepare.executeCsvPrepare>[0]) => Promise<{ content: string; isError?: boolean }> | { content: string; isError?: boolean }) =>
+        async (args: Record<string, unknown>) => {
+          const toolCall = {
+            id: `csv-${Date.now()}`,
+            name: '',
+            arguments: args,
+          } as Parameters<typeof csvPrepare.executeCsvPrepare>[0]
+          const result = await executeFn(toolCall)
+          return { content: [{ type: 'text' as const, text: result.content }] }
+        }
+
+      const csvServer = sdk.createSdkMcpServer({
+        name: 'tagent-csv',
+        version: '1.0.0',
+        tools: [
+          sdk.tool(
+            'csv_prepare',
+            'Load a CSV file into SQLite, return column structure and summary statistics.',
+            {
+              path: z.string().describe('Path to the CSV file'),
+              session_id: z.string().describe('Session ID for cache isolation'),
+            },
+            wrap(csvPrepare.executeCsvPrepare)
+          ),
+          sdk.tool(
+            'csv_query',
+            'Query aggregated/filtered data from loaded CSV. Supports groupby, aggregation, filtering, sorting.',
+            {
+              session_id: z.string().describe('Session ID'),
+              groupby: z.string().optional().describe('Group by column name'),
+              agg: z.string().optional().describe('Aggregation functions, comma-separated. e.g. "count,sum(compress)"'),
+              filters: z.string().optional().describe('JSON array of filter objects. e.g. [{"column":"fcat","op":"=","value":"贴图"}]'),
+              select: z.string().optional().describe('Columns to select, comma-separated'),
+              sort: z.string().optional().describe('Sort column'),
+              sort_dir: z.string().optional().describe('Sort direction: asc or desc'),
+              limit: z.string().optional().describe('Max rows to return'),
+              offset: z.string().optional().describe('Offset for pagination'),
+            },
+            wrap(csvQuery.executeCsvQuery)
+          ),
+          sdk.tool(
+            'csv_dashboard',
+            'Generate an interactive HTML dashboard with charts and sortable tables from CSV data.',
+            {
+              session_id: z.string().describe('Session ID'),
+              action: z.enum(['create', 'add_view', 'replace_view']).describe('Action type'),
+              title: z.string().optional().describe('Dashboard title'),
+              view_id: z.string().optional().describe('View ID for add_view/replace_view'),
+              view_label: z.string().optional().describe('View display name'),
+              sections_json: z.string().optional().describe('JSON array of sections config'),
+            },
+            wrap(csvDashboard.executeCsvDashboard)
+          ),
+        ],
+      })
+      mcpServers['tagent-csv'] = csvServer as unknown as Record<string, unknown>
+      console.log(`[Agent 编排] 已注入 CSV 工具集 (tagent-csv) for session ${sessionId}`)
+    } catch (err) {
+      console.error(`[Agent 编排] 注入 CSV 工具集失败:`, err)
+    }
+  }
+
+  /**
    * 注入 SDK 内置生图工具（Nano Banana）
    */
   private async injectNanoBananaTools(
@@ -1964,6 +2043,9 @@ export class AgentOrchestrator {
         await this.injectTATools(sdk, mcpServers, sessionId, agentCwd)
       }
       markPhase('injectTA')
+
+      // CSV 数据分析工具（始终注入，不限模式）
+      await this.injectCsvTools(sdk, mcpServers, sessionId)
 
       // 合并外部注入的自定义 MCP 服务器（如飞书群聊工具）
       if (customMcpServers) {
