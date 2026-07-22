@@ -1,8 +1,8 @@
 /**
- * CSV 数据准备工具
+ * CSV 数据准备工具（流式版本）
  *
- * 读取 CSV 文件，自动推断列类型，建立 SQLite 数据库，返回结构摘要。
- * 支持 100 万行级别数据，按 session 隔离缓存。
+ * 流式读取 CSV，分批处理，避免大文件爆栈。
+ * 支持 100 万行级别数据。
  */
 
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
@@ -12,7 +12,6 @@ import Papa from 'papaparse'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
-import * as crypto from 'crypto'
 
 // ===== 工具元数据 =====
 
@@ -104,7 +103,7 @@ function writeCacheMeta(sessionId: string, meta: CacheMeta): void {
   fs.writeFileSync(getMetaPath(sessionId), JSON.stringify(meta, null, 2), 'utf-8')
 }
 
-// ===== 列类型推断 =====
+// ===== 列类型推断（基于采样） =====
 
 interface ColumnInfo {
   name: string
@@ -119,8 +118,13 @@ interface ColumnInfo {
   sum?: number
 }
 
-function inferColumnType(values: (string | number | null)[], columnName: string): ColumnInfo {
-  const nonNull = values.filter((v) => v !== null && v !== '' && v !== undefined)
+/**
+ * 从采样数据推断列类型
+ * 采样大小限制在 10000 行以内，避免内存问题
+ */
+function inferColumnTypeFromSample(values: (string | number | null)[]): ColumnInfo {
+  // 只用前 10000 个非空值做推断
+  const nonNull = values.filter((v) => v !== null && v !== '' && v !== undefined).slice(0, 10000)
   const unique = new Set(nonNull)
 
   // 检查是否为数值列
@@ -141,7 +145,7 @@ function inferColumnType(values: (string | number | null)[], columnName: string)
     const isInteger = numericValues.every((v) => Number.isInteger(v))
 
     return {
-      name: columnName,
+      name: '',
       type: isInteger ? 'integer' : 'real',
       role: 'metric',
       min,
@@ -153,17 +157,15 @@ function inferColumnType(values: (string | number | null)[], columnName: string)
 
   // 分类列
   const info: ColumnInfo = {
-    name: columnName,
+    name: '',
     type: 'text',
     role: 'dimension',
     unique_count: unique.size,
   }
 
-  // 如果唯一值不多，列出所有值
   if (unique.size <= 20) {
     info.values = Array.from(unique) as string[]
   } else if (unique.size <= 100) {
-    // 只列出 top 值
     const counts: Record<string, number> = {}
     for (const v of nonNull) {
       const key = String(v)
@@ -176,6 +178,118 @@ function inferColumnType(values: (string | number | null)[], columnName: string)
   }
 
   return info
+}
+
+// ===== 流式处理 =====
+
+const SAMPLE_SIZE = 10000 // 采样行数
+const INSERT_BATCH_SIZE = 5000 // 每批插入行数
+
+/**
+ * 流式处理 CSV 文件：
+ * 1. 第一遍：采样推断列类型
+ * 2. 第二遍：分批插入 SQLite + 聚合统计
+ */
+function processCsvStream(
+  filePath: string,
+  dbPath: string,
+  columnInfos: ColumnInfo[]
+): { rowCount: number; compressSum: number } {
+  const db = new Database(dbPath)
+  db.pragma('journal_mode = WAL')
+  db.pragma('synchronous = OFF')
+  db.pragma('cache_size = -64000') // 64MB cache
+
+  // 创建表
+  const colDefs = columnInfos.map((c) => {
+    const colName = c.name.replace(/[^a-zA-Z0-9_]/g, '_')
+    if (c.type === 'integer') return `${colName} INTEGER`
+    if (c.type === 'real') return `${colName} REAL`
+    return `${colName} TEXT`
+  })
+  db.exec(`CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, ${colDefs.join(', ')})`)
+
+  // 准备插入语句
+  const colNames = columnInfos.map((c) => c.name.replace(/[^a-zA-Z0-9_]/g, '_'))
+  const placeholders = colNames.map(() => '?').join(', ')
+  const insertStmt = db.prepare(`INSERT INTO assets (${colNames.join(', ')}) VALUES (${placeholders})`)
+
+  // 找到 compress 列索引
+  const compressIdx = columnInfos.findIndex((c) => c.name === 'compress')
+
+  let rowCount = 0
+  let compressSum = 0
+  let batch: (string | number)[][] = []
+
+  // 流式读取
+  const fileContent = fs.readFileSync(filePath, 'utf-8')
+  const lines = fileContent.split('\n')
+  const header = lines[0]
+  const dataLines = lines.slice(1)
+
+  // 使用 papaparse 解析每一行
+  for (let i = 0; i < dataLines.length; i++) {
+    const line = dataLines[i] ?? ''
+    if (!line.trim()) continue
+
+    // 解析单行
+    const result = Papa.parse<string[]>(line, { header: false })
+    if (result.errors.length > 0) continue
+
+    const values = result.data[0]
+    if (!values || values.length === 0) continue
+
+    // 转换类型
+    const row = columnInfos.map((c, idx) => {
+      const raw = values[idx] ?? ''
+      if (c.type === 'integer') return parseInt(raw, 10) || 0
+      if (c.type === 'real') return parseFloat(raw) || 0
+      return raw
+    })
+
+    // 累积 compress
+    if (compressIdx >= 0) {
+      compressSum += (row[compressIdx] as number) || 0
+    }
+
+    batch.push(row)
+    rowCount++
+
+    // 批量插入
+    if (batch.length >= INSERT_BATCH_SIZE) {
+      const insertMany = db.transaction((rows: (string | number)[][]) => {
+        for (const r of rows) {
+          insertStmt.run(...r)
+        }
+      })
+      insertMany(batch)
+      batch = []
+    }
+  }
+
+  // 插入剩余
+  if (batch.length > 0) {
+    const insertMany = db.transaction((rows: (string | number)[][]) => {
+      for (const r of rows) {
+        insertStmt.run(...r)
+      }
+    })
+    insertMany(batch)
+  }
+
+  // 建索引
+  for (const col of columnInfos) {
+    if (col.role === 'dimension') {
+      const colName = col.name.replace(/[^a-zA-Z0-9_]/g, '_')
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_assets_${colName} ON assets(${colName})`)
+    }
+  }
+  if (compressIdx >= 0) {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_assets_compress ON assets(compress)')
+  }
+
+  db.close()
+  return { rowCount, compressSum }
 }
 
 // ===== 核心实现 =====
@@ -207,23 +321,57 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
       }
     }
 
-    // 读取 CSV
     const startTime = Date.now()
-    const fileContent = fs.readFileSync(resolvedPath, 'utf-8')
-    const parsed = Papa.parse(fileContent, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: false, // 先不做自动类型转换
+
+    // 第一遍：读取头部采样推断列类型
+    const fileStream = fs.createReadStream(resolvedPath, { encoding: 'utf-8', highWaterMark: 64 * 1024 })
+    const sampleRows: Record<string, string>[] = []
+    let header: string[] = []
+    let headerParsed = false
+
+    await new Promise<void>((resolve, reject) => {
+      let buffer = ''
+      fileStream.on('data', (chunk: string | Buffer) => {
+        buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf-8')
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // 保留最后一行（可能不完整）
+
+        for (const line of lines) {
+          if (!line.trim()) continue
+          if (!headerParsed) {
+            // 解析表头
+            const result = Papa.parse<string[]>(line, { header: false })
+            if (result.data[0] && result.data[0].length > 0) {
+              header = result.data[0]
+              headerParsed = true
+            }
+            continue
+          }
+
+          if (sampleRows.length < SAMPLE_SIZE) {
+            const result = Papa.parse<string[]>(line, { header: false })
+            if (result.data[0]) {
+              const values = result.data[0]
+              const row: Record<string, string> = {}
+              header.forEach((h, i) => {
+                row[h] = values[i] ?? ''
+              })
+              sampleRows.push(row)
+            }
+          }
+        }
+
+        // 采够了就停止读取
+        if (sampleRows.length >= SAMPLE_SIZE) {
+          fileStream.destroy()
+          resolve()
+        }
+      })
+      fileStream.on('end', resolve)
+      fileStream.on('error', reject)
     })
 
-    if (parsed.errors.length > 0) {
-      console.warn('[CSV] 解析警告:', parsed.errors.slice(0, 5))
-    }
-
-    const rows = parsed.data as Record<string, string>[]
-    const columns = parsed.meta.fields || []
-
-    if (columns.length === 0 || rows.length === 0) {
+    if (header.length === 0 || sampleRows.length === 0) {
       return {
         toolCallId: toolCall.id,
         content: JSON.stringify({ status: 'error', message: 'CSV 为空或无有效数据' }),
@@ -231,71 +379,27 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
       }
     }
 
-    // 推断列类型
-    const columnInfos: ColumnInfo[] = columns.map((col) => {
-      const values = rows.map((r) => r[col] ?? null)
-      return inferColumnType(values, col)
+    // 推断列类型（基于采样）
+    const columnInfos: ColumnInfo[] = header.map((col) => {
+      const values = sampleRows.map((r) => r[col] ?? null)
+      const info = inferColumnTypeFromSample(values)
+      info.name = col
+      return info
     })
 
-    // 建 SQLite
+    // 第二遍：流式处理全量数据，插入 SQLite
     const dbPath = getDbPath(sessionId)
-    const db = new Database(dbPath)
-    db.pragma('journal_mode = WAL')
-    db.pragma('synchronous = OFF')
-
-    // 创建表
-    const colDefs = columnInfos.map((c) => {
-      const colName = c.name.replace(/[^a-zA-Z0-9_]/g, '_')
-      if (c.type === 'integer') return `${colName} INTEGER`
-      if (c.type === 'real') return `${colName} REAL`
-      return `${colName} TEXT`
-    })
-
-    db.exec(`CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY, ${colDefs.join(', ')})`)
-
-    // 批量插入
-    const colNames = columnInfos.map((c) => c.name.replace(/[^a-zA-Z0-9_]/g, '_'))
-    const placeholders = colNames.map(() => '?').join(', ')
-    const insertStmt = db.prepare(`INSERT INTO assets (${colNames.join(', ')}) VALUES (${placeholders})`)
-
-    const insertMany = db.transaction((rows: Record<string, string>[]) => {
-      for (const row of rows) {
-        const values = columnInfos.map((c) => {
-          const raw = row[c.name] ?? ''
-          if (c.type === 'integer') return parseInt(raw, 10) || 0
-          if (c.type === 'real') return parseFloat(raw) || 0
-          return raw
-        })
-        insertStmt.run(...values)
-      }
-    })
-
-    // 分批插入，每批 10000 行
-    const batchSize = 10000
-    for (let i = 0; i < rows.length; i += batchSize) {
-      insertMany(rows.slice(i, i + batchSize))
+    // 删除旧数据库
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath)
     }
 
-    // 建索引
-    for (const col of columnInfos) {
-      if (col.role === 'dimension') {
-        const colName = col.name.replace(/[^a-zA-Z0-9_]/g, '_')
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_assets_${colName} ON assets(${colName})`)
-      }
-    }
-
-    // compress 列索引
-    const compressCol = columnInfos.find((c) => c.name === 'compress')
-    if (compressCol) {
-      db.exec('CREATE INDEX IF NOT EXISTS idx_assets_compress ON assets(compress)')
-    }
-
-    db.close()
+    const { rowCount, compressSum } = processCsvStream(resolvedPath, dbPath, columnInfos)
 
     // 概览统计
     const overview = {
-      total_assets: rows.length,
-      total_bytes: compressCol?.sum || 0,
+      total_assets: rowCount,
+      total_bytes: compressSum,
     }
 
     // 写缓存
@@ -304,7 +408,7 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
       csv_mtime: stat.mtimeMs,
       csv_size: stat.size,
       loaded_at: new Date().toISOString(),
-      row_count: rows.length,
+      row_count: rowCount,
       columns: columnInfos,
       overview,
     }
@@ -318,7 +422,7 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
           status: 'ready',
           from_cache: false,
           elapsed_ms: elapsed,
-          row_count: rows.length,
+          row_count: rowCount,
           file_size_mb: (stat.size / 1024 / 1024).toFixed(1),
           columns: columnInfos,
           overview,
