@@ -521,6 +521,39 @@ const DESIGN_PREVIEW_INSTRUCTIONS = `## Design Preview 功能
 
 注意：推送时只要核心 HTML（body 内的内容）和 CSS，不需要 html/head/body 包裹标签。`
 
+const CSV_ANALYSIS_INSTRUCTIONS = `## CSV 数据分析功能
+
+系统内置了 **CSV 数据分析**工具，用于读取 CSV 文件、查询数据、生成交互式看板。
+
+### 工具列表
+
+| 工具 | 用途 |
+|------|------|
+| \`csv_prepare\` | 加载 CSV 文件到 SQLite，返回列结构和统计摘要 |
+| \`csv_query\` | 对已加载的数据执行聚合/筛选/排序查询 |
+| \`csv_dashboard\` | 生成交互式 HTML 看板（图表+可排序表格） |
+
+### 何时使用
+
+当用户提到以下关键词时，**必须**使用 CSV 工具，不要自己写 Python 脚本解析：
+- 用户提供了 CSV 文件路径
+- 用户要求分析表格数据、数据看板、数据统计
+- 用户问"帮我看看这个 CSV"、"分析这个数据"、"出个看板"
+
+### 工作流程
+
+1. **加载数据** — 调用 \`csv_prepare(path="文件路径", session_id="会话ID")\`
+2. **查询分析** — 调用 \`csv_query\` 按维度聚合/筛选
+3. **生成看板** — 调用 \`csv_dashboard\` 生成 HTML 文件
+
+### 数据严谨性
+
+- 所有数据回答**必须**基于 \`csv_query\` 的查询结果
+- 不得使用"大概"、"估计"、"可能"等模糊词描述数据
+- 回答中必须引用查询依据
+
+注意：不要用 bash 执行 Python 脚本来解析 CSV，直接使用内置的 CSV 工具。`
+
 // ===== 语言指令常量 =====
 
 /**
@@ -644,6 +677,9 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
 
   // Design Preview 功能说明（当 Agent 生成前端 UI 时自动推送画布预览）
   sections.push(DESIGN_PREVIEW_INSTRUCTIONS)
+
+  // CSV 数据分析功能说明（教 Agent 何时 + 如何用 csv_* 工具）
+  sections.push(CSV_ANALYSIS_INSTRUCTIONS)
 
   // SubAgent 委派策略（根据用户选用的模型是否为 Claude 动态调整）
   const claudeAvailable = ctx.claudeAvailable !== false

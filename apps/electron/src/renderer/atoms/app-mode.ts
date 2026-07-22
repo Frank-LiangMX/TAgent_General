@@ -141,3 +141,6 @@ export const inspectorMagnifiedAtom = atomWithStorage<boolean>('tagent-inspector
 
 /** 聚焦模式：会话列占宽比例（0.28–0.62），拖拽分界线调整并持久化 */
 export const focusSplitRatioAtom = atomWithStorage<number>('tagent-focus-split-ratio', 0.42)
+
+/** BrowserPanel 当前 URL（Agent 推送 CSV 看板等场景使用） */
+export const browserPanelUrlAtom = atom<string | null>(null)

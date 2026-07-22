@@ -1048,7 +1048,35 @@ export class AgentOrchestrator {
               view_label: z.string().optional().describe('View display name'),
               sections_json: z.string().optional().describe('JSON array of sections config'),
             },
-            wrap(csvDashboard.executeCsvDashboard)
+            async (args: Record<string, unknown>) => {
+              const toolCall = {
+                id: `csv-dashboard-${Date.now()}`,
+                name: 'csv_dashboard',
+                arguments: args,
+              } as Parameters<typeof csvDashboard.executeCsvDashboard>[0]
+              const result = await csvDashboard.executeCsvDashboard(toolCall)
+
+              // 当看板生成成功时，发送事件让前端在 Inspector 中显示
+              if (!result.isError) {
+                try {
+                  const parsed = JSON.parse(result.content)
+                  if (parsed.url) {
+                    this.eventBus.emit(sessionId, {
+                      kind: 'tagent_event',
+                      event: {
+                        type: 'csv_dashboard_open',
+                        url: parsed.url,
+                        title: (args.title as string) || 'CSV 数据看板',
+                      },
+                    })
+                  }
+                } catch {
+                  // 忽略解析错误
+                }
+              }
+
+              return { content: [{ type: 'text' as const, text: result.content }] }
+            }
           ),
         ],
       })
@@ -2584,6 +2612,19 @@ export class AgentOrchestrator {
             sessionMeta,
             workspaceSlug,
           })
+          // 持久化到会话：预览/打开文件时 getAuthorizedRoots 才能访问 Agent 写出的 sibling 文件
+          // （例如消息附件在 Downloads，Agent 在同目录生成 .py / .html）
+          if (allDirs.length > 0) {
+            const existing = sessionMeta?.attachedDirectories ?? []
+            const merged = [...new Set([...existing, ...allDirs])]
+            if (merged.length !== existing.length) {
+              try {
+                updateAgentSessionMeta(sessionId, { attachedDirectories: merged }, true)
+              } catch (err) {
+                console.warn('[Agent 编排] 持久化 additionalDirectories 失败:', err)
+              }
+            }
+          }
           return allDirs.length > 0 ? { additionalDirectories: allDirs } : {}
         })(),
         // 启用文件检查点，支持 rewindFiles 回退

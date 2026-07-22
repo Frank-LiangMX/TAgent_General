@@ -20,7 +20,7 @@ import {
   agentSessionPathMapAtom,
   agentDiffPanelTabAtom,
 } from '@/atoms/agent-atoms'
-import { rightRailItemAtom } from '@/atoms/app-mode'
+import { rightRailItemAtom, browserPanelUrlAtom } from '@/atoms/app-mode'
 import { SidePanel } from '@/components/agent/SidePanel'
 import { BtwPanel } from '@/components/agent/BtwPanel'
 import { BrowserPanel } from '@/components/agent/BrowserPanel'
@@ -33,6 +33,7 @@ export function RailItemContent({ item }: { item: RightRailItem }): React.ReactE
   const sessionPathMap = useAtomValue(agentSessionPathMapAtom)
   const diffPanelTabMap = useAtomValue(agentDiffPanelTabAtom)
   const setDiffPanelTabMap = useSetAtom(agentDiffPanelTabAtom)
+  const browserPanelUrl = useAtomValue(browserPanelUrlAtom)
 
   const setActiveTab = React.useCallback(
     (tab: 'project' | 'activity' | 'changes') => {
@@ -56,7 +57,7 @@ export function RailItemContent({ item }: { item: RightRailItem }): React.ReactE
   }
 
   if (item === 'browser') {
-    return <BrowserPanel />
+    return <BrowserPanel initialUrl={browserPanelUrl} />
   }
 
   if (item === 'design') {

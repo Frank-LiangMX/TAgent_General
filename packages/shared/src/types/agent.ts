@@ -804,6 +804,11 @@ export type TAgentEvent =
       name?: string
       device?: string
     }
+  | {
+      type: 'csv_dashboard_open'
+      url: string
+      title?: string
+    }
 
 /** 外部入口触发 Agent 运行的来源 */
 export type AgentExternalRunSource = 'feishu' | 'dingtalk' | 'wechat' | 'bridge'

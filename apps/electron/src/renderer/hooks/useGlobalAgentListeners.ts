@@ -80,7 +80,7 @@ import {
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import { appModeAtom, rightRailItemAtom } from '@/atoms/app-mode'
+import { appModeAtom, rightRailItemAtom, browserPanelUrlAtom } from '@/atoms/app-mode'
 import {
   setDesignHtmlAtom,
   setDesignDeviceAtom,
@@ -752,6 +752,18 @@ export function useGlobalAgentListeners(): void {
           console.log(
             `[Design Preview] Agent 推送更新: "${evt.name ?? '未命名'}" (${evt.device ?? 'desktop'})`
           )
+        }
+
+        // CSV Dashboard 事件：Agent 调用 csv_dashboard 工具后在 Inspector 中显示看板
+        if (payload.kind === 'tagent_event' && payload.event.type === 'csv_dashboard_open') {
+          const evt = payload.event as { url?: string; title?: string }
+          if (evt.url) {
+            // 切换到 BrowserPanel 并加载看板 URL
+            store.set(rightRailItemAtom, 'browser')
+            store.set(agentSidePanelOpenAtom, true)
+            store.set(browserPanelUrlAtom, evt.url)
+            console.log(`[CSV Dashboard] 打开看板: ${evt.title ?? '数据看板'}`)
+          }
         }
 
         // 如果收到未知会话的事件（跨工作区场景），立即刷新会话列表
