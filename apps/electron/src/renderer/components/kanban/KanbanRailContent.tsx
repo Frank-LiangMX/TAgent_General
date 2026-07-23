@@ -126,11 +126,9 @@ function KanbanBoardItem({
             !selected && 'text-foreground/80'
           )}
         >
-          <SidebarTooltip label={displayName} multiline>
-            <span className={cn('min-w-0 flex-1 truncate', selected && 'session-row-title')}>
-              {displayName}
-            </span>
-          </SidebarTooltip>
+          <span className={cn('min-w-0 flex-1 truncate', selected && 'session-row-title')}>
+            {displayName}
+          </span>
         </div>
         <div
           className={cn(

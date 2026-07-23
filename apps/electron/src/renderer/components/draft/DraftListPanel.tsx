@@ -33,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@tagent/ui'
-import { SidebarTooltip } from '@/components/app-shell/SidebarTooltip'
+
 import { STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
@@ -191,11 +191,9 @@ const DraftItem = React.memo(function DraftItem({
                   !active && 'text-foreground/80'
                 )}
               >
-                <SidebarTooltip label={draft.title || '未命名草稿'} multiline>
-                  <span className={cn('min-w-0 flex-1 truncate', active && 'session-row-title')}>
-                    {draft.title || '未命名草稿'}
-                  </span>
-                </SidebarTooltip>
+                <span className={cn('min-w-0 flex-1 truncate', active && 'session-row-title')}>
+                  {draft.title || '未命名草稿'}
+                </span>
                 <span
                   className={cn(
                     'shrink-0 text-[9px] tabular-nums',

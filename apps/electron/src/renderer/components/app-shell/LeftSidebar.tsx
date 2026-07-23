@@ -2080,9 +2080,7 @@ const ConversationItem = React.memo(function ConversationItem({
                   weight="regular"
                   className={cn('shrink-0', active ? 'opacity-80' : 'opacity-45')}
                 />
-                <SidebarTooltip label={conversation.title} multiline>
-                  <span className="min-w-0 flex-1 truncate">{conversation.title}</span>
-                </SidebarTooltip>
+                <span className="min-w-0 flex-1 truncate">{conversation.title}</span>
               </div>
             )}
           </div>
@@ -2340,9 +2338,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
               {/* 同 TabBar：min-w-0 flex-1 + truncate */}
               <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[12px] leading-[18px] text-foreground/80">
                 <ChatsCircle size={13} weight="regular" className="shrink-0 opacity-45" />
-                <SidebarTooltip label={session.title} multiline>
-                  <span className="min-w-0 flex-1 truncate">{session.title}</span>
-                </SidebarTooltip>
+                <span className="min-w-0 flex-1 truncate">{session.title}</span>
               </div>
             </>
           ) : (
@@ -2386,16 +2382,14 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                         weight="regular"
                         className={cn('shrink-0', active ? 'opacity-80' : 'opacity-45')}
                       />
-                      <SidebarTooltip label={session.title} multiline>
-                        <span
-                          className={cn(
-                            'session-title-text min-w-0 flex-1 truncate',
-                            active && 'session-row-title'
-                          )}
-                        >
-                          {session.title}
-                        </span>
-                      </SidebarTooltip>
+                      <span
+                        className={cn(
+                          'session-title-text min-w-0 flex-1 truncate',
+                          active && 'session-row-title'
+                        )}
+                      >
+                        {session.title}
+                      </span>
                     </div>
                     <div
                       className={cn(
@@ -2403,9 +2397,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                         active ? 'session-row-meta' : 'md-text-faint'
                       )}
                     >
-                      <SidebarTooltip label={metaModelName} multiline>
-                        <span className="min-w-0 flex-1 truncate">{metaModelName}</span>
-                      </SidebarTooltip>
+                      <span className="min-w-0 flex-1 truncate">{metaModelName}</span>
                       <span className="shrink-0 tabular-nums">
                         {formatSessionTime(session.updatedAt)}
                       </span>
@@ -2689,11 +2681,9 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   !collapsed && 'rotate-90'
                 )}
               />
-              <SidebarTooltip label={group.workspace.name} multiline>
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium leading-[18px]">
-                  {group.workspace.name}
-                </span>
-              </SidebarTooltip>
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium leading-[18px]">
+                {group.workspace.name}
+              </span>
               <span className="app-sidebar-project-count">{group.sessions.length}</span>
             </button>
           )

@@ -633,42 +633,30 @@
  * ========================================================================== */
 
 .session-list-row {
-  /* 预留 hover translateX(2px)，右移时不裁切右侧控件 */
-  margin-right: 2px;
+  /* 不再 margin-right 单侧预留：侧栏选中态需左右对称 */
+  margin-right: 0;
+  /* 只过渡 background-color 等可插值属性；禁止 backdrop-filter */
   transition:
-    background 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    backdrop-filter 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    -webkit-backdrop-filter 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+    background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (hover: hover) {
   .session-list-row:not(.session-list-item-active):hover {
-    /* 不透明 color-mix，禁止 foreground/0.0x 半透明（会盖掉底色变透） */
-    background: var(
-      --hover-fill,
-      color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
-    );
+    background-color: color-mix(in srgb, hsl(var(--primary)) 7%, hsl(var(--background)));
     color: hsl(var(--foreground));
-    transform: translateX(2px);
+    transform: none;
   }
 }
 
-/*
- * 批量选择模式：禁用 hover 右移。
- * 批量模式下右侧三点菜单已隐藏，translateX(2px) 会让 checkbox + 标题整体右移
- * 而无右侧元素平衡，视觉上像右对齐错位；删除后 DOM 重建还会放大该错位。
- */
 .session-list-row--batch:hover {
   transform: none !important;
 }
 
 .session-list-row:not(.session-list-item-active):active {
-  transform: translateX(1px) scale(0.995);
+  transform: scale(0.995);
   box-shadow: inset 0 1px 3px hsl(var(--foreground) / 0.08);
 }
 

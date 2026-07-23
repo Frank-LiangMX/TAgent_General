@@ -793,12 +793,23 @@ html.material-frosted .app-content-boundary-rim {
   box-shadow:
     inset 0 1px 0 var(--surface-highlight, hsl(var(--glass-shine) / 0.12)),
     0 4px 12px hsl(var(--foreground) / 0.05) !important;
+  /* 全局选中也不开 blur，避免切换会话时整表掉帧 */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .session-item-selected *,
 .session-list-item-active *,
 .workspace-item-selected * {
   color: inherit !important;
+}
+
+/* 选中标题字重变化可过渡（font-weight 不可插值时至少 color 平滑） */
+.session-list-row .session-row-title,
+.session-list-row .session-row-meta {
+  transition:
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    font-weight 0s;
 }
 
 /* 顶部标签沿用原型的上圆下直轮廓，不参与会话/工作区的胶囊选择态。 */
@@ -4684,10 +4695,8 @@ html.material-frosted .tool-cluster {
 }
 
 /*
- * 会话行：单列 flex（三点菜单 absolute，不再用 2 列 grid）。
- * 旧 grid（1fr + auto）在菜单不占第二列时，会让标题按内容撑宽，
- * 再被 .session-well / .app-nav-sidebar 的 overflow:hidden 硬裁，出现「无省略号」。
- * margin-right 预留 hover translateX(2px)，避免右移被父级裁切。
+ * 会话行：单列 flex（三点菜单 absolute）。
+ * 水平 margin/padding 左右对称，选中胶囊在侧栏列表井内居中。
  */
 :is(.list-well, .session-well) .session-row-shell {
   display: flex;
@@ -4697,47 +4706,44 @@ html.material-frosted .tool-cluster {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  margin: 2px 2px 2px 0;
-  padding: 7px 8px;
+  margin: 2px 0;
+  padding: 7px 10px;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-glass-rail) - 1px);
+  background-color: transparent;
+  background-image: none;
+  /* 仅 background-color，避免渐变插值拖影 */
   transition:
-    background 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
     color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-/* 标题截断对齐 TabBar：组件内用 min-w-0 flex-1 truncate，此处不再叠一套 */
 
 :is(.list-well, .session-well) .session-row-shell:not(.session-list-item-active):hover {
-  background: var(
-    --hover-fill,
-    color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
-  );
+  background-color: color-mix(in srgb, hsl(var(--primary)) 7%, hsl(var(--background)));
+  background-image: none;
   color: var(--foreground);
-  transform: translateX(2px);
 }
 
-/* well 内列表行（非 shell 场景，如草稿 / 看板 / 归档 compact） */
+/* well 内列表行（非 shell：草稿 / 看板 / 归档 compact） */
 :is(.list-well, .session-well) .session-list-row:not(.session-row-shell) {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  margin-right: 2px;
-  padding: 7px 8px;
+  margin: 2px 0;
+  padding: 7px 10px;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-glass-rail) - 1px);
   overflow: visible;
+  box-sizing: border-box;
   transition:
     background 160ms cubic-bezier(0.16, 1, 0.3, 1),
     color 160ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :is(.list-well, .session-well)
@@ -4747,7 +4753,6 @@ html.material-frosted .tool-cluster {
     color-mix(in srgb, hsl(var(--foreground)) 7%, hsl(var(--background)))
   );
   color: var(--foreground);
-  transform: translateX(2px);
 }
 
 /* 会话状态线改为底部横条后，well 内也显示（不再隐藏） */
