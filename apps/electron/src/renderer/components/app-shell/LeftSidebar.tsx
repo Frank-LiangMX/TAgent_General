@@ -2253,8 +2253,10 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
 
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
+    isBatchMode && '!flex !items-center gap-2',
     surface === 'well' && 'session-row-shell app-sidebar-session-row w-full',
     surface === 'compact' && 'w-full py-[7px] px-1',
+    isBatchMode && 'session-list-row--batch',
     childClassName,
     selectionClassName
   )

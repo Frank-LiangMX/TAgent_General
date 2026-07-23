@@ -658,6 +658,15 @@
   }
 }
 
+/*
+ * 批量选择模式：禁用 hover 右移。
+ * 批量模式下右侧三点菜单已隐藏，translateX(2px) 会让 checkbox + 标题整体右移
+ * 而无右侧元素平衡，视觉上像右对齐错位；删除后 DOM 重建还会放大该错位。
+ */
+.session-list-row--batch:hover {
+  transform: none !important;
+}
+
 .session-list-row:not(.session-list-item-active):active {
   transform: translateX(1px) scale(0.995);
   box-shadow: inset 0 1px 3px hsl(var(--foreground) / 0.08);

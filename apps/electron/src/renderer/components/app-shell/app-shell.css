@@ -1197,6 +1197,11 @@
   transform: translateX(2px);
 }
 
+/* 批量选择模式：禁用 hover 右移，避免 checkbox+标题错位（同 glass.css） */
+.app-nav-sidebar .app-sidebar-session-row.session-list-row--batch:hover {
+  transform: none !important;
+}
+
 .app-nav-sidebar .app-sidebar-session-row.session-list-item-active {
   border-color: var(--spatial-accent-line) !important;
   color: var(--spatial-ink);
