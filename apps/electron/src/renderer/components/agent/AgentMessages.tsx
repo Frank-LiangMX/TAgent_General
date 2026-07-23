@@ -65,6 +65,9 @@ import {
   VirtualizedScrollPositionManager,
   createScrollPositionSaver,
 } from '@/hooks/useVirtualizedScrollPosition'
+import { parseSDKMessagesToParts } from '@/lib/streaming-message-parser'
+import { MessagePartRenderer } from '@/components/agent/MessagePartRenderer'
+import { AssistantTurnV2 } from '@/components/agent/AssistantTurnV2'
 import { stripDesignContextFromUserMessage } from '@/lib/strip-design-context'
 import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { cn } from '@/lib/utils'
@@ -968,6 +971,38 @@ function AgentMessagesImpl({
                   mergedTimeline.findLastIndex(
                     (e) => e.kind === 'sdk' && e.group.type === 'assistant-turn'
                   )
+
+              // 新版：使用状态机渲染 assistant turn
+              if (group.type === 'assistant-turn') {
+                return (
+                  <AssistantTurnV2
+                    key={getGroupId(group)}
+                    messages={group.turnMessages}
+                    allMessages={allSDKMessages}
+                    modelId={sessionModelId}
+                    isStreaming={isLive}
+                    streamingText={
+                      isLive && hasLiveAssistantContent ? smoothContent : undefined
+                    }
+                    streamingThinking={
+                      isLive && hasLiveAssistantContent ? smoothThinking : undefined
+                    }
+                    streamStartedAt={isLive ? startedAt : undefined}
+                    retrying={isLive ? retrying : undefined}
+                    stoppedByUser={isLastAssistantTurn}
+                    isContextCompacting={streamState?.isCompacting}
+                    onFork={shouldDisableActions ? undefined : onFork}
+                    onRewind={shouldDisableActions ? undefined : onRewind}
+                    onRetry={shouldDisableActions ? undefined : onRetry}
+                    onRetryInNewSession={
+                      shouldDisableActions ? undefined : onRetryInNewSession
+                    }
+                    onCompact={shouldDisableActions ? undefined : onCompact}
+                  />
+                )
+              }
+
+              // 旧版：system / user 保持原有渲染
               return (
                 <MessageGroupRenderer
                   key={getGroupId(group)}
