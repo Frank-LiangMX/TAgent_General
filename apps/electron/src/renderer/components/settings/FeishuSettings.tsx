@@ -547,7 +547,7 @@ function FeishuBindingCard({
         <div className="flex items-center gap-2.5">
           <div
             className={cn(
-              'flex items-center justify-center w-8 h-8 rounded-lg',
+              'flex items-center justify-center w-8 h-8 rounded-glass-popover',
               isGroup
                 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                 : 'bg-green-500/10 text-green-600 dark:text-green-400'
@@ -792,7 +792,7 @@ function CliRecommendationCard(): React.ReactElement {
   }, [])
 
   return (
-    <div className="w-full rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-3 space-y-2">
+    <div className="w-full rounded-glass-popover border border-dashed border-primary/30 bg-primary/5 px-3 py-3 space-y-2">
       <div className="flex items-start gap-2">
         <div className="flex-1 text-xs text-foreground/80 leading-relaxed">
           <div className="font-medium text-foreground mb-0.5">想要更完整的飞书生态体验？</div>
@@ -905,7 +905,7 @@ function RegisterFeishuDialog({
 
           {phase === 'qrcode' && qrcode && (
             <>
-              <div className="bg-white rounded-lg p-3 shadow-sm">
+              <div className="bg-white rounded-glass-popover p-3 shadow-sm">
                 {qrcode.dataUrl ? (
                   <img
                     src={qrcode.dataUrl}
@@ -1096,7 +1096,7 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
             </Select>
           </div>
 
-          <div className="flex items-start gap-2 rounded-lg bg-blue-500/10 px-3 py-3 text-xs text-blue-700 dark:text-blue-300">
+          <div className="flex items-start gap-2 rounded-glass-popover bg-blue-500/10 px-3 py-3 text-xs text-blue-700 dark:text-blue-300">
             <MessageSquare size={15} className="mt-0.5 flex-shrink-0" />
             <div className="leading-relaxed">
               实时同步模式下，一个 TAgent Session 对应一个飞书群。即使配置了多个
@@ -1104,7 +1104,7 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
             </div>
           </div>
 
-          <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-3 text-xs text-amber-800 dark:text-amber-300">
+          <div className="flex items-start gap-2 rounded-glass-popover bg-amber-500/10 px-3 py-3 text-xs text-amber-800 dark:text-amber-300">
             <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
             <div className="space-y-1 leading-relaxed">
               <div className="font-medium text-amber-900 dark:text-amber-200">
@@ -1133,7 +1133,7 @@ function SessionMirrorSection({ bots }: { bots: FeishuBotConfig[] }): React.Reac
           </div>
 
           {showBotBindingWarning && (
-            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-3 text-xs text-amber-800 dark:text-amber-300">
+            <div className="flex items-start gap-2 rounded-glass-popover bg-amber-500/10 px-3 py-3 text-xs text-amber-800 dark:text-amber-300">
               <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
               <div className="leading-relaxed">
                 当前同步 Bot 还没有绑定记录。请先在飞书里向「{selectedBot?.name ?? '该 Bot'}
@@ -1402,7 +1402,7 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           {testResult && (
             <div
               className={cn(
-                'p-3 rounded-lg flex items-start gap-2 text-sm',
+                'p-3 rounded-glass-popover flex items-start gap-2 text-sm',
                 testResult.success
                   ? 'bg-green-500/10 text-green-700 dark:text-green-400'
                   : 'bg-red-500/10 text-red-700 dark:text-red-400'
@@ -1421,7 +1421,7 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           )}
 
           {state?.status === 'error' && state.errorMessage && (
-            <div className="p-2.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
+            <div className="p-2.5 rounded-glass-popover bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
               {state.errorMessage}
             </div>
           )}
@@ -1703,7 +1703,7 @@ function FeishuConfigTab(): React.ReactElement {
             </div>
 
             {/* 提示 */}
-            <div className="pl-7 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
+            <div className="pl-7 p-3 rounded-glass-popover bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
               版本审核通过并发布后，在飞书中搜索机器人名称添加到聊天， 即可通过飞书向 TAgent
               发送指令。
             </div>

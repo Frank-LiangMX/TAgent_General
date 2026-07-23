@@ -1089,7 +1089,7 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
   }, [file.path, file.filename])
 
   if (!imageSrc) {
-    return <div className="w-[200px] h-[140px] rounded-lg bg-muted/30 animate-pulse shrink-0" />
+    return <div className="w-[200px] h-[140px] rounded-glass-popover bg-muted/30 animate-pulse shrink-0" />
   }
 
   return (
@@ -1097,7 +1097,7 @@ function AttachedImageThumb({ file }: { file: AttachedFileRef }): React.ReactEle
       <img
         src={imageSrc}
         alt={file.filename}
-        className="max-w-[300px] max-h-[200px] rounded-lg object-contain cursor-pointer"
+        className="max-w-[300px] max-h-[200px] rounded-glass-popover object-contain cursor-pointer"
         onClick={() => setLightboxOpen(true)}
       />
       <Tooltip>

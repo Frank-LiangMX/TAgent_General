@@ -100,7 +100,7 @@ function McpRecommendationCard({ mcp, onInstall }: McpRecommendationCardProps): 
       : 'text-muted-foreground'
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 transition-colors hover:bg-muted/30">
+    <div className="flex items-start gap-3 rounded-glass-popover border border-border bg-background p-3 transition-colors hover:bg-muted/30">
       <div className={cn('mt-0.5', statusColor)}>
         {mcp.installed ? (
           <CheckCircle2 size={18} />

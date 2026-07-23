@@ -71,7 +71,7 @@ export function ImageLightbox({
           <img
             src={src}
             alt={alt}
-            className="max-w-[90vw] max-h-[90vh] rounded-lg object-contain shadow-2xl select-none"
+            className="max-w-[90vw] max-h-[90vh] rounded-glass-popover object-contain shadow-2xl select-none"
             draggable={false}
           />
 

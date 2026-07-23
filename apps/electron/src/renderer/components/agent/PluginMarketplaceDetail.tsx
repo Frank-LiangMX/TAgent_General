@@ -158,7 +158,7 @@ export function PluginMarketplaceDetail({
                 </h3>
                 <div className="material-panel-card rounded-xl border border-border/50 bg-card/40 p-4">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
+                    <span className="flex size-9 items-center justify-center rounded-glass-popover bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
                       <Plug size={16} strokeWidth={1.75} />
                     </span>
                     <div className="min-w-0">
@@ -194,7 +194,7 @@ export function PluginMarketplaceDetail({
                 </h3>
                 <div className="material-panel-card rounded-xl border border-border/50 bg-card/40 p-4">
                   <div className="flex items-start gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/12 text-amber-600 dark:text-amber-400">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-glass-popover bg-amber-500/12 text-amber-600 dark:text-amber-400">
                       <Sparkles size={16} strokeWidth={1.75} />
                     </span>
                     <div className="min-w-0">

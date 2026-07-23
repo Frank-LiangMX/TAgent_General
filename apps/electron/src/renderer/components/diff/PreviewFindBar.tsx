@@ -395,7 +395,7 @@ export function PreviewFindBar({
       data-tagent-find-ignore
       role="search"
       aria-label="文件内查找"
-      className="absolute right-3 top-2 z-30 flex max-w-[min(390px,calc(100%-24px))] items-center gap-0.5 rounded-lg bg-popover/95 px-1.5 py-1 text-popover-foreground shadow-lg ring-1 ring-border/40 backdrop-blur"
+      className="absolute right-3 top-2 z-30 flex max-w-[min(390px,calc(100%-24px))] items-center gap-0.5 rounded-glass-popover bg-popover/95 px-1.5 py-1 text-popover-foreground shadow-lg ring-1 ring-border/40 backdrop-blur"
     >
       <Search className="size-3 shrink-0 text-muted-foreground" aria-hidden="true" />
       <input

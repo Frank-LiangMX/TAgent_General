@@ -237,7 +237,7 @@ export function ExitPlanModeBanner({
                 key={option.action}
                 type="button"
                 className={`
-                  flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
+                  flex items-center gap-2.5 px-3 py-2 rounded-glass-popover text-xs transition-all outline-none text-left
                   ${
                     option.variant === 'destructive'
                       ? 'bg-foreground/[0.04] text-foreground/80 hover:bg-destructive/10 hover:text-destructive'
@@ -272,7 +272,7 @@ export function ExitPlanModeBanner({
           <div className="flex gap-2">
             <input
               type="text"
-              className="flex-1 px-3 py-2 rounded-lg text-xs bg-foreground/[0.04] focus:bg-foreground/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
+              className="flex-1 px-3 py-2 rounded-glass-popover text-xs bg-foreground/[0.04] focus:bg-foreground/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
               placeholder="输入修改意见..."
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}

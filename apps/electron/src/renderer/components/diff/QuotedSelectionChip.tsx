@@ -49,7 +49,7 @@ export function QuotedSelectionChip({
     <div
       className={cn(
         'group/chip relative flex items-start gap-2 shrink-0 max-w-[33%]',
-        'rounded-lg bg-primary/8 border border-primary/20',
+        'rounded-glass-popover bg-primary/8 border border-primary/20',
         'pl-2.5 pr-7 py-1.5 text-[13px]',
         'transition-colors hover:bg-primary/12',
         className

@@ -761,7 +761,7 @@ function CleanupAction({
       onClick={onClick}
       disabled={loading}
       className={cn(
-        'flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-colors',
+        'flex items-center justify-center gap-2 px-4 py-2.5 rounded-glass-popover text-sm transition-colors',
         variant === 'primary'
           ? 'bg-primary text-primary-foreground hover:bg-primary/90'
           : 'bg-muted/50 text-foreground hover:bg-muted',

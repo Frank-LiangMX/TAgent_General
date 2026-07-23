@@ -80,7 +80,7 @@ export function EnvironmentCheckCard({
   }[status]
 
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
+    <div className="flex items-start gap-3 rounded-glass-popover bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex-shrink-0">
         <StatusIcon
           className={`h-4 w-4 ${iconColor} ${status === 'checking' ? 'animate-spin' : ''}`}

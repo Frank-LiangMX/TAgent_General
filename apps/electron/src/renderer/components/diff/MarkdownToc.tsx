@@ -69,7 +69,7 @@ export function MarkdownToc({
   return (
     <nav
       aria-label="文档目录"
-      className="flex flex-col w-52 shrink-0 self-start max-h-full m-2 rounded-lg bg-muted/40"
+      className="flex flex-col w-52 shrink-0 self-start max-h-full m-2 rounded-glass-popover bg-muted/40"
     >
       <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-foreground/40 select-none">
         目录

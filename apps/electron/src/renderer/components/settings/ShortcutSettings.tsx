@@ -207,7 +207,7 @@ function ShortcutKeycap({
       type={onClick && !disabled ? 'button' : undefined}
       onClick={disabled ? undefined : onClick}
       className={cn(
-        'inline-flex items-center justify-center min-w-[3.5rem] h-7 px-2.5 rounded-lg text-[11px] font-mono tabular-nums border transition-colors',
+        'inline-flex items-center justify-center min-w-[3.5rem] h-7 px-2.5 rounded-glass-popover text-[11px] font-mono tabular-nums border transition-colors',
         muted
           ? 'border-transparent bg-muted/40 md-text-faint italic'
           : 'border-border/50 bg-muted/45 md-text-variant',

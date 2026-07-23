@@ -545,7 +545,7 @@ function MessageAttachmentImage({
     return (
       <div
         className={cn(
-          'rounded-lg bg-muted/30 animate-pulse shrink-0',
+          'rounded-glass-popover bg-muted/30 animate-pulse shrink-0',
           isSingle ? 'w-[280px] h-[200px]' : 'size-[280px]'
         )}
       />
@@ -556,14 +556,14 @@ function MessageAttachmentImage({
     <img
       src={imageSrc}
       alt={attachment.filename}
-      className="max-w-[500px] max-h-[min(500px,50vh)] rounded-lg object-contain cursor-pointer"
+      className="max-w-[500px] max-h-[min(500px,50vh)] rounded-glass-popover object-contain cursor-pointer"
       onClick={() => setLightboxOpen(true)}
     />
   ) : (
     <img
       src={imageSrc}
       alt={attachment.filename}
-      className="size-[280px] rounded-lg object-cover shrink-0 cursor-pointer"
+      className="size-[280px] rounded-glass-popover object-cover shrink-0 cursor-pointer"
       onClick={() => setLightboxOpen(true)}
     />
   )
@@ -608,7 +608,7 @@ function MessageAttachmentFile({ attachment }: MessageAttachmentFileProps): Reac
     attachment.filename.length > 20 ? attachment.filename.slice(0, 17) + '...' : attachment.filename
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-[#37a5aa]/10 border border-[#37a5aa]/20 px-3 py-1.5 text-[13px] text-[#37a5aa] shrink-0">
+    <div className="flex items-center gap-2 rounded-glass-popover bg-[#37a5aa]/10 border border-[#37a5aa]/20 px-3 py-1.5 text-[13px] text-[#37a5aa] shrink-0">
       <Paperclip className="size-4" />
       <span>{displayName}</span>
     </div>

@@ -113,7 +113,7 @@ export function VersionHistory(): React.ReactElement {
                 {/* 版本标题（可点击展开） */}
                 <button
                   onClick={() => toggleExpand(release.id)}
-                  className="w-full flex items-center justify-between text-left hover:bg-accent/50 -m-4 p-4 rounded-lg transition-colors"
+                  className="w-full flex items-center justify-between text-left hover:bg-accent/50 -m-4 p-4 rounded-glass-popover transition-colors"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="flex-1 min-w-0">

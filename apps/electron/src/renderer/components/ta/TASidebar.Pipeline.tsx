@@ -119,7 +119,7 @@ function StatCard({
   }[color]
 
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
+    <div className="rounded-glass-popover border border-border/50 bg-muted/30 px-3 py-2.5">
       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
       <div className={`text-xl font-semibold mt-1 ${colorClass}`}>{value}</div>
     </div>

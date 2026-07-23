@@ -524,7 +524,7 @@ export function VoiceDictationApp(): React.ReactElement {
         </div>
 
         <div className="min-h-0 px-2">
-          <div className="overflow-hidden rounded-lg bg-muted/45">
+          <div className="overflow-hidden rounded-glass-popover bg-muted/45">
             <div
               ref={hintBarRef}
               className="flex min-h-8 shrink-0 items-center justify-between gap-3 px-3 py-1.5 text-xs leading-4 text-muted-foreground"

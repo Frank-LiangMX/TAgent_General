@@ -67,13 +67,13 @@ export function TASidebarAssets(): React.ReactElement {
     <div className="px-3 py-3 flex flex-col gap-3">
       {/* 计数卡 */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
+        <div className="rounded-glass-popover border border-border/50 bg-muted/30 px-3 py-2.5">
           <div className="text-[10px] text-muted-foreground uppercase tracking-wide">资产</div>
           <div className="text-xl font-semibold text-foreground mt-1">
             {isLoading ? '—' : (stats?.total ?? 0)}
           </div>
         </div>
-        <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5">
+        <div className="rounded-glass-popover border border-border/50 bg-muted/30 px-3 py-2.5">
           <div className="text-[10px] text-muted-foreground uppercase tracking-wide">待审</div>
           <div className="text-xl font-semibold text-amber-500 mt-1">
             {isLoading ? '—' : (stats?.pending ?? 0)}

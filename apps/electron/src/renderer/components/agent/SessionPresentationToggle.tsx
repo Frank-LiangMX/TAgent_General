@@ -35,7 +35,7 @@ export function SessionPresentationToggle({
       role="group"
       aria-label="会话展示模式"
       className={cn(
-        'inline-flex shrink-0 items-center rounded-lg border border-border/55 bg-background/72 p-0.5 shadow-sm backdrop-blur-md',
+        'inline-flex shrink-0 items-center rounded-glass-popover border border-border/55 bg-background/72 p-0.5 shadow-sm backdrop-blur-md',
         className
       )}
     >

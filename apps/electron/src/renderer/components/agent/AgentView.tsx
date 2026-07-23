@@ -3158,7 +3158,7 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
                             <div className="px-3 pt-2.5 pb-1.5">
                               <button
                                 type="button"
-                                className="group flex items-start gap-2 w-full rounded-lg border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
+                                className="group flex items-start gap-2 w-full rounded-glass-popover border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-primary/[0.06]"
                                 onClick={() => void handleSend({ overrideText: suggestion })}
                               >
                                 <Sparkles className="size-4 shrink-0 mt-0.5 text-primary/60 group-hover:text-primary/80" />

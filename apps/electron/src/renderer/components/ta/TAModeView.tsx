@@ -151,7 +151,7 @@ export function TAModeView(): React.ReactElement {
               key={id}
               onClick={() => setActiveTab(id)}
               className={cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
+                'flex items-center gap-2.5 px-3 py-2 rounded-glass-popover text-sm transition-colors',
                 activeTab === id
                   ? 'bg-primary/10 text-foreground font-medium'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'

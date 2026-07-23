@@ -314,7 +314,7 @@ export function AskUserBanner({ sessionId }: AskUserBannerProps): React.ReactEle
                   key={idx}
                   type="button"
                   className={`
-                    px-2.5 py-1 rounded-lg text-xs font-medium transition-all outline-none
+                    px-2.5 py-1 rounded-glass-popover text-xs font-medium transition-all outline-none
                     ${
                       isActive
                         ? 'bg-primary text-primary-foreground shadow-sm'
@@ -437,7 +437,7 @@ function QuestionCard({
     <div className="space-y-2">
       <div className="space-y-1">
         {showBadge && (
-          <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-primary text-primary-foreground shadow-sm">
+          <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-glass-popover text-xs font-medium bg-primary text-primary-foreground shadow-sm">
             {`${questionIndex + 1}-${question.multiSelect ? '多选' : '单选'}${question.header ? `：${question.header}` : ''}`}
           </span>
         )}
@@ -453,7 +453,7 @@ function QuestionCard({
               key={option.label}
               type="button"
               className={`
-                flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
+                flex items-center gap-2 px-3 py-2 rounded-glass-popover text-xs transition-all outline-none text-left
                 ${
                   isSelected
                     ? 'bg-primary text-primary-foreground shadow-sm'
@@ -483,7 +483,7 @@ function QuestionCard({
         <button
           type="button"
           className={`
-            flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all outline-none text-left
+            flex items-center gap-2 px-3 py-2 rounded-glass-popover text-xs transition-all outline-none text-left
             ${
               answer.showCustom
                 ? 'bg-primary text-primary-foreground shadow-sm'
@@ -505,7 +505,7 @@ function QuestionCard({
       {answer.showCustom && (
         <input
           type="text"
-          className="w-full px-3 py-2 rounded-lg text-xs bg-foreground/[0.04] focus:bg-foreground/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
+          className="w-full px-3 py-2 rounded-glass-popover text-xs bg-foreground/[0.04] focus:bg-foreground/[0.08] focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40 transition-colors"
           placeholder="输入自定义答案..."
           value={answer.customText}
           onChange={(e) => onCustomTextChange(e.target.value)}
@@ -521,7 +521,7 @@ function QuestionCard({
       )}
 
       {previewContent && (
-        <div className="mt-2 rounded-lg bg-foreground/[0.04] p-3 text-xs prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-0.5 prose-li:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+        <div className="mt-2 rounded-glass-popover bg-foreground/[0.04] p-3 text-xs prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-0.5 prose-li:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
           <Markdown remarkPlugins={PREVIEW_REMARK_PLUGINS} urlTransform={safeUrlTransform}>
             {previewContent}
           </Markdown>

@@ -183,7 +183,7 @@ function SearchResultItem({
       onClick={onClick}
       onMouseEnter={onHover}
       className={cn(
-        'settings-search-result-item w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors',
+        'settings-search-result-item w-full flex items-center gap-2 px-2 py-1.5 rounded-glass-popover text-left transition-colors',
         active
           ? 'settings-search-result-item--active'
           : 'md-text hover:bg-[var(--hover-fill,hsl(var(--accent)))]'

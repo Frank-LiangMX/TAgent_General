@@ -203,7 +203,7 @@ export function MermaidBlock({ code }: MermaidBlockProps): React.ReactElement {
   const zoomPercent = Math.round(scale * 100)
 
   return (
-    <div className="mermaid-block-wrapper group/mermaid rounded-lg overflow-hidden my-2 border border-border/50">
+    <div className="mermaid-block-wrapper group/mermaid rounded-glass-popover overflow-hidden my-2 border border-border/50">
       {/* 头部栏 */}
       <div className="flex items-center justify-between h-[34px] px-2 py-1 bg-muted/60 text-muted-foreground text-xs">
         <span className="font-medium select-none">Mermaid</span>

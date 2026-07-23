@@ -29,7 +29,7 @@ export function TASidebarConfig(): React.ReactElement {
           type="button"
           onClick={() => setActiveTab('config')}
           className={cn(
-            'rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-left',
+            'rounded-glass-popover border border-border/50 bg-muted/30 px-3 py-2.5 text-left',
             'hover:bg-foreground/[0.04] transition-colors'
           )}
         >
@@ -41,7 +41,7 @@ export function TASidebarConfig(): React.ReactElement {
         </button>
       ))}
 
-      <div className="rounded-lg bg-muted/40 border border-border/40 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+      <div className="rounded-glass-popover bg-muted/40 border border-border/40 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
         配置修改在主区『配置』Tab 完成；保存后此处自动同步。
       </div>
     </div>

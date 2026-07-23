@@ -121,7 +121,7 @@ export function TaskProgressCard({
   return (
     <div className={cn('my-1', animate && 'animate-in fade-in duration-200')}>
       {/* 虚线边框容器 */}
-      <div className="rounded-lg bg-muted/40 px-3.5 py-3" style={dashedBorderStyle}>
+      <div className="rounded-glass-popover bg-muted/40 px-3.5 py-3" style={dashedBorderStyle}>
         {/* 标题行 */}
         <div className="flex items-center gap-1.5 mb-1.5">
           <ListTodo className="size-3.5 text-muted-foreground" />

@@ -195,7 +195,7 @@ export function BtwPanel(): React.ReactElement {
 
       {/* Error */}
       {error && (
-        <div className="mx-4 mb-2 px-3 py-2 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-lg shrink-0">
+        <div className="mx-4 mb-2 px-3 py-2 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-glass-popover shrink-0">
           {error}
         </div>
       )}
@@ -209,7 +209,7 @@ export function BtwPanel(): React.ReactElement {
             onKeyDown={handleKeyDown}
             placeholder="输入问题..."
             rows={1}
-            className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-h-32"
+            className="flex-1 resize-none rounded-glass-popover bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-h-32"
             disabled={streaming}
             onInput={(e) => {
               const target = e.currentTarget

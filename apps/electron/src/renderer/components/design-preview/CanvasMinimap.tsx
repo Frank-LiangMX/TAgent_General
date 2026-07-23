@@ -256,7 +256,7 @@ export function CanvasMinimap({
   return (
     <div
       className={cn(
-        'pointer-events-auto select-none overflow-hidden rounded-lg border border-border/50',
+        'pointer-events-auto select-none overflow-hidden rounded-glass-popover border border-border/50',
         'bg-background/90 shadow-lg backdrop-blur-sm',
         className
       )}

@@ -395,7 +395,7 @@ function UpdateSection(): React.ReactElement | null {
       {/* 错误详情（可展开） */}
       {status.status === 'error' && status.error && (
         <div className="border-t px-4 py-2.5">
-          <div className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive dark:text-destructive">
+          <div className="rounded-glass-popover bg-destructive/10 px-3 py-2 text-xs text-destructive dark:text-destructive">
             <div className="font-medium mb-0.5">更新失败</div>
             <div className="text-[11px] break-all opacity-90">{status.error}</div>
           </div>
@@ -760,7 +760,7 @@ function StatusGridItem({
   if (hide) return null
 
   return (
-    <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+    <div className="flex flex-col items-center p-2 rounded-glass-popover bg-muted/30">
       {ok ? (
         <CheckCircle2 size={18} className="text-emerald-500 mb-1" />
       ) : (

@@ -221,7 +221,7 @@ export function TAInstallDialog({
         </div>
 
         {/* 日志区 */}
-        <div className="border rounded-lg bg-muted/30">
+        <div className="border rounded-glass-popover bg-muted/30">
           <ScrollArea className="h-48">
             <div className="p-3 font-mono text-xs space-y-0.5">
               {logs.length === 0 ? (

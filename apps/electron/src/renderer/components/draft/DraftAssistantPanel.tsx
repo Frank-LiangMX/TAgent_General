@@ -344,7 +344,7 @@ export function DraftAssistantPanel(): React.ReactElement {
       <div className="px-4 pt-3 pb-3 shrink-0">
         {/* 已配置：显示推荐提示 */}
         {isConfigured && (
-          <div className="mb-2.5 px-2.5 py-1.5 rounded-lg bg-primary/5 border border-primary/10">
+          <div className="mb-2.5 px-2.5 py-1.5 rounded-glass-popover bg-primary/5 border border-primary/10">
             <p className="text-[11px] text-primary/80">💡 {suggestion.reason}</p>
           </div>
         )}
@@ -358,7 +358,7 @@ export function DraftAssistantPanel(): React.ReactElement {
               onClick={() => handleAnalysis(action)}
               disabled={streaming || !isConfigured}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors',
+                'flex items-center gap-1.5 px-3 py-2 rounded-glass-popover text-[11px] font-medium transition-colors',
                 action.id === suggestion.type && isConfigured
                   ? 'bg-primary/15 text-primary border border-primary/20'
                   : 'bg-muted/30 hover:bg-muted/50 text-foreground/70 hover:text-foreground border border-border/30',
@@ -421,7 +421,7 @@ export function DraftAssistantPanel(): React.ReactElement {
             onKeyDown={handleKeyDown}
             placeholder={isConfigured ? '追问或补充…' : '请先选择模型'}
             rows={1}
-            className="flex-1 resize-none rounded-lg bg-transparent px-2 py-1.5 text-[13px] leading-relaxed text-foreground placeholder:text-foreground/40 outline-none max-h-24 disabled:opacity-50"
+            className="flex-1 resize-none rounded-glass-popover bg-transparent px-2 py-1.5 text-[13px] leading-relaxed text-foreground placeholder:text-foreground/40 outline-none max-h-24 disabled:opacity-50"
             disabled={streaming || !isConfigured}
             onInput={(e) => {
               const target = e.currentTarget

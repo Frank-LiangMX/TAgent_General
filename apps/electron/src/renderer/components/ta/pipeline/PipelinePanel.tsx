@@ -184,7 +184,7 @@ function PipelineCard({ pipeline, onCancel, isCancelling }: PipelineCardProps): 
   }, [pipeline.startTime, pipeline.endTime])
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+    <div className="flex items-center gap-3 p-3 rounded-glass-popover border border-border">
       {/* 状态图标 */}
       <div
         className={cn(

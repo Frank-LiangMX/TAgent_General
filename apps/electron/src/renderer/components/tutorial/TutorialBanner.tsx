@@ -64,7 +64,7 @@ export function TutorialBanner(): React.ReactElement | null {
         {/* 关闭按钮 */}
         <button
           onClick={handleLater}
-          className="absolute top-3 right-3 p-1 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
+          className="absolute top-3 right-3 p-1 rounded-glass-popover text-muted-foreground/50 hover:text-muted-foreground hover:bg-foreground/5 transition-colors"
         >
           <X size={14} />
         </button>

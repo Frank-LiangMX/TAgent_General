@@ -53,7 +53,7 @@ export function AttachmentPreviewItem({
     return (
       <div
         className={cn(
-          'group/attachment relative size-[72px] shrink-0 rounded-lg overflow-hidden',
+          'group/attachment relative size-[72px] shrink-0 rounded-glass-popover overflow-hidden',
           className
         )}
       >
@@ -92,7 +92,7 @@ export function AttachmentPreviewItem({
       <div
         className={cn(
           'group/attachment relative flex items-center gap-2 shrink-0',
-          'rounded-lg bg-blue-500/10 border border-blue-500/20',
+          'rounded-glass-popover bg-blue-500/10 border border-blue-500/20',
           'pl-2.5 pr-7 py-1.5 text-[13px] text-blue-500 dark:text-blue-400',
           'transition-colors hover:bg-blue-500/15',
           className
@@ -122,7 +122,7 @@ export function AttachmentPreviewItem({
     <div
       className={cn(
         'group/attachment relative flex items-center gap-2 shrink-0',
-        'rounded-lg bg-[#37a5aa]/10 border border-[#37a5aa]/20',
+        'rounded-glass-popover bg-[#37a5aa]/10 border border-[#37a5aa]/20',
         'pl-2.5 pr-7 py-1.5 text-[13px] text-[#37a5aa]',
         'transition-colors hover:bg-[#37a5aa]/15',
         onClick && 'cursor-pointer',

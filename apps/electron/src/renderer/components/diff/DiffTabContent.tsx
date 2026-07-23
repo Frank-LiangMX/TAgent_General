@@ -1252,7 +1252,7 @@ export function DiffTabContent({
             isPdf ? (
               pdfSrc ? (
                 <div className="relative h-full">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-lg bg-background/80 backdrop-filter backdrop-blur-sm border border-border/30 shadow-sm">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-glass-popover bg-background/80 backdrop-filter backdrop-blur-sm border border-border/30 shadow-sm">
                     <button
                       type="button"
                       className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"
@@ -1292,7 +1292,7 @@ export function DiffTabContent({
             ) : isImage ? (
               imageDataUrl ? (
                 <div className="relative h-full">
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-lg bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-2 py-1 rounded-glass-popover bg-background/80 backdrop-blur-sm border border-border/30 shadow-sm">
                     <button
                       type="button"
                       className="w-6 h-6 rounded border border-border/30 flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/50"

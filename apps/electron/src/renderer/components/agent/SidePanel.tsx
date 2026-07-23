@@ -391,7 +391,7 @@ export function SidePanel({
             {sessionPath ? (
               <>
                 <div className="mb-2 flex flex-shrink-0 items-center gap-2 rounded-xl border border-border/35 bg-background/35 px-2.5 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/55 text-muted-foreground">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-glass-popover bg-muted/55 text-muted-foreground">
                     <FolderOpen className="size-3.5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -429,7 +429,7 @@ export function SidePanel({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className={cn(filePanelActionButtonClass, 'rounded-lg bg-background/20')}
+                        className={cn(filePanelActionButtonClass, 'rounded-glass-popover bg-background/20')}
                         onClick={() =>
                           window.electronAPI.openFile(sessionPath).catch(console.error)
                         }
@@ -603,7 +603,7 @@ function ActivityFileItem({ path, type, onAction }: ActivityFileItemProps): Reac
   const name = getPathBasename(path)
 
   return (
-    <div className="group relative flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent/40 cursor-pointer transition-colors">
+    <div className="group relative flex items-center gap-2 px-2 py-1.5 rounded-glass-popover hover:bg-accent/40 cursor-pointer transition-colors">
       {/* 标记点 */}
       <span
         className={cn(
@@ -697,7 +697,7 @@ function AttachedFilesSection({
         return (
           <div
             key={filePath}
-            className="flex items-center gap-1 py-1 pl-2 pr-2 text-sm cursor-pointer hover:bg-accent/50 group mx-2 rounded-lg"
+            className="flex items-center gap-1 py-1 pl-2 pr-2 text-sm cursor-pointer hover:bg-accent/50 group mx-2 rounded-glass-popover"
             onClick={() => onFilePreview?.(filePath)}
           >
             <span className="w-3.5 flex-shrink-0" />

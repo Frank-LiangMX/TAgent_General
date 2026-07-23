@@ -330,7 +330,7 @@ export function OfficeSessionView({ sessionId }: OfficeSessionViewProps): React.
                     type="button"
                     onClick={() => void refresh()}
                     disabled={loading}
-                    className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-wait disabled:opacity-55"
+                    className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-glass-popover text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-wait disabled:opacity-55"
                     aria-label="刷新办公室任务状态"
                   >
                     <RefreshCw className={cn('size-4', loading && 'animate-spin')} aria-hidden />

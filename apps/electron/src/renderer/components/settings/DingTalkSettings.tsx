@@ -231,7 +231,7 @@ export function DingTalkSettings(): React.ReactElement {
             </div>
 
             {/* 提示 */}
-            <div className="pl-7 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
+            <div className="pl-7 p-3 rounded-glass-popover bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
               <span className="font-medium">重要：</span>配置事件订阅前，必须先在 TAgent
               中保存凭证并确认 Stream 连接成功， 否则钉钉后台会提示「Stream 模式接入失败」。
             </div>
@@ -453,7 +453,7 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           {testResult && (
             <div
               className={cn(
-                'p-3 rounded-lg flex items-start gap-2 text-sm',
+                'p-3 rounded-glass-popover flex items-start gap-2 text-sm',
                 testResult.success
                   ? 'bg-green-500/10 text-green-700 dark:text-green-400'
                   : 'bg-red-500/10 text-red-700 dark:text-red-400'
@@ -469,7 +469,7 @@ function BotConfigCard({ bot, state, onSaved, onRemoved }: BotConfigCardProps): 
           )}
 
           {state?.status === 'error' && state.errorMessage && (
-            <div className="p-2.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
+            <div className="p-2.5 rounded-glass-popover bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
               {state.errorMessage}
             </div>
           )}

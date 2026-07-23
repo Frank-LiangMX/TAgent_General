@@ -345,7 +345,7 @@ export function QuickTaskApp(): React.ReactElement {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 rounded-glass-popover px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
                 >
                   <svg
                     width="14"
@@ -381,7 +381,7 @@ export function QuickTaskApp(): React.ReactElement {
             type="button"
             onClick={handleSubmit}
             disabled={!hasContent || isSubmitting}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 rounded-glass-popover bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <span className="inline-block size-3 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
@@ -428,7 +428,7 @@ function AttachmentChip({
 
   if (isImage && previewUrl) {
     return (
-      <div className="group/chip relative size-14 shrink-0 rounded-lg overflow-hidden">
+      <div className="group/chip relative size-14 shrink-0 rounded-glass-popover overflow-hidden">
         <img src={previewUrl} alt={filename} className="size-full object-cover" />
         <button
           type="button"
@@ -453,7 +453,7 @@ function AttachmentChip({
   }
 
   return (
-    <div className="group/chip relative flex items-center gap-1.5 shrink-0 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground">
+    <div className="group/chip relative flex items-center gap-1.5 shrink-0 rounded-glass-popover bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground">
       <svg
         width="12"
         height="12"

@@ -273,7 +273,7 @@ export function RetryingNotice({
   }, [retrying.failed, retrying.history])
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 p-3 mb-3">
+    <div className="rounded-glass-popover border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 p-3 mb-3">
       {/* 头部：简洁状态 */}
       <button
         type="button"

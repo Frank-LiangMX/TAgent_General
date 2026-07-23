@@ -245,7 +245,7 @@ export function LayerTreePanel({
             <div className="px-2.5 pb-1.5">
               <button
                 type="button"
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="flex w-full items-center justify-center gap-1.5 rounded-glass-popover bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 onClick={handleTellAgent}
               >
                 <Send className="size-3" />

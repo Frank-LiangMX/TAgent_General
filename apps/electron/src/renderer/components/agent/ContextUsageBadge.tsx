@@ -358,7 +358,7 @@ export function ContextUsageBadge({
         </div>
 
         {/* Token 明细 */}
-        <div className="space-y-1 rounded-lg bg-background/50 p-2">
+        <div className="space-y-1 rounded-glass-popover bg-background/50 p-2">
           <ContextUsageTermHint term="输入" display="输入 Token" inline />
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground/60">本次输入</span>

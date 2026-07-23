@@ -125,7 +125,7 @@ function ReviewCard({ item }: ReviewCardProps): React.ReactElement {
   const lastReview = item.reviewHistory?.[0]
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+    <div className="flex items-center gap-3 p-3 rounded-glass-popover border border-border">
       {/* 状态图标 */}
       <div
         className={cn(

@@ -82,7 +82,7 @@ function EmptyState(): React.ReactElement {
 
 /** 原型基调的工具栏胶囊按钮（细发丝描边 + 半透明底） */
 const toolbarChipClass =
-  'flex h-7 items-center gap-1.5 rounded-lg border border-border/45 bg-background/50 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground disabled:pointer-events-none disabled:opacity-45'
+  'flex h-7 items-center gap-1.5 rounded-glass-popover border border-border/45 bg-background/50 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground disabled:pointer-events-none disabled:opacity-45'
 
 /** 是否在可编辑区域（输入框等），空格键不应触发平移 */
 function isEditableTarget(target: EventTarget | null): boolean {

@@ -81,7 +81,7 @@ export function DesignSuggestionBanner({
   return (
     <div
       className={cn(
-        'mx-3 mb-1 flex items-start gap-3 rounded-lg border border-border/50 p-3 shadow-sm',
+        'mx-3 mb-1 flex items-start gap-3 rounded-glass-popover border border-border/50 p-3 shadow-sm',
         config.bg,
         isHighConfidence && 'border-primary/20',
         className

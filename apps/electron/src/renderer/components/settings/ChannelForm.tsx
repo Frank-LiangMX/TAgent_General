@@ -631,7 +631,7 @@ export function ChannelForm({
 
           {/* Token Plan 供应商消费提醒 */}
           {showTokenPlanWarning && TOKEN_PLAN_PROVIDERS.has(provider) && (
-            <div className="mx-4 mb-2 flex items-start gap-2.5 rounded-lg border border-amber-200/60 bg-amber-50/80 px-3 py-2.5 text-xs dark:border-amber-600/30 dark:bg-amber-950/30">
+            <div className="mx-4 mb-2 flex items-start gap-2.5 rounded-glass-popover border border-amber-200/60 bg-amber-50/80 px-3 py-2.5 text-xs dark:border-amber-600/30 dark:bg-amber-950/30">
               <AlertTriangle
                 size={14}
                 className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"

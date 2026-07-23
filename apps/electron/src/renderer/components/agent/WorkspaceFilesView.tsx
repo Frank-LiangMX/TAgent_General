@@ -460,7 +460,7 @@ function AttachedFilesSection({
         return (
           <div
             key={filePath}
-            className="flex items-center gap-1 py-1 pl-2 pr-2 text-sm cursor-pointer hover:bg-accent/50 group mx-2 rounded-lg"
+            className="flex items-center gap-1 py-1 pl-2 pr-2 text-sm cursor-pointer hover:bg-accent/50 group mx-2 rounded-glass-popover"
             onClick={() => onFilePreview?.(filePath)}
           >
             <span className="w-3.5 flex-shrink-0" />

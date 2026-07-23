@@ -42,7 +42,7 @@ function SnapshotChip({
   return (
     <div
       className={cn(
-        'group flex shrink-0 flex-col items-stretch rounded-lg border text-[11px] transition-colors',
+        'group flex shrink-0 flex-col items-stretch rounded-glass-popover border text-[11px] transition-colors',
         isActive
           ? 'border-primary/35 bg-primary/10 text-primary'
           : isLatest
@@ -107,7 +107,7 @@ export function VersionTimeline({ className }: { className?: string }): React.Re
       {activeId && (
         <button
           type="button"
-          className="shrink-0 rounded-lg border border-border/45 bg-background/50 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground"
+          className="shrink-0 rounded-glass-popover border border-border/45 bg-background/50 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground"
           onClick={() => setActiveId(null)}
         >
           回到最新

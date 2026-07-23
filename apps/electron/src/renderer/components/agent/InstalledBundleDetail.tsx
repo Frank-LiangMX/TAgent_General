@@ -55,7 +55,7 @@ export function InstalledBundleDetail({
                 >
                   <span
                     className={cn(
-                      'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                      'flex size-9 shrink-0 items-center justify-center rounded-glass-popover',
                       item.kind === 'mcp'
                         ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400'
                         : 'bg-amber-500/12 text-amber-600 dark:text-amber-400'

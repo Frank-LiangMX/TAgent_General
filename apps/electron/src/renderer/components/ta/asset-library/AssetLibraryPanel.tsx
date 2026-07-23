@@ -339,7 +339,7 @@ export function AssetLibraryPanel(): React.ReactElement {
                   variant={selectedType === type ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedType(selectedType === type ? null : type)}
-                  className="size-[32px] rounded-lg p-0"
+                  className="size-[32px] rounded-glass-popover p-0"
                 >
                   {ASSET_TYPE_ICONS[type] || <Folder size={16} />}
                 </Button>
@@ -431,9 +431,9 @@ function AssetCard({ asset }: AssetCardProps): React.ReactElement {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-muted/50 transition-colors cursor-pointer">
+        <div className="flex items-center gap-3 p-3 rounded-glass-popover border border-border hover:border-primary/30 hover:bg-muted/50 transition-colors cursor-pointer">
           {/* 图标 */}
-          <div className="size-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+          <div className="size-10 rounded-glass-popover bg-muted flex items-center justify-center flex-shrink-0">
             {ASSET_TYPE_ICONS[asset.type] || <Folder size={20} className="text-muted-foreground" />}
           </div>
 

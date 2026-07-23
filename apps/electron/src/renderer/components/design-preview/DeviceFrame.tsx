@@ -92,7 +92,7 @@ function DesktopFrame({
 
   return (
     <div
-      className="relative rounded-lg bg-zinc-200 shadow-xl ring-1 ring-zinc-300"
+      className="relative rounded-glass-popover bg-zinc-200 shadow-xl ring-1 ring-zinc-300"
       style={{
         width: frameWidth,
         height: frameHeight,

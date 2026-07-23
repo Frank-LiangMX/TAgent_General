@@ -162,14 +162,14 @@ export function WeChatSettings(): React.ReactElement {
 
         {/* 错误信息 */}
         {bridgeState.status === 'error' && bridgeState.errorMessage && (
-          <div className="mt-2 px-3 py-2.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
+          <div className="mt-2 px-3 py-2.5 rounded-glass-popover bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
             {bridgeState.errorMessage}
           </div>
         )}
 
         {/* 连接成功提示 */}
         {isConnected && (
-          <div className="mt-2 px-3 py-2.5 rounded-lg bg-green-500/10 text-green-700 dark:text-green-400 text-sm">
+          <div className="mt-2 px-3 py-2.5 rounded-glass-popover bg-green-500/10 text-green-700 dark:text-green-400 text-sm">
             微信已连接，消息将自动接收。
           </div>
         )}
@@ -242,7 +242,7 @@ export function WeChatSettings(): React.ReactElement {
             </div>
 
             {/* 提示 */}
-            <div className="pl-7 p-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
+            <div className="pl-7 p-3 rounded-glass-popover bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">
               微信集成基于{' '}
               <button
                 type="button"

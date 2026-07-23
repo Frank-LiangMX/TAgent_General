@@ -330,7 +330,7 @@ export function MemoryGraph({
 
       {/* 节点详情面板（选中时显示） */}
       {selectedNode && (
-        <div className="absolute bottom-4 right-4 w-64 rounded-lg border border-border/40 bg-background/90 p-3 text-xs shadow-lg backdrop-blur-sm">
+        <div className="absolute bottom-4 right-4 w-64 rounded-glass-popover border border-border/40 bg-background/90 p-3 text-xs shadow-lg backdrop-blur-sm">
           <div className="mb-1 flex items-center gap-1.5">
             <span
               className="size-2 rounded-full"

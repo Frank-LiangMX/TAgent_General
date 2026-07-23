@@ -141,7 +141,7 @@ export function RequirementBlockCard({
             onChange={(e) => updateField('description', e.target.value)}
             placeholder="详细描述这个需求…"
             rows={3}
-            className="material-flat-input min-h-[60px] w-full resize-y rounded-lg bg-muted/30 px-3 py-2 text-sm text-foreground/80 outline-none transition-colors placeholder:text-muted-foreground/40 focus:bg-muted/40"
+            className="material-flat-input min-h-[60px] w-full resize-y rounded-glass-popover bg-muted/30 px-3 py-2 text-sm text-foreground/80 outline-none transition-colors placeholder:text-muted-foreground/40 focus:bg-muted/40"
           />
         )}
       </div>

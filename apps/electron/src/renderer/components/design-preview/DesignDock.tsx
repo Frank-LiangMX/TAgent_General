@@ -68,7 +68,7 @@ function DockTooltip({
 
 /** 顶部工具栏图标胶囊（与导入按钮同基调） */
 const dockChipClass =
-  'flex size-7 items-center justify-center rounded-lg border border-border/45 bg-background/50 text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground'
+  'flex size-7 items-center justify-center rounded-glass-popover border border-border/45 bg-background/50 text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground'
 
 export interface DesignDockProps {
   className?: string
@@ -195,7 +195,7 @@ function ZoomInput({
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit()
         }}
-        className="h-7 w-[3.2rem] rounded-lg border border-border/45 bg-background/75 text-center text-[11px] font-medium tabular-nums text-foreground outline-none"
+        className="h-7 w-[3.2rem] rounded-glass-popover border border-border/45 bg-background/75 text-center text-[11px] font-medium tabular-nums text-foreground outline-none"
         aria-label="缩放比例"
       />
     )
@@ -205,7 +205,7 @@ function ZoomInput({
     <DockTooltip label="点击输入缩放比例">
       <button
         type="button"
-        className="flex h-7 min-w-[3.2rem] items-center justify-center rounded-lg border border-border/45 bg-background/50 px-2 text-[11px] font-medium tabular-nums text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground"
+        className="flex h-7 min-w-[3.2rem] items-center justify-center rounded-glass-popover border border-border/45 bg-background/50 px-2 text-[11px] font-medium tabular-nums text-muted-foreground transition-colors hover:bg-background/75 hover:text-foreground"
         onClick={() => {
           setDraft(String(Math.round(zoom * 100)))
           setEditing(true)

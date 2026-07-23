@@ -207,7 +207,7 @@ function BundleSubItem({
   return (
     <div className="material-panel-card flex items-start gap-3 rounded-xl border border-border/50 bg-card/40 p-4">
       <span
-        className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', iconClass)}
+        className={cn('flex size-9 shrink-0 items-center justify-center rounded-glass-popover', iconClass)}
       >
         {icon}
       </span>

@@ -158,7 +158,7 @@ export function KsccChannelForm({
       />
 
       {ksccInstalled === false && (
-        <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3 text-xs text-foreground/80">
+        <div className="rounded-glass-popover border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3 text-xs text-foreground/80">
           kscc CLI 尚未安装，Agent 无法使用该渠道。{' '}
           <button
             type="button"

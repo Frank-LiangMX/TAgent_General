@@ -39,7 +39,7 @@ export function TAConfigPanel(): React.ReactElement {
         {/* UE5 桥接 */}
         <section>
           <h2 className="text-sm font-medium mb-3">UE5 桥接</h2>
-          <div className="p-4 rounded-lg border border-border text-xs text-muted-foreground">
+          <div className="p-4 rounded-glass-popover border border-border text-xs text-muted-foreground">
             UE5 桥接配置将在后续版本中实现
           </div>
         </section>

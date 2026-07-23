@@ -127,7 +127,7 @@ export function PluginSidebarNav({ capabilities }: PluginSidebarNavProps): React
           <button
             type="button"
             onClick={() => handleSelectSection('recommended')}
-            className="mb-2 rounded-lg px-2 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+            className="mb-2 rounded-glass-popover px-2 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
           >
             ← 返回市场
           </button>
