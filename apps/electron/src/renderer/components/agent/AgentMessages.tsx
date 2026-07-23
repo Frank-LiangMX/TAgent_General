@@ -16,6 +16,8 @@ import {
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import * as React from 'react'
 
+import type { StickToBottomContext } from 'use-stick-to-bottom'
+
 import type { AskMessage, AgentEventUsage, RetryAttempt, SDKMessage } from '@tagent/shared'
 import { AskMessageItem } from './AskMessageItem'
 import { buildLiveGroupSet } from './live-group-set'
@@ -554,6 +556,26 @@ function AgentMessagesImpl({
   const [skipFadeIn, setSkipFadeIn] = React.useState(false)
   const prevSessionIdRef = React.useRef<string | null>(null)
 
+  // 滚动时禁用 backdrop-filter，消除 GPU 合成滞后导致的拖影
+  const scrollContextRef = React.useRef<StickToBottomContext | null>(null)
+  React.useEffect(() => {
+    const scrollEl = scrollContextRef.current?.scrollRef?.current
+    if (!scrollEl) return
+    let scrollTimer = 0
+    const onScroll = (): void => {
+      scrollEl.classList.add('is-scrolling')
+      clearTimeout(scrollTimer)
+      scrollTimer = window.setTimeout(() => {
+        scrollEl.classList.remove('is-scrolling')
+      }, 150)
+    }
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      scrollEl.removeEventListener('scroll', onScroll)
+      clearTimeout(scrollTimer)
+    }
+  }, [])
+
   // 拉取初始 Ask 消息（会话切换 + 流式完成后 refreshVersion 触发）
   const askRefreshVersion = useAtomValue(currentAskRefreshVersionAtom)
   React.useEffect(() => {
@@ -888,6 +910,7 @@ function AgentMessagesImpl({
   return (
     <BasePathsProvider basePaths={attachedDirs}>
       <Conversation
+        contextRef={scrollContextRef}
         resize={ready && !transitioning ? 'smooth' : 'instant'}
         className={
           ready

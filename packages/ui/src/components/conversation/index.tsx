@@ -45,7 +45,7 @@ export function ConversationContent({
 }: ConversationContentProps): React.ReactElement {
   return (
     <StickToBottom.Content
-      scrollClassName="scrollbar-none"
+      scrollClassName="scrollbar-none will-change-scroll-position"
       className={cn('selectable-content flex flex-col gap-1 py-4 px-8', className)}
       {...props}
     />

@@ -845,3 +845,17 @@
     0 0 0 2px var(--spatial-accent-soft),
     var(--surface-role-composer-shadow) !important;
 }
+
+/*
+ * 滚动性能优化：滚动时关闭子元素的 backdrop-filter，
+ * 避免 GPU 合成滞后导致的拖影（ghosting）。
+ * is-scrolling 由 AgentMessages 的 scroll listener 动态添加。
+ */
+.is-scrolling .agent-turn-process,
+.is-scrolling .agent-turn-title,
+.is-scrolling .agent-tool-detail,
+.is-scrolling .agent-running-badge,
+.is-scrolling .agent-sticky-jump {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
