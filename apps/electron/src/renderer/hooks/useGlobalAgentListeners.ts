@@ -98,7 +98,6 @@ import {
 } from '@/atoms/notifications'
 import {
   autoPreviewEnabledAtom,
-  previewPanelOpenMapAtom,
   previewFileMapAtom,
 } from '@/atoms/preview-atoms'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
@@ -694,12 +693,9 @@ export function useGlobalAgentListeners(): void {
             return m
           })
           if (openPanel) {
-            store.set(previewPanelOpenMapAtom, (prev) => {
-              if (prev.get(sid)) return prev
-              const m = new Map(prev)
-              m.set(sid, true)
-              return m
-            })
+            // 自动预览：路由到右栏预览页（选中 browser + 展开右栏）
+            setRightRailItemForSession(store, sid, 'browser')
+            setAgentSidePanelOpenForSession(store, sid, true)
           }
           return previewFile
         })

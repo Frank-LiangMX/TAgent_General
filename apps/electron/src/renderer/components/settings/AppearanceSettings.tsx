@@ -40,7 +40,6 @@ import {
   updateAssistantPresenceStyle,
 } from '@/atoms/assistant-presence'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
-import { previewModePreferenceAtom, type PreviewModePreference } from '@/atoms/preview-atoms'
 import { officeMotionModeAtom, type OfficeMotionMode } from '@/atoms/session-presentation-atoms'
 import {
   themeModeAtom,
@@ -57,12 +56,6 @@ const READING_FONT_SIZE_OPTIONS = [
   { value: 'small', label: '小' },
   { value: 'medium', label: '中' },
   { value: 'large', label: '大' },
-]
-
-/** Agent 预览默认展开方式 */
-const PREVIEW_MODE_OPTIONS: { value: PreviewModePreference; label: string }[] = [
-  { value: 'tab', label: '标签页' },
-  { value: 'split', label: '侧边分屏' },
 ]
 
 const OFFICE_MOTION_OPTIONS: { value: OfficeMotionMode; label: string }[] = [
@@ -235,7 +228,6 @@ export function AppearanceSettings(): React.ReactElement {
   const [themeStyle, setThemeStyle] = useAtom(themeStyleAtom)
   const systemIsDark = useAtomValue(systemIsDarkAtom)
   const [markdownFontSize, setMarkdownFontSize] = useAtom(markdownFontSizeAtom)
-  const [previewModePref, setPreviewModePref] = useAtom(previewModePreferenceAtom)
   const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
   const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
   const [officeMotionMode, setOfficeMotionMode] = useAtom(officeMotionModeAtom)
@@ -474,14 +466,6 @@ export function AppearanceSettings(): React.ReactElement {
               />
             </div>
           ) : null}
-
-          <SettingsSegmentedControl
-            label="Agent 预览展开方式"
-            description="点击文件、工具结果「预览」时的默认位置；拖拽预览 Tab 出标签栏可即时切换为侧边分屏"
-            value={previewModePref}
-            onValueChange={(v) => setPreviewModePref(v as PreviewModePreference)}
-            options={PREVIEW_MODE_OPTIONS}
-          />
         </SettingsCard>
       </SettingsSection>
     </SettingsPage>

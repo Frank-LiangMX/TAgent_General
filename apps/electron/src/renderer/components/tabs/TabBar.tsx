@@ -8,7 +8,7 @@
  * - preview Tab 拖出 TabBar 转为右侧分屏
  */
 
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import * as React from 'react'
 
 import { TabBarItem } from './TabBarItem'
@@ -24,7 +24,6 @@ import {
   visualActiveTabIdAtom,
   visibleTabsAtom,
 } from '@/atoms/tab-atoms'
-import { tearOffPreviewToSplit } from '@/components/diff/preview-opener'
 import { useCloseTab } from '@/hooks/useCloseTab'
 import { useSyncActiveTabSideEffects } from '@/hooks/useSyncActiveTabSideEffects'
 
@@ -33,7 +32,6 @@ export function TabBar(): React.ReactElement {
   const setActiveTabId = useSetAtom(activeTabIdAtom)
   const [visualActiveTabId, setVisualActiveTabId] = useAtom(visualActiveTabIdAtom)
   const indicatorMap = useAtomValue(tabIndicatorMapAtom)
-  const store = useStore()
   const setTabSwitching = useSetAtom(tabSwitchingAtom)
 
   const syncSideEffects = useSyncActiveTabSideEffects()
@@ -70,13 +68,6 @@ export function TabBar(): React.ReactElement {
       }, 350)
     },
     [setVisualActiveTabId, setActiveTabId, setTabSwitching, syncSideEffects, tabs]
-  )
-
-  const handleTearOff = React.useCallback(
-    (tabId: string) => {
-      tearOffPreviewToSplit(store, tabId)
-    },
-    [store]
   )
 
   const handleDragStart = React.useCallback(
@@ -122,7 +113,6 @@ export function TabBar(): React.ReactElement {
       onActivate={handleActivate}
       onClose={requestClose}
       onDragStart={handleDragStart}
-      onTearOff={handleTearOff}
     />
   )
 }
@@ -134,7 +124,6 @@ function TabBarInner({
   onActivate,
   onClose,
   onDragStart,
-  onTearOff,
 }: {
   tabs: TabItem[]
   activeTabId: string | null
@@ -142,7 +131,6 @@ function TabBarInner({
   onActivate: (tabId: string) => void
   onClose: (tabId: string) => void
   onDragStart: (tabId: string, e: React.PointerEvent) => void
-  onTearOff: (tabId: string) => void
 }): React.ReactElement {
   const [hoveredTabId, setHoveredTabId] = React.useState<string | null>(null)
   const [isLeaving, setIsLeaving] = React.useState(false)
@@ -152,7 +140,6 @@ function TabBarInner({
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const barRef = React.useRef<HTMLDivElement>(null)
   const activePlateRef = React.useRef<HTMLSpanElement>(null)
-  const [tearingOff, setTearingOff] = React.useState<string | null>(null)
 
   const updateActivePlate = React.useCallback(() => {
     const list = scrollRef.current
@@ -193,50 +180,10 @@ function TabBarInner({
 
   const handleDragStartWithTearOff = React.useCallback(
     (tabId: string, e: React.PointerEvent) => {
-      const tab = tabs.find((t) => t.id === tabId)
-      if (!tab || tab.type !== 'preview') {
-        onDragStart(tabId, e)
-        return
-      }
-
-      if (e.button !== 0) return
-      const startX = e.clientX
-      let torn = false
-      let sorting = false
-      const TEAR_OFF_MARGIN = 24
-
-      const handleMove = (me: PointerEvent): void => {
-        if (torn) return
-        const rect = barRef.current?.getBoundingClientRect()
-        const outOfBar =
-          !!rect &&
-          (me.clientY < rect.top - TEAR_OFF_MARGIN || me.clientY > rect.bottom + TEAR_OFF_MARGIN)
-        if (outOfBar) {
-          torn = true
-          setTearingOff(tabId)
-          document.removeEventListener('pointermove', handleMove)
-          requestAnimationFrame(() => {
-            onTearOff(tabId)
-            setTearingOff(null)
-          })
-          return
-        }
-        const dx = Math.abs(me.clientX - startX)
-        if (!sorting && dx > 5) {
-          sorting = true
-          onDragStart(tabId, e)
-        }
-      }
-
-      const handleUp = (): void => {
-        document.removeEventListener('pointermove', handleMove)
-        document.removeEventListener('pointerup', handleUp)
-      }
-
-      document.addEventListener('pointermove', handleMove)
-      document.addEventListener('pointerup', handleUp)
+      // tear-off 已移除：所有标签页（含 preview）统一走普通拖拽排序
+      onDragStart(tabId, e)
     },
-    [tabs, onDragStart, onTearOff]
+    [onDragStart]
   )
 
   React.useEffect(() => {
@@ -310,10 +257,6 @@ function TabBarInner({
     >
       <div className="absolute inset-0 z-[1] titlebar-drag-region pointer-events-none" />
 
-      {tearingOff && (
-        <div className="pointer-events-none absolute -bottom-px left-0 right-0 h-px bg-primary/60 shadow-[0_0_8px_rgba(0,0,0,0.2)]" />
-      )}
-
       <div
         ref={scrollRef}
         role="tablist"
@@ -332,7 +275,7 @@ function TabBarInner({
               isStreaming={streamingMap.get(tab.id) ?? 'idle'}
               isHovered={hoveredTabId === tab.id}
               isLeaving={hoveredTabId === tab.id && isLeaving}
-              isTearingOff={tearingOff === tab.id}
+              isTearingOff={false}
               onActivate={() => onActivate(tab.id)}
               onClose={() => onClose(tab.id)}
               onMiddleClick={() => onClose(tab.id)}

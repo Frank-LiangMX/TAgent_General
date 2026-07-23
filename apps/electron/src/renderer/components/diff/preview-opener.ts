@@ -1,28 +1,19 @@
 /**
- * 统一预览入口 — 按 previewModePreferenceAtom 路由到 Tab 或右侧分屏。
+ * 统一预览入口 — 路由到右栏「预览」页（browser）。
  *
  * 支持本地文件（DiffTabContent）与网页 URL（WebPreviewFrame，含 CSV live dashboard）。
+ * 历史上有「内联分屏 / 临时标签页」两套展示形态，现已统一收口到右栏预览页。
  */
 
 import * as React from 'react'
 import { useStore } from 'jotai'
 
 import {
-  getPreviewDisplayTitle,
   previewFileMapAtom,
-  previewModePreferenceAtom,
-  previewPanelOpenMapAtom,
   type PreviewFile,
 } from '@/atoms/preview-atoms'
-import {
-  activeTabIdAtom,
-  closeTab,
-  getPreviewTabTitleFromPreview,
-  isPreviewTab,
-  openTab,
-  sessionViewStateMapAtom,
-  tabsAtom,
-} from '@/atoms/tab-atoms'
+import { setAgentSidePanelOpenForSession } from '@/atoms/agent-atoms'
+import { setRightRailItemForSession } from '@/atoms/app-mode'
 
 type JotaiStore = ReturnType<typeof useStore>
 
@@ -34,12 +25,11 @@ export interface UrlPreviewInput {
   reloadNonce?: number
 }
 
-/** 打开预览面板（Tab 或分屏，取决于用户偏好） */
+/** 打开预览：写入预览数据 + 弹出右栏并选中「预览」页 */
 function openPreviewState(
   store: JotaiStore,
   sessionId: string,
-  preview: PreviewFile,
-  tabTitle: string
+  preview: PreviewFile
 ): void {
   store.set(previewFileMapAtom, (prev) => {
     const m = new Map(prev)
@@ -47,32 +37,12 @@ function openPreviewState(
     return m
   })
 
-  const preferSplit = store.get(previewModePreferenceAtom) === 'split'
-
-  if (preferSplit) {
-    store.set(previewPanelOpenMapAtom, (prev) => {
-      const m = new Map(prev)
-      m.set(sessionId, true)
-      return m
-    })
-    return
-  }
-
-  store.set(previewPanelOpenMapAtom, (prev) => {
-    const m = new Map(prev)
-    m.set(sessionId, false)
-    return m
-  })
-  const result = openTab(store.get(tabsAtom), {
-    type: 'preview',
-    sessionId,
-    title: tabTitle,
-  })
-  store.set(tabsAtom, result.tabs)
-  store.set(activeTabIdAtom, result.activeTabId)
+  // 统一路由到右栏预览页：选中 browser 项并展开右栏
+  setRightRailItemForSession(store, sessionId, 'browser')
+  setAgentSidePanelOpenForSession(store, sessionId, true)
 }
 
-/** 按用户偏好打开本地文件预览 */
+/** 打开本地文件预览（路由到右栏预览页） */
 export function openPreview(store: JotaiStore, sessionId: string, file: PreviewFile): void {
   const preview: PreviewFile = {
     ...file,
@@ -82,10 +52,10 @@ export function openPreview(store: JotaiStore, sessionId: string, file: PreviewF
     console.warn('[openPreview] 缺少 filePath')
     return
   }
-  openPreviewState(store, sessionId, preview, getPreviewTabTitleFromPreview(preview))
+  openPreviewState(store, sessionId, preview)
 }
 
-/** 打开网页 / CSV live dashboard 预览（与会话分屏或 Tab 同一壳） */
+/** 打开网页 / CSV live dashboard 预览（路由到右栏预览页） */
 export function openUrlPreview(store: JotaiStore, sessionId: string, input: UrlPreviewInput): void {
   const url = input.url.trim()
   if (!sessionId || !url) {
@@ -111,8 +81,7 @@ export function openUrlPreview(store: JotaiStore, sessionId: string, input: UrlP
     readOnly: true,
   }
 
-  const tabTitle = `预览：${getPreviewDisplayTitle(preview)}`
-  openPreviewState(store, sessionId, preview, tabTitle)
+  openPreviewState(store, sessionId, preview)
 }
 
 export function useOpenPreview(): (sessionId: string, file: PreviewFile) => void {
@@ -123,30 +92,4 @@ export function useOpenPreview(): (sessionId: string, file: PreviewFile) => void
     },
     [store]
   )
-}
-
-export function tearOffPreviewToSplit(store: JotaiStore, tabId: string): void {
-  const tabs = store.get(tabsAtom)
-  const tab = tabs.find((t) => t.id === tabId)
-  if (!tab || !isPreviewTab(tab)) return
-
-  const sessionId = tab.sessionId
-  const agentTab = tabs.find((t) => t.type === 'agent' && t.sessionId === sessionId)
-  if (!agentTab) return
-
-  const closed = closeTab(store.get(tabsAtom), store.get(activeTabIdAtom), tabId)
-  store.set(tabsAtom, closed.tabs)
-  store.set(activeTabIdAtom, agentTab.id)
-
-  store.set(sessionViewStateMapAtom, (prev) => {
-    const m = new Map(prev)
-    m.set(sessionId, { previewTabOpen: false, lastView: 'session' })
-    return m
-  })
-
-  store.set(previewPanelOpenMapAtom, (prev) => {
-    const m = new Map(prev)
-    m.set(sessionId, true)
-    return m
-  })
 }

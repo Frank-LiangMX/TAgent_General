@@ -137,7 +137,6 @@ import {
 } from '@/atoms/composer-atoms'
 import { draftSessionIdsAtom } from '@/atoms/draft-session-atoms'
 import {
-  previewPanelOpenMapAtom,
   previewFileMapAtom,
   quotedSelectionMapAtom,
   currentQuotedSelectionAtom,
@@ -387,6 +386,8 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
   const boardId = useAtomValue(sessionBoardIdAtomFamily(sessionId))
   const setRightRailItem = useSetAtom(rightRailItemAtom)
   const setSidePanelOpen = useSetAtom(agentSidePanelOpenAtom)
+  const currentRightRailItem = useAtomValue(rightRailItemAtom)
+  const currentSidePanelOpen = useAtomValue(agentSidePanelOpenAtom)
   const previousBoardIdRef = React.useRef<string | undefined>(undefined)
   const boardIdTrackingReadyRef = React.useRef(false)
 
@@ -2835,17 +2836,16 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
   const assistantNeedsInput =
     hasBannerOverlay || (allPermissionRequests.get(sessionId)?.length ?? 0) > 0
 
-  // ===== 预览面板状态（toggle 快捷键，分屏布局在 MainArea） =====
-  const setPreviewOpenMap = useSetAtom(previewPanelOpenMapAtom)
-
+  // ===== 预览面板状态（toggle 快捷键，切换右栏预览页） =====
   const togglePreviewPanel = React.useCallback(() => {
-    setPreviewOpenMap((prev) => {
-      const m = new Map(prev)
-      const current = m.get(sessionId) ?? false
-      m.set(sessionId, !current)
-      return m
-    })
-  }, [sessionId, setPreviewOpenMap])
+    // 右栏已展开且当前就是预览页 → 收起右栏；否则选中预览页并展开右栏
+    if (currentSidePanelOpen && currentRightRailItem === 'browser') {
+      setSidePanelOpen(false)
+    } else {
+      setRightRailItem('browser')
+      setSidePanelOpen(true)
+    }
+  }, [currentSidePanelOpen, currentRightRailItem, setRightRailItem, setSidePanelOpen])
 
   React.useEffect(() => {
     return registerShortcut('toggle-preview-panel', togglePreviewPanel)

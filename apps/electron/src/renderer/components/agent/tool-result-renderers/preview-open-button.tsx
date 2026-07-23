@@ -60,7 +60,7 @@ export function PreviewOpenButton({
           预览
         </span>
       </TooltipTrigger>
-      <TooltipContent>在预览标签页中打开</TooltipContent>
+      <TooltipContent>在右栏预览中打开</TooltipContent>
     </Tooltip>
   )
 }

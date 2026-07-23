@@ -147,7 +147,7 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
   {
     id: 'toggle-preview-panel',
     name: '切换预览面板',
-    description: '显示或隐藏内联 Diff/文件预览面板',
+    description: '显示或隐藏右栏预览页',
     defaultMac: 'Cmd+\\',
     defaultWin: 'Ctrl+\\',
     category: 'navigation',
