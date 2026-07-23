@@ -12,6 +12,9 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  VirtualizedConversationContent,
+  VirtualizedConversationScrollButton,
+  type VirtuosoHandle,
 } from '@tagent/ui'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import * as React from 'react'
@@ -51,11 +54,6 @@ import {
 import { tabMinimapCacheAtom } from '@/atoms/tab-atoms'
 import { userProfileAtom } from '@/atoms/user-profile'
 import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from '@/components/ai-elements/conversation'
-import {
   BasePathsProvider,
   Message,
   MessageContent,
@@ -63,7 +61,10 @@ import {
 } from '@/components/ai-elements/message'
 import { ScrollMinimap } from '@/components/ai-elements/scroll-minimap'
 import { StickyUserMessage } from '@/components/ai-elements/sticky-user-message'
-import { ScrollPositionManager } from '@/hooks/useScrollPositionMemory'
+import {
+  VirtualizedScrollPositionManager,
+  createScrollPositionSaver,
+} from '@/hooks/useVirtualizedScrollPosition'
 import { stripDesignContextFromUserMessage } from '@/lib/strip-design-context'
 import { markdownToPlainText } from '@/lib/markdown-rich-text'
 import { cn } from '@/lib/utils'
@@ -578,6 +579,10 @@ function AgentMessagesImpl({
   const [skipFadeIn, setSkipFadeIn] = React.useState(false)
   const prevSessionIdRef = React.useRef<string | null>(null)
 
+  // react-virtuoso 滚动容器 ref 和到底部状态
+  const virtuosoRef = React.useRef<VirtuosoHandle>(null)
+  const [isAtBottom, setIsAtBottom] = React.useState(true)
+
   // 拉取初始 Ask 消息（会话切换 + 流式完成后 refreshVersion 触发）
   const askRefreshVersion = useAtomValue(currentAskRefreshVersionAtom)
   React.useEffect(() => {
@@ -912,118 +917,128 @@ function AgentMessagesImpl({
 
   return (
     <BasePathsProvider basePaths={attachedDirs}>
-      <Conversation
-        resize={ready && !transitioning ? 'smooth' : 'instant'}
-        className={
+      <div
+        className={cn(
+          'relative flex-1 flex flex-col',
           ready
             ? skipFadeIn
               ? 'opacity-100'
               : 'opacity-100 transition-opacity duration-200'
             : 'opacity-0'
-        }
+        )}
       >
-        <ScrollPositionManager id={sessionId} ready={ready} />
-        <ConversationContent
-          className={cn(
-            'tagent-agent-thread',
-            floatingInput ? 'conversation-floating-input' : undefined
-          )}
-        >
-          {!hasContent && !streaming ? (
-            <EmptyState />
-          ) : (
-            <>
-              {/* 统一消息渲染（持久化 + 实时 + Ask 合并为一个列表，确保 system 消息位置正确） */}
-              {mergedTimeline.map((entry, idx) => {
-                if (entry.kind === 'ask') {
-                  // Ask 消息：AssistantTurn 中可能的最后一个，isStreaming 由 ask 流式状态判定
-                  const isAskStreaming =
-                    askStreamState?.running && askStreamState.messageId === entry.message.id
-                  return (
-                    <AskMessageItem
-                      key={`ask:${entry.id}`}
-                      message={entry.message}
-                      isStreaming={!!isAskStreaming}
-                      sessionId={sessionId}
-                    />
-                  )
-                }
-
-                // SDK group：原有渲染逻辑
-                const group = entry.group
-                const isLive = liveGroupSet.has(group)
-                const isErrorGroup =
-                  group.type === 'assistant-turn' && group.assistantMessages.some((m) => !!m.error)
-                const shouldDisableActions = isLive && !isErrorGroup
-                // 仅在最后一个 SDK assistant-turn 上显示"已被用户中断" badge
-                const isLastAssistantTurn =
-                  !streaming &&
-                  stoppedByUser &&
-                  group.type === 'assistant-turn' &&
-                  idx ===
-                    mergedTimeline.findLastIndex(
-                      (e) => e.kind === 'sdk' && e.group.type === 'assistant-turn'
-                    )
+        <VirtualizedScrollPositionManager
+          id={sessionId}
+          ready={ready}
+          virtuosoRef={virtuosoRef}
+        />
+        {!hasContent && !streaming ? (
+          <EmptyState />
+        ) : (
+          <VirtualizedConversationContent
+            ref={virtuosoRef}
+            items={mergedTimeline}
+            renderItem={(index, entry) => {
+              if (entry.kind === 'ask') {
+                const isAskStreaming =
+                  askStreamState?.running && askStreamState.messageId === entry.message.id
                 return (
-                  <MessageGroupRenderer
-                    key={getGroupId(group)}
-                    group={group}
-                    allMessages={allSDKMessages}
-                    historicalTaskSubjects={historicalTaskSubjects}
-                    basePath={sessionPath || undefined}
-                    basePaths={
-                      attachedDirs && attachedDirs.length > 0
-                        ? // 附加目录时仍保留 sessionPath，避免项目内相对路径丢失解析基准
-                          [sessionPath, ...attachedDirs].filter(
-                            (p): p is string => typeof p === 'string' && p.length > 0
-                          )
-                        : undefined
-                    }
-                    onFork={shouldDisableActions ? undefined : onFork}
-                    onRewind={shouldDisableActions ? undefined : onRewind}
-                    onRetry={shouldDisableActions ? undefined : onRetry}
-                    onRetryInNewSession={shouldDisableActions ? undefined : onRetryInNewSession}
-                    onCompact={shouldDisableActions ? undefined : onCompact}
-                    isStreaming={isLive || undefined}
-                    streamingText={isLive && hasLiveAssistantContent ? smoothContent : undefined}
-                    streamingThinking={
-                      isLive && hasLiveAssistantContent ? smoothThinking : undefined
-                    }
-                    isContextCompacting={streamState?.isCompacting}
-                    stoppedByUser={isLastAssistantTurn || undefined}
-                    sessionModelId={sessionModelId}
-                    streamStartedAt={isLive ? startedAt : undefined}
-                    retrying={isLive ? retrying : undefined}
+                  <AskMessageItem
+                    key={`ask:${entry.id}`}
+                    message={entry.message}
+                    isStreaming={!!isAskStreaming}
+                    sessionId={sessionId}
                   />
                 )
-              })}
+              }
 
-              {/* 首条 live assistant 到达前：立刻展示运行胶囊 + 已到的流式 token */}
-              {shouldShowPendingStreamTurn({
-                streaming,
-                hasLiveAssistantContent,
-              }) && (
-                <PendingStreamTurn
-                  startedAt={startedAt}
-                  streamingText={smoothContent || undefined}
-                  streamingThinking={smoothThinking || undefined}
-                  retrying={retrying}
+              const group = entry.group
+              const isLive = liveGroupSet.has(group)
+              const isErrorGroup =
+                group.type === 'assistant-turn' &&
+                group.assistantMessages.some((m) => !!m.error)
+              const shouldDisableActions = isLive && !isErrorGroup
+              const isLastAssistantTurn =
+                !streaming &&
+                stoppedByUser &&
+                group.type === 'assistant-turn' &&
+                index ===
+                  mergedTimeline.findLastIndex(
+                    (e) => e.kind === 'sdk' && e.group.type === 'assistant-turn'
+                  )
+              return (
+                <MessageGroupRenderer
+                  key={getGroupId(group)}
+                  group={group}
+                  allMessages={allSDKMessages}
+                  historicalTaskSubjects={historicalTaskSubjects}
+                  basePath={sessionPath || undefined}
+                  basePaths={
+                    attachedDirs && attachedDirs.length > 0
+                      ? [sessionPath, ...attachedDirs].filter(
+                          (p): p is string => typeof p === 'string' && p.length > 0
+                        )
+                      : undefined
+                  }
+                  onFork={shouldDisableActions ? undefined : onFork}
+                  onRewind={shouldDisableActions ? undefined : onRewind}
+                  onRetry={shouldDisableActions ? undefined : onRetry}
+                  onRetryInNewSession={
+                    shouldDisableActions ? undefined : onRetryInNewSession
+                  }
+                  onCompact={shouldDisableActions ? undefined : onCompact}
+                  isStreaming={isLive || undefined}
+                  streamingText={
+                    isLive && hasLiveAssistantContent ? smoothContent : undefined
+                  }
+                  streamingThinking={
+                    isLive && hasLiveAssistantContent ? smoothThinking : undefined
+                  }
+                  isContextCompacting={streamState?.isCompacting}
+                  stoppedByUser={isLastAssistantTurn || undefined}
+                  sessionModelId={sessionModelId}
+                  streamStartedAt={isLive ? startedAt : undefined}
+                  retrying={isLive ? retrying : undefined}
                 />
-              )}
-
-              {/* SDK status=compacting 到达后会在时间线内联显示；此处仅作事件到达前的兜底 */}
-              {streamState?.isCompacting && !hasInlineCompactingIndicator && (
-                <CompactingIndicator />
-              )}
-            </>
-          )}
-        </ConversationContent>
+              )
+            }}
+            computeItemKey={(_index, entry) => entry.id}
+            className={cn(
+              'tagent-agent-thread',
+              floatingInput ? 'conversation-floating-input' : undefined
+            )}
+            followOutput={(atBottom) => (atBottom ? 'smooth' : false)}
+            onScroll={createScrollPositionSaver(sessionId)}
+            atBottomStateChange={setIsAtBottom}
+            footer={
+              <>
+                {shouldShowPendingStreamTurn({
+                  streaming,
+                  hasLiveAssistantContent,
+                }) && (
+                  <PendingStreamTurn
+                    startedAt={startedAt}
+                    streamingText={smoothContent || undefined}
+                    streamingThinking={smoothThinking || undefined}
+                    retrying={retrying}
+                  />
+                )}
+                {streamState?.isCompacting && !hasInlineCompactingIndicator && (
+                  <CompactingIndicator />
+                )}
+              </>
+            }
+          />
+        )}
         {showMinimap && <ScrollMinimap items={minimapItems} />}
-        <ConversationScrollButton />
+        <VirtualizedConversationScrollButton
+          virtuosoRef={virtuosoRef}
+          visible={!isAtBottom}
+        />
         {showStickyUserMessage && allUserMessagesData.length > 0 && (
           <StickyUserMessage userMessages={allUserMessagesData} />
         )}
-      </Conversation>
+      </div>
     </BasePathsProvider>
   )
 }
