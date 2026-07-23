@@ -80,6 +80,43 @@ function stableStringify(value: unknown): string {
     .join(',')}}`
 }
 
+/**
+ * 切会话分批挂载常量（P1-7）
+ * - INITIAL_BATCH：切会话瞬间首批挂载的"最近 N 条"（时间线靠底 = 最新）
+ * - GROW_STEP：空闲帧递增挂载时每批追加的条数
+ */
+const VISIBLE_INITIAL_BATCH = 20
+const VISIBLE_GROW_STEP = 40
+
+/**
+ * requestIdleCallback 兼容 helper（P1-7 分批挂载用）
+ *
+ * Electron/Chromium 原生支持 requestIdleCallback；若运行时缺失或 TS 类型未覆盖，
+ * 退化到 requestAnimationFrame（语义略不同，但能保证让出主线程后下一帧回调）。
+ *
+ * 返回一个 cancel 句柄（number），调用方在 useEffect 清理时传入 cancelIdleShim
+ * 取消，避免切会话后旧会话的递增回调污染新会话。
+ */
+type IdleShimHandle = number
+
+function scheduleIdle(task: () => void): IdleShimHandle {
+  const ric = (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback
+  if (typeof ric === 'function') {
+    // 原生路径：DOM lib 提供 requestIdleCallback 全局类型
+    return (window as Window).requestIdleCallback(task as IdleRequestCallback)
+  }
+  return window.requestAnimationFrame(task)
+}
+
+function cancelIdleShim(handle: IdleShimHandle): void {
+  const cic = (globalThis as { cancelIdleCallback?: unknown }).cancelIdleCallback
+  if (typeof cic === 'function') {
+    ;(window as unknown as { cancelIdleCallback: (h: number) => void }).cancelIdleCallback(handle)
+    return
+  }
+  window.cancelAnimationFrame(handle)
+}
+
 /** 消息对象引用 → 稳定 key 缓存，避免内容相同的消息产生重复 key */
 const stableKeyCache = new WeakMap<object, string>()
 let stableKeyFallbackCounter = 0
@@ -556,6 +593,18 @@ function AgentMessagesImpl({
   const [skipFadeIn, setSkipFadeIn] = React.useState(false)
   const prevSessionIdRef = React.useRef<string | null>(null)
 
+  /**
+   * 分批挂载窗口（P1-7）：切长会话时先只挂"最近 N 条"，空闲帧再递增挂剩余历史，
+   * 让切会话那一帧的主线程快速让出，避免几百条历史一次性挂 DOM 卡死 TabBar 指示器/蒙版动画。
+   *
+   * - visibleCount 表示"从时间线底部（最新）向上挂载多少条"。
+   *   渲染用 mergedTimeline.slice(Math.max(0, length - visibleCount))，即保留最新 visibleCount 条。
+   * - 流式 live 消息永远在时间线底部，初始 N 条已覆盖最新内容 → 分批不影响流式输出（风险点 3）。
+   * - 滚动位置恢复（风险点 1）：分批期间 ScrollPositionManager 的 scrollReady 门控为 false，
+   *   等全量挂完（visibleCount >= length）再恢复，避免 scrollHeight 不足导致恢复到错误位置。
+   */
+  const [visibleCount, setVisibleCount] = React.useState<number>(VISIBLE_INITIAL_BATCH)
+
   // 滚动时禁用 backdrop-filter，消除 GPU 合成滞后导致的拖影
   const scrollContextRef = React.useRef<StickToBottomContext | null>(null)
   React.useEffect(() => {
@@ -607,6 +656,8 @@ function AgentMessagesImpl({
       prevSessionIdRef.current = sessionId
       setReady(false)
       setSkipFadeIn(false)
+      // 切会话瞬间收缩到首批 N 条（从最新往上挂），剩余在空闲帧渐进补齐
+      setVisibleCount(VISIBLE_INITIAL_BATCH)
     }
   }, [sessionId])
 
@@ -907,6 +958,86 @@ function AgentMessagesImpl({
     return entries
   }, [allGroups, askMessages])
 
+  const totalEntries = mergedTimeline.length
+
+  // P1-7 风险点 3（流式不受干扰）：流式追加新消息时 mergedTimeline.length 增长，
+  // 若 visibleCount 已到全量，需同步跟随，避免把最新流式内容 slice 掉。
+  // 已全挂载时强制 visibleCount = length；未全挂载时不收缩（分批递增逻辑会追上）。
+  React.useEffect(() => {
+    if (Number.isFinite(visibleCount) && visibleCount >= totalEntries) {
+      setVisibleCount(Number.POSITIVE_INFINITY)
+    }
+  }, [totalEntries, visibleCount])
+
+  // P1-7 核心递增：空闲帧渐进挂载剩余历史，直至覆盖全量。
+  // - 依赖 visibleCount 与 totalEntries：每帧挂一批后 visibleCount 变化 → 重排下一帧。
+  // - 到达全量（visibleCount >= totalEntries）后停。
+  // - scheduleIdle 让出主线程，切换动画/流式合成优先拿帧。
+  React.useEffect(() => {
+    if (!Number.isFinite(visibleCount)) return
+    if (visibleCount >= totalEntries) return
+    if (totalEntries === 0) return
+    let cancelled = false
+    const handle = scheduleIdle(() => {
+      if (cancelled) return
+      setVisibleCount((prev) => Math.min(prev + VISIBLE_GROW_STEP, totalEntries))
+    })
+    return () => {
+      cancelled = true
+      cancelIdleShim(handle)
+    }
+  }, [visibleCount, totalEntries])
+
+  // P1-7 风险点 2（向下/向上滚到未挂区不空白）：用户向上滚接近已挂窗口顶端时，
+  // 立即追加一批，不等空闲帧，保证滚到的位置已有内容。仅当仍在分批递增时生效。
+  React.useEffect(() => {
+    if (!Number.isFinite(visibleCount)) return
+    if (visibleCount >= totalEntries) return
+    const scrollEl = scrollContextRef.current?.scrollRef?.current
+    if (!scrollEl) return
+    let cancelled = false
+    const onScroll = (): void => {
+      if (cancelled) return
+      // 时间线升序（最新在底），已挂窗口为 [length-visibleCount, length)。
+      // 用户向上滚 → scrollTop 减小，接近顶部 200px 视为接近未挂区上沿，立即加一批。
+      if (scrollEl.scrollTop < 200) {
+        setVisibleCount((prev) => Math.min(prev + VISIBLE_GROW_STEP, totalEntries))
+      }
+    }
+    scrollEl.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      cancelled = true
+      scrollEl.removeEventListener('scroll', onScroll)
+    }
+  }, [visibleCount, totalEntries])
+
+  // P1-7 风险点 1（滚动位置恢复）：分批挂载期间 ScrollPositionManager 的 ready 门控为 false，
+  // 等全量挂完再恢复，避免下方历史未挂、scrollHeight 不足导致恢复到错误位置。
+  const fullyMounted =
+    !Number.isFinite(visibleCount) || visibleCount >= totalEntries
+  const scrollReady = ready && fullyMounted
+
+  // P1-7 渲染切片：保留最新 visibleCount 条（时间线底部 = 最新，含流式 live）
+  const visibleTimeline = React.useMemo<TimelineEntry[]>(() => {
+    if (!Number.isFinite(visibleCount) || visibleCount >= totalEntries) {
+      return mergedTimeline
+    }
+    const start = Math.max(0, totalEntries - visibleCount)
+    return mergedTimeline.slice(start)
+  }, [mergedTimeline, visibleCount, totalEntries])
+  // findLastIndex 需在完整时间线上找，避免分批后"已被用户中断"badge 指向被截断索引
+  const lastAssistantTurnIndexInFull = React.useMemo(() => {
+    return mergedTimeline.findLastIndex(
+      (e) => e.kind === 'sdk' && e.group.type === 'assistant-turn'
+    )
+  }, [mergedTimeline])
+
+  // P1-7：visibleTimeline 是 mergedTimeline 的尾部切片（最新在底），
+  // startOffset 用于把 localIdx 还原成完整时间线索引，供"已被用户中断"badge 判定。
+  const visibleStartOffset = Number.isFinite(visibleCount)
+    ? Math.max(0, totalEntries - visibleCount)
+    : 0
+
   return (
     <BasePathsProvider basePaths={attachedDirs}>
       <Conversation
@@ -920,7 +1051,7 @@ function AgentMessagesImpl({
             : 'opacity-0'
         }
       >
-        <ScrollPositionManager id={sessionId} ready={ready} />
+        <ScrollPositionManager id={sessionId} ready={scrollReady} />
         <ConversationContent
           className={cn(
             'tagent-agent-thread',
@@ -932,7 +1063,9 @@ function AgentMessagesImpl({
           ) : (
             <>
               {/* 统一消息渲染（持久化 + 实时 + Ask 合并为一个列表，确保 system 消息位置正确） */}
-              {mergedTimeline.map((entry, idx) => {
+              {/* P1-7：分批挂载时只渲染 visibleTimeline（最近 N 条，最新在底，含流式 live） */}
+              {visibleTimeline.map((entry, localIdx) => {
+                const idx = visibleStartOffset + localIdx
                 if (entry.kind === 'ask') {
                   // Ask 消息：AssistantTurn 中可能的最后一个，isStreaming 由 ask 流式状态判定
                   const isAskStreaming =
@@ -954,14 +1087,12 @@ function AgentMessagesImpl({
                   group.type === 'assistant-turn' && group.assistantMessages.some((m) => !!m.error)
                 const shouldDisableActions = isLive && !isErrorGroup
                 // 仅在最后一个 SDK assistant-turn 上显示"已被用户中断" badge
+                // P1-7：用完整时间线上的 findLastIndex，避免分批后 badge 指向被截断索引
                 const isLastAssistantTurn =
                   !streaming &&
                   stoppedByUser &&
                   group.type === 'assistant-turn' &&
-                  idx ===
-                    mergedTimeline.findLastIndex(
-                      (e) => e.kind === 'sdk' && e.group.type === 'assistant-turn'
-                    )
+                  idx === lastAssistantTurnIndexInFull
                 return (
                   <MessageGroupRenderer
                     key={getGroupId(group)}
@@ -995,6 +1126,29 @@ function AgentMessagesImpl({
                   />
                 )
               })}
+
+              {/* P1-7 分批加载提示：切长会话时先挂最近 N 条，剩余历史在空闲帧渐进补齐。
+                  此处提示用户"更早的历史还在加载"，避免误以为卡住/出 bug。
+                  全量挂完（fullyMounted）后立即消失。 */}
+              {(() => {
+                // 剩余未挂条数：已全挂（Infinity 或 visibleCount >= totalEntries）时为 0
+                const remaining = fullyMounted
+                  ? 0
+                  : Math.max(0, totalEntries - Math.min(visibleCount, totalEntries))
+                if (remaining <= 0) return null
+                return (
+                  <div
+                    aria-live="polite"
+                    className="flex items-center justify-center gap-2 py-2 text-muted-foreground"
+                  >
+                    {/* 纯 CSS spinner，不新引依赖（参考 MainArea.tsx 切会话蒙版写法） */}
+                    <span className="size-3.5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground/60" />
+                    <span className="text-xs">
+                      正在加载更早的 {remaining} 条消息…
+                    </span>
+                  </div>
+                )
+              })()}
 
               {/* 首条 live assistant 到达前：立刻展示运行胶囊 + 已到的流式 token */}
               {shouldShowPendingStreamTurn({
