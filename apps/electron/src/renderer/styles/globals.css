@@ -5943,7 +5943,9 @@ html.material-frosted .app-shell-content-stage .content-glass {
 }
 
 .conversation-floating-input {
-  padding-bottom: max(8px, var(--session-bottom-reserve, 120px));
+  /* padding-bottom 等于被遮挡的 composer 高度，最后一条消息下沿正好贴 composer 顶。
+   * 额外 +24px 留一行半空气，避免消息与输入框零缓冲。 */
+  padding-bottom: max(8px, calc(var(--session-bottom-reserve, 120px) + 24px));
 }
 
 /* 回底按钮：略高于输入区（+14），避免贴死 composer */

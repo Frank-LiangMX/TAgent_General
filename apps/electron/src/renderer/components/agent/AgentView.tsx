@@ -67,7 +67,7 @@ import { AgentSwitchBanner } from './AgentSwitchBanner'
 import { AskHeuristicDialog, type AskHeuristicChoice } from './AskHeuristicDialog'
 import { AskUserBanner } from './AskUserBanner'
 import { ComposerUnderlay } from './ComposerUnderlay'
-import { ComposerAssistantPresence, ComposerRunBadge } from './ComposerAssistantPresence'
+import { ComposerAssistantPresence } from './ComposerAssistantPresence'
 import { dispatchAssistantTyping } from './assistant-microcopy'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { KsccInstallGuide } from './KsccInstallGuide'
@@ -3236,7 +3236,6 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
                                 sendWithCmdEnter={sendWithCmdEnter}
                               />
                             </div>
-                            <ComposerRunBadge sessionId={sessionId} />
                           </div>
 
                           {/* Footer 工具栏 — 容器变窄时尾部按钮自动折叠进「更多」Popover */}

@@ -26,16 +26,24 @@ const STATE_LABELS: Record<AssistantPresenceState, string> = {
 }
 
 const BUBBLE_DURATION = {
+  /** thinking 状态文案停留时长（与节奏 var(--motion-presence-rhythm) 对齐） */
   state: 1800,
-  tool: 1800,
+  /** tool+elapsed 浮岛停留时长：acting 期间持续显示，不设上限 */
+  tool: 999_999,
+  /** typing 打字反馈节奏 */
   typing: 760,
+  /** success 完成卡片浮岛停留时长 */
+  success: 2400,
 } as const
 
 const BUBBLE_PRIORITY = {
   typing: 1,
-  tool: 2,
+  /** tool + elapsed 浮岛优先级与 click 同级；成功态 completion 高一档 */
+  tool: 3,
   click: 3,
   state: 4,
+  /** success 完成态独立最高 */
+  completion: 5,
 } as const
 
 interface ComposerAssistantPresenceProps {
@@ -51,100 +59,6 @@ interface LiveAnnouncement {
   text: string
 }
 
-const RUN_BADGE_TARGET_WAIT_MS = 1600
-const RUN_BADGE_TRAVEL_MS = 360
-
-async function waitForRunBadgeTarget(sessionId: string): Promise<HTMLElement | null> {
-  const startedAt = performance.now()
-
-  while (performance.now() - startedAt < RUN_BADGE_TARGET_WAIT_MS) {
-    const target = document.querySelector<HTMLElement>(
-      `[data-run-badge-complete-target="${sessionId}"]`
-    )
-    if (target) {
-      const rect = target.getBoundingClientRect()
-      if (rect.width > 0 && rect.height > 0) return target
-    }
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-  }
-
-  return null
-}
-
-async function animateRunBadgeToFooter(source: HTMLElement, sessionId: string): Promise<void> {
-  const sourceRect = source.getBoundingClientRect()
-  if (sourceRect.width <= 0 || sourceRect.height <= 0) return
-
-  const target = await waitForRunBadgeTarget(sessionId)
-  if (!target) return
-
-  const targetRect = target.getBoundingClientRect()
-  const clone = source.cloneNode(true) as HTMLElement
-  clone.setAttribute('aria-hidden', 'true')
-  clone.style.position = 'fixed'
-  clone.style.left = `${sourceRect.left}px`
-  clone.style.top = `${sourceRect.top}px`
-  clone.style.width = `${sourceRect.width}px`
-  clone.style.height = `${sourceRect.height}px`
-  clone.style.margin = '0'
-  clone.style.zIndex = '1250'
-  clone.style.pointerEvents = 'none'
-  clone.style.transformOrigin = 'center center'
-  clone.style.willChange = 'transform, opacity'
-  document.body.appendChild(clone)
-
-  const deltaX = targetRect.left + targetRect.width / 2 - (sourceRect.left + sourceRect.width / 2)
-  const deltaY = targetRect.top + targetRect.height / 2 - (sourceRect.top + sourceRect.height / 2)
-  const scale =
-    sourceRect.width > 0 ? Math.min(1.04, Math.max(0.78, targetRect.width / sourceRect.width)) : 1
-
-  const previousTargetOpacity = target.style.opacity
-  target.style.opacity = '0'
-  target.style.willChange = 'opacity'
-
-  const travel = clone.animate(
-    [
-      { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)' },
-      {
-        offset: 0.18,
-        opacity: 1,
-        transform: `translate3d(${deltaX * 0.1}px, ${deltaY * 0.04 - 5}px, 0) scale(1.02)`,
-      },
-      {
-        offset: 0.74,
-        opacity: 1,
-        transform: `translate3d(${deltaX * 0.84}px, ${deltaY * 0.82 - 2}px, 0) scale(${1 + (scale - 1) * 0.72})`,
-      },
-      {
-        opacity: 0.2,
-        transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scale})`,
-      },
-    ],
-    {
-      duration: RUN_BADGE_TRAVEL_MS,
-      easing: 'cubic-bezier(0.45, 0, 0.55, 1)',
-      fill: 'forwards',
-    }
-  )
-
-  const targetFade = target.animate([{ opacity: 0 }, { opacity: 1 }], {
-    duration: 180,
-    delay: 170,
-    easing: 'ease-out',
-    fill: 'forwards',
-  })
-
-  try {
-    await Promise.all([travel.finished, targetFade.finished])
-  } catch {
-    // Ignore cancelled transitions during rapid UI updates.
-  } finally {
-    clone.remove()
-    target.style.opacity = previousTargetOpacity
-    target.style.removeProperty('will-change')
-  }
-}
-
 export function ComposerAssistantPresence({
   activeToolName,
   location = 'composer',
@@ -152,6 +66,7 @@ export function ComposerAssistantPresence({
   sessionId,
   state,
 }: ComposerAssistantPresenceProps): React.ReactElement {
+  const { elapsedMs, isRunning, isCompleted, shouldShow } = useSessionRunElapsed(sessionId)
   const bubbleTimerRef = React.useRef<number | null>(null)
   const bubbleTokenRef = React.useRef(0)
   const bubblePriorityRef = React.useRef(0)
@@ -164,9 +79,18 @@ export function ComposerAssistantPresence({
   const lastToolBubbleAtRef = React.useRef(0)
   const acknowledgementAtRef = React.useRef(0)
   const previousStateRef = React.useRef(state)
+  /** 当前 microcopy 短语（运行中追加到时间后边的"对话"）。
+   * 与浮岛可见性解耦 —— running 期间浮岛永远常驻时间，bubble 只是临时后缀。 */
   const [bubble, setBubble] = React.useState<string | null>(null)
   const [announcement, setAnnouncement] = React.useState<LiveAnnouncement>({ id: 0, text: '' })
   const label = STATE_LABELS[state]
+
+  /** 浮岛可见性：
+   * - isRunning：浮岛常驻，显示时间
+   * - bubble 不为空：显示 microcopy（typing / state / success 等）
+   * - isCompleted 不参与浮岛可见性；完成态的耗时由信息流底部完成卡片承担
+   */
+  const islandVisible = isRunning || bubble !== null
 
   const clearBubbleTimer = React.useCallback(() => {
     if (bubbleTimerRef.current === null) return
@@ -190,6 +114,11 @@ export function ComposerAssistantPresence({
       setBubble(text)
       if (announce) {
         setAnnouncement((current) => ({ id: current.id + 1, text }))
+      }
+      if (duration === BUBBLE_DURATION.tool) {
+        // tool 浮岛持续显示，由优先级 / state 切换让位，无需 timer
+        bubbleTimerRef.current = null
+        return true
       }
       bubbleTimerRef.current = window.setTimeout(() => {
         if (bubbleTokenRef.current !== token) return
@@ -262,7 +191,19 @@ export function ComposerAssistantPresence({
     const previous = previousStateRef.current
     previousStateRef.current = state
     clearStateTimer()
-    if (previous === state) return
+
+    // success 完成态：浮岛显示「好啦 ✦」2.4s 后淡出。
+    // 时间由 isCompleted 维持显示，bubble 仅作为"对话"后缀。
+    if (state === 'success') {
+      clearTyping(false)
+      showBubble(getAssistantStateMicrocopy('success') ?? '好啦 ✦', BUBBLE_DURATION.success, BUBBLE_PRIORITY.completion, true)
+      return
+    }
+
+    if (previous === state) {
+      // 同 state 内 update（如 elapsedMs 推进）→ bubble 文本无依赖 elapsed，跳过
+      return
+    }
 
     const stateCopy = getAssistantStateMicrocopy(state)
 
@@ -348,10 +289,16 @@ export function ComposerAssistantPresence({
     [showBubble]
   )
 
+  /** 浮岛主体：仅在 running 期间显示时间（1 秒一跳）。
+   *  completed 状态的时间由信息流底部的「完成 ✓ 0:42」卡片承担，浮岛不再显示。
+   *  对话后缀：bubble 不为空时拼到时间后边（typing / tool / click / state / success 任意一种） */
+  const showTime = isRunning
+  const showBubbleText = bubble !== null
+
   return (
     <div
       className="composer-assistant-presence"
-      data-announcing={bubble ? 'true' : 'false'}
+      data-announcing={islandVisible ? 'true' : 'false'}
       data-assistant-transition-target={location === 'composer' ? sessionId : undefined}
       data-location={location}
       data-state={state}
@@ -367,42 +314,25 @@ export function ComposerAssistantPresence({
       />
       <span aria-hidden="true" className="composer-assistant-presence__state-dot" />
       <span aria-hidden="true" className="composer-assistant-presence__status">
-        {bubble}
+        <span className="composer-assistant-presence__status-inner">
+          {showTime && (
+            <span className="composer-assistant-presence__status-time tabular-nums">
+              {formatRunElapsed(elapsedMs)}
+            </span>
+          )}
+          {showTime && showBubbleText && (
+            <span className="composer-assistant-presence__status-divider" aria-hidden>
+              ·
+            </span>
+          )}
+          {showBubbleText && (
+            <span className="composer-assistant-presence__status-text">{bubble}</span>
+          )}
+        </span>
       </span>
       <span aria-live="polite" className="sr-only" key={announcement.id}>
         {announcement.text}
       </span>
     </div>
-  )
-}
-
-export function ComposerRunBadge({ sessionId }: { sessionId: string }): React.ReactElement {
-  const { elapsedMs, isRunning } = useSessionRunElapsed(sessionId)
-  const badgeRef = React.useRef<HTMLSpanElement>(null)
-  const previousRunningRef = React.useRef(isRunning)
-
-  React.useEffect(() => {
-    const wasRunning = previousRunningRef.current
-    previousRunningRef.current = isRunning
-    if (!wasRunning || isRunning) return
-    const badge = badgeRef.current
-    if (!badge) return
-    void animateRunBadgeToFooter(badge, sessionId)
-  }, [isRunning, sessionId])
-
-  return (
-    <span
-      ref={badgeRef}
-      className="composer-run-badge"
-      aria-hidden="true"
-      data-status={isRunning ? 'running' : 'idle'}
-      data-visible={isRunning ? 'true' : 'false'}
-    >
-      <span className="composer-run-badge__dot" aria-hidden />
-      <span className="composer-run-badge__pulse" aria-hidden />
-      <span className="composer-run-badge__label-default">{'运行中 ·\u00A0'}</span>
-      <span className="composer-run-badge__label-narrow">{'运行 ·\u00A0'}</span>
-      <span className="composer-run-badge__time tabular-nums">{formatRunElapsed(elapsedMs)}</span>
-    </span>
   )
 }

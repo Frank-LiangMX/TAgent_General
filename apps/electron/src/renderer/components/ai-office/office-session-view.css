@@ -87,7 +87,8 @@
 }
 
 .agent-view--office-dock .conversation-floating-input {
-  padding-bottom: max(0.75rem, var(--session-bottom-reserve, 118px));
+  /* 与 .conversation-floating-input 同步：预留额外 24px 空气行 */
+  padding-bottom: max(0.75rem, calc(var(--session-bottom-reserve, 118px) + 24px));
 }
 
 .agent-view--office-dock [data-conversation-scroll-btn] {
