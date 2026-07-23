@@ -99,8 +99,12 @@ jobs:
         working-directory: ${{ matrix.workdir }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder ${{ matrix.package_args }} --publish never
+        # --publish always 让 electron-builder 直接上传产物到 GitHub Release，
+        # 确保 latest.yml 中的 sha512/size/url 与实际上传的 asset 严格一致。
+        # 多平台并行构建时 electron-builder 会自动复用/合并 Release。
+        run: npx electron-builder ${{ matrix.package_args }} --publish always
 
+      # 注意：--publish always 已自动上传产物，此处 upload-artifact 仅作 CI 备份
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -110,32 +114,21 @@ jobs:
           retention-days: 90
 
   release:
-    name: Create GitHub Release
+    name: Sync Release Body
     needs: [build-desktop]
     runs-on: ubuntu-latest
     steps:
-      # 必须 checkout：Create Release 的 body_path 依赖仓库根目录 RELEASE_NOTES.md。
-      # 以前只 download-artifact、不 checkout，导致 GitHub Release 正文长期为空。
+      # 必须 checkout：body_path 依赖仓库根目录 RELEASE_NOTES.md
       - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
-          merge-multiple: true
-
-      - name: List artifacts
-        run: ls -laR artifacts/ || true
 
       - name: Verify RELEASE_NOTES.md
         run: |
           test -f RELEASE_NOTES.md
           head -n 5 RELEASE_NOTES.md
 
-      # Release notes body 从仓库根目录的 RELEASE_NOTES.md 读取。
-      # 维护规则：发版前更新该文件为当前要发的版本内容。
-      # 历史版本在 GitHub Release 页面永久可见，无需在本文件保留。
-      # softprops 在 release 已存在时可能不覆盖 body；publish 脚本成功后会再 sync 一次。
-      - name: Create Release
+      # build-desktop jobs 已通过 --publish always 上传产物到 GitHub Release。
+      # 本 job 仅同步 Release Notes 正文和元数据，不重新上传/覆盖 assets。
+      - name: Update Release Body
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
@@ -143,6 +136,4 @@ jobs:
           body_path: RELEASE_NOTES.md
           draft: false
           prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
-          overwrite_files: true
-          files: |
-            artifacts/**
+          # 不指定 files：避免覆盖 build-desktop job 已上传的产物和 latest.yml
