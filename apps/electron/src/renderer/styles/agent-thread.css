@@ -496,20 +496,13 @@
   font-size: 11.5px;
   font-weight: 550;
   letter-spacing: -0.01em;
-  color: hsl(var(--tooltip-foreground, var(--foreground)) / 0.94);
-  background: var(--surface-role-tooltip-fill, var(--surface-role-navigation-fill));
-  border: 1px solid
-    var(--surface-role-tooltip-rim, var(--surface-role-navigation-rim, var(--surface-rim)));
-  box-shadow: var(
-    --surface-role-tooltip-shadow,
-    var(--surface-role-navigation-shadow, var(--surface-shadow-chip))
-  );
-  -webkit-backdrop-filter: blur(
-      var(--surface-role-tooltip-blur, var(--surface-role-navigation-blur, 15px))
-    )
-    saturate(var(--surface-saturate, 1.06));
-  backdrop-filter: blur(var(--surface-role-tooltip-blur, var(--surface-role-navigation-blur, 15px)))
-    saturate(var(--surface-saturate, 1.06));
+  color: hsl(var(--muted-foreground));
+  /* 扁平化：去掉阴影与模糊，对齐旁边 ghost 按钮 */
+  background: transparent;
+  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 6%, transparent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   cursor: default;
 }
 
@@ -528,15 +521,13 @@
 }
 
 .dark .tagent-agent-thread .agent-running-badge {
-  color: hsl(var(--tooltip-foreground, var(--foreground)) / 0.94);
+  color: hsl(var(--muted-foreground));
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 9%, transparent);
 }
 
-[data-material='soft'] .tagent-agent-thread .agent-running-badge {
-  background: hsl(var(--tooltip, var(--background)) / 0.98);
-}
-
+[data-material='soft'] .tagent-agent-thread .agent-running-badge,
 [data-material='glass'] .tagent-agent-thread .agent-running-badge {
-  background: var(--surface-role-tooltip-fill, var(--surface-role-navigation-fill));
+  background: transparent;
 }
 
 .tagent-agent-thread .agent-running-badge__label {
@@ -624,8 +615,8 @@
     inset 0 1px 0 rgb(255 255 255 / 0.5),
     0 0 0 2px var(--spatial-accent-soft, hsl(var(--primary) / 0.1)),
     var(--surface-role-composer-shadow, 0 12px 28px rgb(23 30 40 / 0.12)) !important;
-  /* 必须保留 -50% 居中，禁止仅 translateY */
-  transform: translateX(-50%) translateY(-1px);
+  /* 居中改用 mx-auto，不再需要 translateX(-50%)，只保留轻微上移 */
+  transform: translateY(-1px);
 }
 
 .dark .conversation-scroll-btn,
@@ -821,7 +812,8 @@
     inset 0 1px 0 rgb(255 255 255 / 0.5),
     0 0 0 2px var(--spatial-accent-soft),
     var(--surface-role-composer-shadow) !important;
-  transform: translateX(-50%) translateY(-1px);
+  /* 居中用 mx-auto，仅保留垂直上移 */
+  transform: translateY(-1px);
 }
 
 .dark .app-shell-scene .conversation-scroll-btn,
@@ -837,7 +829,7 @@
 .dark .app-shell-scene [data-conversation-scroll-btn]:hover,
 .app-shell-scene.dark .conversation-scroll-btn:hover,
 .app-shell-scene.dark [data-conversation-scroll-btn]:hover {
-  transform: translateX(-50%) translateY(-1px);
+  transform: translateY(-1px);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.06),
     0 0 0 2px var(--spatial-accent-soft),

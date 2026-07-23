@@ -2963,6 +2963,11 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
       ) {
         return
       }
+      // 回底滚动按钮不收起 composer，否则点击它会让输入框降低、
+      // 布局重排吞掉按钮的 scrollToBottom 触发
+      if (target.closest('[data-conversation-scroll-btn]')) {
+        return
+      }
       setComposerExpanded(false)
     }
     document.addEventListener('pointerdown', onPointerDown, true)
