@@ -145,7 +145,7 @@ export function VirtualizedConversationContent<T = unknown>({
       data={items}
       itemContent={renderItem}
       computeItemKey={computeItemKey}
-      className={cn('flex-1 flex flex-col', className)}
+      className={cn('selectable-content flex flex-col py-4 px-8', className)}
       followOutput={
         followOutput ?? ((isAtBottom: boolean) => (isAtBottom ? 'smooth' : false))
       }
