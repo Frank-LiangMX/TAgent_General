@@ -201,18 +201,30 @@ function extractTurnUsage(turnMessages: SDKMessage[]): {
   durationMs?: number
   usage?: AgentEventUsage
 } {
+  let fallbackDurationMs: number | undefined
+
   for (const msg of turnMessages) {
+    const raw = msg as Record<string, unknown>
+    const messageDurationMs =
+      typeof raw._durationMs === 'number'
+        ? raw._durationMs
+        : typeof raw.durationMs === 'number'
+          ? raw.durationMs
+          : undefined
+
+    if (fallbackDurationMs == null && messageDurationMs != null) {
+      fallbackDurationMs = messageDurationMs
+    }
+
     if (msg.type !== 'result') continue
     const resultMsg = msg as SDKResultMessage
-    const raw = msg as Record<string, unknown>
-    const durationMs = typeof raw._durationMs === 'number' ? raw._durationMs : undefined
     const u = resultMsg.usage
-    if (!u) return { durationMs }
+    if (!u) return { durationMs: messageDurationMs ?? fallbackDurationMs }
     const contextWindow = resultMsg.modelUsage
       ? Object.values(resultMsg.modelUsage)[0]?.contextWindow
       : undefined
     return {
-      durationMs,
+      durationMs: messageDurationMs ?? fallbackDurationMs,
       usage: {
         inputTokens:
           u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
@@ -224,7 +236,7 @@ function extractTurnUsage(turnMessages: SDKMessage[]): {
       },
     }
   }
-  return {}
+  return fallbackDurationMs != null ? { durationMs: fallbackDurationMs } : {}
 }
 
 // ===== 辅助：从 user 消息中提取纯文本内容 =====
@@ -567,6 +579,7 @@ export function buildAllTaskActivities(allMessages: SDKMessage[]): ToolActivity[
 // ===== AssistantTurnRenderer — 渲染一个完整的 assistant turn =====
 
 export interface AssistantTurnRendererProps {
+  sessionId?: string
   turn: AssistantTurn
   /** 所有消息（全局，供工具结果查找跨 turn 的结果） */
   allMessages: SDKMessage[]
@@ -595,13 +608,12 @@ export interface AssistantTurnRendererProps {
   stoppedByUser?: boolean
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
   sessionModelId?: string
-  /** 流式开始时间戳（运行中胶囊实时计时） */
-  streamStartedAt?: number
   /** 重试状态（流式中展示重试提示） */
   retrying?: AgentStreamState['retrying']
 }
 
 export function AssistantTurnRenderer({
+  sessionId,
   turn,
   allMessages,
   historicalTaskSubjects,
@@ -617,7 +629,6 @@ export function AssistantTurnRenderer({
   streamingThinking,
   stoppedByUser,
   sessionModelId: _sessionModelId,
-  streamStartedAt,
   retrying,
 }: AssistantTurnRendererProps): React.ReactElement | null {
   const channels = useAtomValue(channelsAtom)
@@ -851,11 +862,10 @@ export function AssistantTurnRenderer({
           basePaths={basePaths}
         />
       )}
-      {isStreaming && (
+      {isStreaming && retrying && (
         <div className="agent-turn-footer">
           <div className="agent-turn-footer__meta">
-            {retrying && <RetryingNotice retrying={retrying} />}
-            <AgentStatusBadge status="running" startedAt={streamStartedAt} />
+            <RetryingNotice retrying={retrying} />
           </div>
         </div>
       )}
@@ -864,7 +874,12 @@ export function AssistantTurnRenderer({
           {/* 全部靠左：完成状态 + 操作 */}
           <div className="agent-turn-footer__meta">
             {hasDuration && (
-              <AgentStatusBadge status="completed" durationMs={durationMs!} usage={usage} />
+              <AgentStatusBadge
+                status="completed"
+                durationMs={durationMs!}
+                transitionSessionId={sessionId}
+                usage={usage}
+              />
             )}
             {showStoppedBadge && <span className="agent-turn-footer__stopped">已中断</span>}
             {textContent && <CopyButton content={textContent} />}
@@ -1474,6 +1489,7 @@ function ErrorMessage({
 // ===== MessageGroup 渲染器（统一入口，同时支持 turn 和单条消息） =====
 
 export interface MessageGroupRendererProps {
+  sessionId?: string
   group: MessageGroup
   allMessages: SDKMessage[]
   /** 跨 turn 历史 TaskCreate id → subject 映射（由父组件 useMemo 算一次后传入） */
@@ -1501,8 +1517,6 @@ export interface MessageGroupRendererProps {
   basePaths?: string[]
   /** 用户在前端选择的模型 ID（优先用于显示名称） */
   sessionModelId?: string
-  /** 流式开始时间戳（运行中胶囊实时计时） */
-  streamStartedAt?: number
   /** 重试状态（流式中展示重试提示） */
   retrying?: AgentStreamState['retrying']
 }
@@ -1615,13 +1629,38 @@ function areMessageGroupPropsEqual(
   if (prev.isContextCompacting !== next.isContextCompacting) return false
 
   // Session 元数据
+  if (prev.sessionId !== next.sessionId) return false
   if (prev.sessionModelId !== next.sessionModelId) return false
-  if (prev.streamStartedAt !== next.streamStartedAt) return false
   if (prev.basePath !== next.basePath) return false
 
   // 同组内新 tool_result 到达 → turnMessages 增长 → 需重渲染
   if (prev.group.type === 'assistant-turn' && next.group.type === 'assistant-turn') {
     if (prev.group.turnMessages.length !== next.group.turnMessages.length) return false
+    const prevSignature = prev.group.turnMessages
+      .map((message) => {
+        const record = message as Record<string, unknown>
+        return [
+          message.type,
+          typeof record.uuid === 'string' ? record.uuid : '',
+          typeof record._durationMs === 'number' ? record._durationMs : '',
+          typeof record.durationMs === 'number' ? record.durationMs : '',
+          message.type === 'result' && typeof record.result === 'string' ? record.result : '',
+        ].join(':')
+      })
+      .join('|')
+    const nextSignature = next.group.turnMessages
+      .map((message) => {
+        const record = message as Record<string, unknown>
+        return [
+          message.type,
+          typeof record.uuid === 'string' ? record.uuid : '',
+          typeof record._durationMs === 'number' ? record._durationMs : '',
+          typeof record.durationMs === 'number' ? record.durationMs : '',
+          message.type === 'result' && typeof record.result === 'string' ? record.result : '',
+        ].join(':')
+      })
+      .join('|')
+    if (prevSignature !== nextSignature) return false
   }
 
   return true
@@ -1630,6 +1669,7 @@ function areMessageGroupPropsEqual(
 export const MessageGroupRenderer = React.memo(MessageGroupRendererImpl, areMessageGroupPropsEqual)
 
 function MessageGroupRendererImpl({
+  sessionId,
   group,
   allMessages,
   historicalTaskSubjects,
@@ -1646,7 +1686,6 @@ function MessageGroupRendererImpl({
   isContextCompacting,
   stoppedByUser,
   sessionModelId,
-  streamStartedAt,
   retrying,
 }: MessageGroupRendererProps): React.ReactElement | null {
   const groupId = getGroupId(group)
@@ -1699,6 +1738,7 @@ function MessageGroupRendererImpl({
       className="animate-in fade-in duration-200 fill-mode-both"
     >
       <AssistantTurnRenderer
+        sessionId={sessionId}
         turn={group}
         allMessages={allMessages}
         historicalTaskSubjects={historicalTaskSubjects}
@@ -1714,7 +1754,6 @@ function MessageGroupRendererImpl({
         streamingThinking={streamingThinking}
         stoppedByUser={stoppedByUser}
         sessionModelId={sessionModelId}
-        streamStartedAt={streamStartedAt}
         retrying={retrying}
       />
     </div>

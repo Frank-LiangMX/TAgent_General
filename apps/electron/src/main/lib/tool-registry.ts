@@ -33,18 +33,9 @@ import {
   isTAToolCall,
   executeTATool,
 } from './ta-tools'
-import {
-  CSV_PREPARE_TOOL_META,
-  CSV_PREPARE_TOOL_DEFINITIONS,
-} from './tools/csv-prepare-tool'
-import {
-  CSV_QUERY_TOOL_META,
-  CSV_QUERY_TOOL_DEFINITIONS,
-} from './tools/csv-query-tool'
-import {
-  CSV_DASHBOARD_TOOL_META,
-  CSV_DASHBOARD_TOOL_DEFINITIONS,
-} from './tools/csv-dashboard-tool'
+import { CSV_PREPARE_TOOL_META, CSV_PREPARE_TOOL_DEFINITIONS } from './tools/csv-prepare-tool'
+import { CSV_QUERY_TOOL_META, CSV_QUERY_TOOL_DEFINITIONS } from './tools/csv-query-tool'
+import { CSV_DASHBOARD_TOOL_META, CSV_DASHBOARD_TOOL_DEFINITIONS } from './tools/csv-dashboard-tool'
 
 // ===== 内置工具注册 =====
 

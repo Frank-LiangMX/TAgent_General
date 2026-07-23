@@ -115,7 +115,10 @@ export function buildWhereClause(filters: CsvFilter[] | undefined): {
     const op = String(f.op || '=').toUpperCase()
 
     if (op === 'IN' && typeof f.value === 'string') {
-      const values = f.value.split(',').map((v) => v.trim()).filter(Boolean)
+      const values = f.value
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
       if (values.length === 0) continue
       const placeholders = values.map(() => '?').join(',')
       conditions.push(`${col} IN (${placeholders})`)
@@ -147,7 +150,10 @@ export function buildAggSelect(groupbyCols: string[], agg: string | undefined): 
     return parts.join(', ')
   }
 
-  const aggExprs = agg.split(',').map((a) => a.trim()).filter(Boolean)
+  const aggExprs = agg
+    .split(',')
+    .map((a) => a.trim())
+    .filter(Boolean)
   for (const expr of aggExprs) {
     const match = expr.match(/^(\w+)\(([^)]+)\)$/)
     if (match && match[1] && match[2]) {
@@ -204,7 +210,11 @@ export function runCsvQuery(sessionId: string, input: CsvQueryInput): CsvQueryRe
     let orderBy = ''
     if (sort) {
       const sortCol =
-        sort.startsWith('count') || sort.startsWith('sum_') || sort.startsWith('avg_') || sort.startsWith('min_') || sort.startsWith('max_')
+        sort.startsWith('count') ||
+        sort.startsWith('sum_') ||
+        sort.startsWith('avg_') ||
+        sort.startsWith('min_') ||
+        sort.startsWith('max_')
           ? sort
           : sanitizeColumnName(sort)
       orderBy = ` ORDER BY ${sortCol} ${sortDir}`

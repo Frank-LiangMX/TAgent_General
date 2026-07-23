@@ -6,11 +6,7 @@ import { describe, expect, test, afterAll } from 'vitest'
 import * as fs from 'fs'
 import * as path from 'path'
 import { getCsvCacheRoot } from './csv-shared'
-import {
-  ensureCsvLiveServer,
-  stopCsvLiveServer,
-  findSessionIdByLiveUrl,
-} from './csv-live-server'
+import { ensureCsvLiveServer, stopCsvLiveServer, findSessionIdByLiveUrl } from './csv-live-server'
 
 describe('csv-live-server 恢复', () => {
   const TEST_SESSION = `test-csv-live-restore-${Date.now()}`
@@ -31,7 +27,11 @@ describe('csv-live-server 恢复', () => {
   test('ensure → stop → ensure 再次可用，并写入 live.json', async () => {
     process.env.TAGENT_DEV = '1'
     fs.mkdirSync(dashDir(), { recursive: true })
-    fs.writeFileSync(path.join(dashDir(), 'dashboard.html'), '<html><body>ok</body></html>', 'utf-8')
+    fs.writeFileSync(
+      path.join(dashDir(), 'dashboard.html'),
+      '<html><body>ok</body></html>',
+      'utf-8'
+    )
 
     const first = await ensureCsvLiveServer(TEST_SESSION)
     expect(first.ok).toBe(true)
@@ -66,7 +66,11 @@ describe('csv-live-server 恢复', () => {
     const tabSession = `test-live-tabs-api-${Date.now()}`
     const dir = path.join(getCsvCacheRoot(), `${tabSession}-dashboard`)
     fs.mkdirSync(dir, { recursive: true })
-    fs.writeFileSync(path.join(dir, 'dashboard.html'), '<html><body><div id="ai-live-views"></div></body></html>', 'utf-8')
+    fs.writeFileSync(
+      path.join(dir, 'dashboard.html'),
+      '<html><body><div id="ai-live-views"></div></body></html>',
+      'utf-8'
+    )
 
     try {
       const live = await ensureCsvLiveServer(tabSession)

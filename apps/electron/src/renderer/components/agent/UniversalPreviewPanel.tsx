@@ -11,11 +11,7 @@ import * as React from 'react'
 import { FileSearch } from 'lucide-react'
 
 import { agentSessionPathMapAtom, currentAgentSessionIdAtom } from '@/atoms/agent-atoms'
-import {
-  getPreviewDisplayTitle,
-  isUrlPreview,
-  previewFileMapAtom,
-} from '@/atoms/preview-atoms'
+import { getPreviewDisplayTitle, isUrlPreview, previewFileMapAtom } from '@/atoms/preview-atoms'
 import { WebPreviewFrame } from '@/components/agent/WebPreviewFrame'
 import { DiffTabContent } from '@/components/diff/DiffTabContent'
 

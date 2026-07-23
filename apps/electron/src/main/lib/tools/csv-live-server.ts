@@ -19,12 +19,7 @@ import {
   runCsvQuery,
   type CsvFilter,
 } from './csv-shared'
-import {
-  clearLiveTabs,
-  listLiveTabs,
-  removeLiveTab,
-  upsertLiveTab,
-} from './csv-live-tabs'
+import { clearLiveTabs, listLiveTabs, removeLiveTab, upsertLiveTab } from './csv-live-tabs'
 
 interface LiveServerEntry {
   server: Server
@@ -231,7 +226,10 @@ async function handleRequest(
           id,
           label,
           sectionsHtml,
-          filterHtml: json.filterHtml ?? json.filter_html ? String(json.filterHtml ?? json.filter_html) : undefined,
+          filterHtml:
+            (json.filterHtml ?? json.filter_html)
+              ? String(json.filterHtml ?? json.filter_html)
+              : undefined,
         })
         sendJson(res, 200, { ok: true, tab })
         return
@@ -242,7 +240,11 @@ async function handleRequest(
     if (liveTabDeleteMatch && req.method === 'DELETE') {
       const tabId = decodeURIComponent(liveTabDeleteMatch[1]!)
       const removed = removeLiveTab(sessionId, tabId)
-      sendJson(res, removed ? 200 : 404, removed ? { ok: true, id: tabId } : { error: 'tab not found' })
+      sendJson(
+        res,
+        removed ? 200 : 404,
+        removed ? { ok: true, id: tabId } : { error: 'tab not found' }
+      )
       return
     }
 

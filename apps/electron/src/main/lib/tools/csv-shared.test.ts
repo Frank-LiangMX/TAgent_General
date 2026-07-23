@@ -420,9 +420,11 @@ describe('csv-shared / dashboard 集成（需 better-sqlite3）', () => {
       expect(again.isError).toBeFalsy()
       const againBody = JSON.parse(again.content)
       expect(againBody.active_view).toBe(body.active_view)
-      const viewOccurrences = (fs.readFileSync(dashboardPath, 'utf-8').match(
-        new RegExp(`id="view-${body.active_view}"`, 'g')
-      ) ?? []).length
+      const viewOccurrences = (
+        fs
+          .readFileSync(dashboardPath, 'utf-8')
+          .match(new RegExp(`id="view-${body.active_view}"`, 'g')) ?? []
+      ).length
       expect(viewOccurrences).toBe(1)
     } finally {
       stopCsvLiveServer(persistSession)

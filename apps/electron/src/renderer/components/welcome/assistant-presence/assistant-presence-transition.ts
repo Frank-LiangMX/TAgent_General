@@ -252,14 +252,14 @@ function startSessionEntrances(
 }
 
 export function beginAssistantPresenceTransition(
-  source: HTMLElement | null
+  source: HTMLElement | null,
+  reducedMotion = false
 ): AssistantPresenceTransitionHandle | null {
   if (!source) return null
   const sourceRect = source.getBoundingClientRect()
   if (sourceRect.width <= 0 || sourceRect.height <= 0) return null
 
   const activeAnimations = new Set<Animation>()
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const overlay = createOverlay(source, sourceRect)
   const welcomeExit = startWelcomeExit(source, activeAnimations, reducedMotion)
   source.style.visibility = 'hidden'

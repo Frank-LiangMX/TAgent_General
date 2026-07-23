@@ -9,6 +9,7 @@ import {
   shouldAcknowledgeSend,
   type AssistantTypingEventDetail,
 } from './assistant-microcopy'
+import { formatRunElapsed, useSessionRunElapsed } from '@/lib/run-timer'
 import { AssistantPresence } from '@/components/welcome/assistant-presence/AssistantPresence'
 import type { AssistantPresenceState } from '@/components/welcome/assistant-presence/assistant-motion'
 
@@ -50,7 +51,100 @@ interface LiveAnnouncement {
   text: string
 }
 
-/** 会话输入区的角色锚点：状态可读、点击有回应，并用克制的短句反馈当前动作。 */
+const RUN_BADGE_TARGET_WAIT_MS = 1600
+const RUN_BADGE_TRAVEL_MS = 360
+
+async function waitForRunBadgeTarget(sessionId: string): Promise<HTMLElement | null> {
+  const startedAt = performance.now()
+
+  while (performance.now() - startedAt < RUN_BADGE_TARGET_WAIT_MS) {
+    const target = document.querySelector<HTMLElement>(
+      `[data-run-badge-complete-target="${sessionId}"]`
+    )
+    if (target) {
+      const rect = target.getBoundingClientRect()
+      if (rect.width > 0 && rect.height > 0) return target
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  }
+
+  return null
+}
+
+async function animateRunBadgeToFooter(source: HTMLElement, sessionId: string): Promise<void> {
+  const sourceRect = source.getBoundingClientRect()
+  if (sourceRect.width <= 0 || sourceRect.height <= 0) return
+
+  const target = await waitForRunBadgeTarget(sessionId)
+  if (!target) return
+
+  const targetRect = target.getBoundingClientRect()
+  const clone = source.cloneNode(true) as HTMLElement
+  clone.setAttribute('aria-hidden', 'true')
+  clone.style.position = 'fixed'
+  clone.style.left = `${sourceRect.left}px`
+  clone.style.top = `${sourceRect.top}px`
+  clone.style.width = `${sourceRect.width}px`
+  clone.style.height = `${sourceRect.height}px`
+  clone.style.margin = '0'
+  clone.style.zIndex = '1250'
+  clone.style.pointerEvents = 'none'
+  clone.style.transformOrigin = 'center center'
+  clone.style.willChange = 'transform, opacity'
+  document.body.appendChild(clone)
+
+  const deltaX = targetRect.left + targetRect.width / 2 - (sourceRect.left + sourceRect.width / 2)
+  const deltaY = targetRect.top + targetRect.height / 2 - (sourceRect.top + sourceRect.height / 2)
+  const scale =
+    sourceRect.width > 0 ? Math.min(1.04, Math.max(0.78, targetRect.width / sourceRect.width)) : 1
+
+  const previousTargetOpacity = target.style.opacity
+  target.style.opacity = '0'
+  target.style.willChange = 'opacity'
+
+  const travel = clone.animate(
+    [
+      { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)' },
+      {
+        offset: 0.18,
+        opacity: 1,
+        transform: `translate3d(${deltaX * 0.1}px, ${deltaY * 0.04 - 5}px, 0) scale(1.02)`,
+      },
+      {
+        offset: 0.74,
+        opacity: 1,
+        transform: `translate3d(${deltaX * 0.84}px, ${deltaY * 0.82 - 2}px, 0) scale(${1 + (scale - 1) * 0.72})`,
+      },
+      {
+        opacity: 0.2,
+        transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scale})`,
+      },
+    ],
+    {
+      duration: RUN_BADGE_TRAVEL_MS,
+      easing: 'cubic-bezier(0.45, 0, 0.55, 1)',
+      fill: 'forwards',
+    }
+  )
+
+  const targetFade = target.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: 180,
+    delay: 170,
+    easing: 'ease-out',
+    fill: 'forwards',
+  })
+
+  try {
+    await Promise.all([travel.finished, targetFade.finished])
+  } catch {
+    // Ignore cancelled transitions during rapid UI updates.
+  } finally {
+    clone.remove()
+    target.style.opacity = previousTargetOpacity
+    target.style.removeProperty('will-change')
+  }
+}
+
 export function ComposerAssistantPresence({
   activeToolName,
   location = 'composer',
@@ -140,14 +234,14 @@ export function ComposerAssistantPresence({
         typingActiveRef.current = true
         typingStepRef.current = 0
         showBubble(
-          ASSISTANT_TYPING_STEPS[typingStepRef.current] ?? '哒·',
+          ASSISTANT_TYPING_STEPS[typingStepRef.current] ?? '哒...',
           BUBBLE_DURATION.typing,
           BUBBLE_PRIORITY.typing
         )
         typingIntervalRef.current = window.setInterval(() => {
           typingStepRef.current = (typingStepRef.current + 1) % ASSISTANT_TYPING_STEPS.length
           showBubble(
-            ASSISTANT_TYPING_STEPS[typingStepRef.current] ?? '哒·',
+            ASSISTANT_TYPING_STEPS[typingStepRef.current] ?? '哒...',
             BUBBLE_DURATION.typing,
             BUBBLE_PRIORITY.typing
           )
@@ -181,7 +275,7 @@ export function ComposerAssistantPresence({
     if (shouldAcknowledgeSend(previous, state)) {
       clearTyping(false)
       acknowledgementAtRef.current = Date.now()
-      showBubble('收到！', 900, BUBBLE_PRIORITY.click, true)
+      showBubble('收到啦', 900, BUBBLE_PRIORITY.click, true)
       const followup =
         state === 'thinking'
           ? getAssistantAmbientMicrocopy('thinking')
@@ -279,5 +373,36 @@ export function ComposerAssistantPresence({
         {announcement.text}
       </span>
     </div>
+  )
+}
+
+export function ComposerRunBadge({ sessionId }: { sessionId: string }): React.ReactElement {
+  const { elapsedMs, isRunning } = useSessionRunElapsed(sessionId)
+  const badgeRef = React.useRef<HTMLSpanElement>(null)
+  const previousRunningRef = React.useRef(isRunning)
+
+  React.useEffect(() => {
+    const wasRunning = previousRunningRef.current
+    previousRunningRef.current = isRunning
+    if (!wasRunning || isRunning) return
+    const badge = badgeRef.current
+    if (!badge) return
+    void animateRunBadgeToFooter(badge, sessionId)
+  }, [isRunning, sessionId])
+
+  return (
+    <span
+      ref={badgeRef}
+      className="composer-run-badge"
+      aria-hidden="true"
+      data-status={isRunning ? 'running' : 'idle'}
+      data-visible={isRunning ? 'true' : 'false'}
+    >
+      <span className="composer-run-badge__dot" aria-hidden />
+      <span className="composer-run-badge__pulse" aria-hidden />
+      <span className="composer-run-badge__label-default">{'运行中 ·\u00A0'}</span>
+      <span className="composer-run-badge__label-narrow">{'运行 ·\u00A0'}</span>
+      <span className="composer-run-badge__time tabular-nums">{formatRunElapsed(elapsedMs)}</span>
+    </span>
   )
 }

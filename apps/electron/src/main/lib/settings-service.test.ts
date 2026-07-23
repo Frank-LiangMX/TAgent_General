@@ -25,6 +25,20 @@ describe('streaming output setting', () => {
 
   test('keeps the current ribbon presence as the default', () => {
     expect(getSettings().assistantPresenceStyle).toBe('ribbon')
+    expect(getSettings().assistantPresenceMotion).toBe('rich')
+  })
+
+  test('restores reduced presence motion and normalizes unknown legacy values', () => {
+    fsMocks.existsSync.mockReturnValue(true)
+    fsMocks.readFileSync.mockReturnValueOnce(
+      JSON.stringify({ themeMode: 'dark', assistantPresenceMotion: 'reduced' })
+    )
+    expect(getSettings().assistantPresenceMotion).toBe('reduced')
+
+    fsMocks.readFileSync.mockReturnValueOnce(
+      JSON.stringify({ themeMode: 'dark', assistantPresenceMotion: 'system' })
+    )
+    expect(getSettings().assistantPresenceMotion).toBe('rich')
   })
 
   test('restores fluid presence and normalizes unknown legacy values', () => {

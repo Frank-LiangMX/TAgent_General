@@ -845,9 +845,7 @@ export class AgentOrchestrator {
 适用：登录页/设置页/产品界面等 UI 原型 HTML/CSS。
 禁止：CSV 数据看板、分析报表、任意数据可视化看板——这些必须用 csv_dashboard，会打开右侧「预览」面板，不要调用本工具。`,
             {
-              html: z
-                .string()
-                .describe('UI 原型 HTML（body 内标记，不含 html/head/body 包裹）'),
+              html: z.string().describe('UI 原型 HTML（body 内标记，不含 html/head/body 包裹）'),
               css: z.string().optional().describe('可选的 CSS 样式内容'),
               name: z.string().optional().describe('页面名称（如"登录页"、"仪表盘"），用于标识'),
               device: z
@@ -1019,7 +1017,13 @@ export class AgentOrchestrator {
       const csvDashboard = await import('./tools/csv-dashboard-tool')
 
       const wrap =
-        (executeFn: (toolCall: Parameters<typeof csvPrepare.executeCsvPrepare>[0]) => Promise<{ content: string; isError?: boolean }> | { content: string; isError?: boolean }) =>
+        (
+          executeFn: (
+            toolCall: Parameters<typeof csvPrepare.executeCsvPrepare>[0]
+          ) =>
+            | Promise<{ content: string; isError?: boolean }>
+            | { content: string; isError?: boolean }
+        ) =>
         async (args: Record<string, unknown>) => {
           const toolCall = {
             id: `csv-${Date.now()}`,
@@ -1051,9 +1055,19 @@ export class AgentOrchestrator {
               groupby: z
                 .string()
                 .optional()
-                .describe('Group by column(s), comma-separated for cross-dim. e.g. "fcat" or "fcat,module"'),
-              agg: z.string().optional().describe('Aggregation functions, comma-separated. e.g. "count,sum(compress)"'),
-              filters: z.string().optional().describe('JSON array of filter objects. e.g. [{"column":"fcat","op":"=","value":"贴图"}]'),
+                .describe(
+                  'Group by column(s), comma-separated for cross-dim. e.g. "fcat" or "fcat,module"'
+                ),
+              agg: z
+                .string()
+                .optional()
+                .describe('Aggregation functions, comma-separated. e.g. "count,sum(compress)"'),
+              filters: z
+                .string()
+                .optional()
+                .describe(
+                  'JSON array of filter objects. e.g. [{"column":"fcat","op":"=","value":"贴图"}]'
+                ),
               select: z.string().optional().describe('Columns to select, comma-separated'),
               sort: z.string().optional().describe('Sort column'),
               sort_dir: z.string().optional().describe('Sort direction: asc or desc'),
@@ -1079,7 +1093,10 @@ export class AgentOrchestrator {
                 .string()
                 .optional()
                 .describe('slice: natural language query, server finds dimension match'),
-              label: z.string().optional().describe('slice/live_tab: tab label, defaults to matched value'),
+              label: z
+                .string()
+                .optional()
+                .describe('slice/live_tab: tab label, defaults to matched value'),
               tab_id: z.string().optional().describe('live_tab: tab ID'),
               tab_label: z.string().optional().describe('live_tab: tab display name'),
               live_tab_action: z
@@ -1094,10 +1111,15 @@ export class AgentOrchestrator {
               byte_unit: z
                 .string()
                 .optional()
-                .describe('Byte display unit: auto | B | KB | MB | GB | TB (use action=patch to change)'),
+                .describe(
+                  'Byte display unit: auto | B | KB | MB | GB | TB (use action=patch to change)'
+                ),
               view_id: z.string().optional().describe('View ID for add_view/replace_view'),
               view_label: z.string().optional().describe('View display name'),
-              sections_json: z.string().optional().describe('JSON array of sections for single view'),
+              sections_json: z
+                .string()
+                .optional()
+                .describe('JSON array of sections for single view'),
               views_json: z
                 .string()
                 .optional()
@@ -1109,7 +1131,10 @@ export class AgentOrchestrator {
               maps_json: z.string().optional().describe('Optional maps view'),
               reuse_json: z.string().optional().describe('Optional reuse view'),
               opportunity_json: z.string().optional().describe('Optional opportunity view'),
-              live: z.string().optional().describe('true to enable local /api/rows server (auto implies true)'),
+              live: z
+                .string()
+                .optional()
+                .describe('true to enable local /api/rows server (auto implies true)'),
               allow_simple: z
                 .string()
                 .optional()

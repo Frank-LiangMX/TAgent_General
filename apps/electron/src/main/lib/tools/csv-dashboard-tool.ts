@@ -42,7 +42,12 @@ export const CSV_DASHBOARD_TOOL_META: ChatToolMeta = {
   description: '生成交互式 HTML 数据看板（多视图 + 交叉分析 + 可筛选明细）',
   params: [
     { name: 'session_id', type: 'string', description: '会话 ID', required: true },
-    { name: 'action', type: 'string', description: '操作: create / slice / live_tab / add_view / replace_view / patch', required: true },
+    {
+      name: 'action',
+      type: 'string',
+      description: '操作: create / slice / live_tab / add_view / replace_view / patch',
+      required: true,
+    },
     { name: 'title', type: 'string', description: '看板标题' },
     { name: 'view_id', type: 'string', description: '视图 ID（add_view/replace_view 时使用）' },
     { name: 'view_label', type: 'string', description: '视图显示名' },
@@ -68,10 +73,22 @@ export const CSV_DASHBOARD_TOOL_META: ChatToolMeta = {
     { name: 'maps_json', type: 'string', description: 'preset=full 可选视图' },
     { name: 'reuse_json', type: 'string', description: 'preset=full 可选视图' },
     { name: 'opportunity_json', type: 'string', description: 'preset=full 可选视图' },
-    { name: 'live', type: 'string', description: 'true 时启动本地查询服务，明细走 /api/rows（推荐百万行）' },
-    { name: 'filter_column', type: 'string', description: 'slice：过滤列 sql_name，可省略由服务端猜测' },
+    {
+      name: 'live',
+      type: 'string',
+      description: 'true 时启动本地查询服务，明细走 /api/rows（推荐百万行）',
+    },
+    {
+      name: 'filter_column',
+      type: 'string',
+      description: 'slice：过滤列 sql_name，可省略由服务端猜测',
+    },
     { name: 'filter_value', type: 'string', description: 'slice：过滤值（如 贴图、植被）' },
-    { name: 'slice_query', type: 'string', description: 'slice：自然语言/query，服务端在维度列中匹配' },
+    {
+      name: 'slice_query',
+      type: 'string',
+      description: 'slice：自然语言/query，服务端在维度列中匹配',
+    },
     { name: 'label', type: 'string', description: 'slice/live_tab：tab 显示名，默认同 filter 值' },
     { name: 'tab_id', type: 'string', description: 'live_tab：Tab ID，默认同 slice viewId' },
     { name: 'tab_label', type: 'string', description: 'live_tab：Tab 显示名' },
@@ -156,7 +173,10 @@ export const CSV_DASHBOARD_TOOL_DEFINITIONS: ToolDefinition[] = [
           type: 'string',
           description: 'slice: natural language query, server finds best dimension match',
         },
-        label: { type: 'string', description: 'slice/live_tab: tab label, defaults to matched filter value' },
+        label: {
+          type: 'string',
+          description: 'slice/live_tab: tab label, defaults to matched filter value',
+        },
         tab_id: { type: 'string', description: 'live_tab: tab ID' },
         tab_label: { type: 'string', description: 'live_tab: tab display name' },
         live_tab_action: {
@@ -279,12 +299,25 @@ function normalizeSection(raw: Record<string, unknown>): DashboardSectionV2 {
   }
 
   return {
-    type: (type === 'stats' || type === 'chart' || type === 'table' || type === 'filter_bar' || type === 'opportunity_intro' || type === 'filter_panel' || type === 'detail_table' || type === 'heatmap')
-      ? type
-      : 'stats',
-    chart_type: (chartType === 'pie' || chartType === 'bar' || chartType === 'horizontal_bar' || chartType === 'stacked_bar' || chartType === 'doughnut')
-      ? chartType
-      : (chartType as DashboardSectionV2['chart_type']),
+    type:
+      type === 'stats' ||
+      type === 'chart' ||
+      type === 'table' ||
+      type === 'filter_bar' ||
+      type === 'opportunity_intro' ||
+      type === 'filter_panel' ||
+      type === 'detail_table' ||
+      type === 'heatmap'
+        ? type
+        : 'stats',
+    chart_type:
+      chartType === 'pie' ||
+      chartType === 'bar' ||
+      chartType === 'horizontal_bar' ||
+      chartType === 'stacked_bar' ||
+      chartType === 'doughnut'
+        ? chartType
+        : (chartType as DashboardSectionV2['chart_type']),
     title: r.title as string | undefined,
     data,
     columns: r.columns as string[] | undefined,
@@ -304,7 +337,9 @@ function normalizeSection(raw: Record<string, unknown>): DashboardSectionV2 {
     column_tips: r.column_tips as Record<string, string> | undefined,
     // v2 字段透传
     click_filter: r.click_filter as Record<string, string | number> | undefined,
-    click_filter_map: r.click_filter_map as Record<string, Record<string, string | number>> | undefined,
+    click_filter_map: r.click_filter_map as
+      | Record<string, Record<string, string | number>>
+      | undefined,
     filters: r.filters as DashboardSectionV2['filters'],
     dimensions: r.dimensions as DashboardSectionV2['dimensions'],
     path_search_placeholder: r.path_search_placeholder as string | undefined,
@@ -360,7 +395,15 @@ function formatBytesHumanReadable(bytes: number): string {
 
 /** DashboardSection：兼容旧 sections 字段名，并对齐 StatsCheckBorad 视觉 */
 interface DashboardSectionV2 {
-  type: 'stats' | 'chart' | 'table' | 'filter_bar' | 'opportunity_intro' | 'filter_panel' | 'detail_table' | 'heatmap'
+  type:
+    | 'stats'
+    | 'chart'
+    | 'table'
+    | 'filter_bar'
+    | 'opportunity_intro'
+    | 'filter_panel'
+    | 'detail_table'
+    | 'heatmap'
   // 旧字段保留
   chart_type?: 'pie' | 'bar' | 'horizontal_bar' | 'stacked_bar' | 'doughnut'
   title?: string
@@ -422,9 +465,21 @@ interface DashboardSectionV2 {
 
 /** 主题色数组（Chart.js 数据集 + 自定义配色） */
 const CHART_PALETTE = [
-  '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-  '#3b82f6', '#14b8a6', '#f97316', '#ec4899', '#84cc16',
-  '#0ea5e9', '#a855f7', '#06b6d4', '#22c55e', '#eab308',
+  '#6366f1',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#3b82f6',
+  '#14b8a6',
+  '#f97316',
+  '#ec4899',
+  '#84cc16',
+  '#0ea5e9',
+  '#a855f7',
+  '#06b6d4',
+  '#22c55e',
+  '#eab308',
 ]
 
 /** 读取本地 Chart.js（内联进 HTML，避免 CDN/离线失败） */
@@ -1639,7 +1694,8 @@ function buildChartData(section: DashboardSectionV2): {
         datasets: [{ data: entries.map(([, v]) => Number(v) || 0), backgroundColor: palette }],
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
       },
     }
@@ -1651,11 +1707,17 @@ function buildChartData(section: DashboardSectionV2): {
       type: 'bar',
       data: {
         labels: items.map((it) => String(it.name || it.label || '')),
-        datasets: [{ data: items.map((it) => Number(it.value || it.count || 0)), backgroundColor: palette.slice(0, 1) }],
+        datasets: [
+          {
+            data: items.map((it) => Number(it.value || it.count || 0)),
+            backgroundColor: palette.slice(0, 1),
+          },
+        ],
       },
       options: {
         indexAxis: 'y',
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: { x: { beginAtZero: true } },
       },
@@ -1668,10 +1730,16 @@ function buildChartData(section: DashboardSectionV2): {
     type: 'bar',
     data: {
       labels: items.map((it) => String(it.name || it.label || '')),
-      datasets: [{ data: items.map((it) => Number(it.value || it.count || 0)), backgroundColor: palette.slice(0, 1) }],
+      datasets: [
+        {
+          data: items.map((it) => Number(it.value || it.count || 0)),
+          backgroundColor: palette.slice(0, 1),
+        },
+      ],
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         x: { stacked: chartType === 'stacked_bar', beginAtZero: true },
@@ -1682,13 +1750,20 @@ function buildChartData(section: DashboardSectionV2): {
 }
 
 /** 从 chart 数据推断 click_filter_map */
-function resolveClickFilterMap(section: DashboardSectionV2): Record<string, Record<string, string | number>> | undefined {
+function resolveClickFilterMap(
+  section: DashboardSectionV2
+): Record<string, Record<string, string | number>> | undefined {
   if (section.click_filter_map) return section.click_filter_map
   const col = section.filter_column
   if (!col) return undefined
   const raw = section.data
   const labels: string[] = []
-  if (raw && typeof raw === 'object' && !Array.isArray(raw) && Array.isArray((raw as { labels?: string[] }).labels)) {
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    !Array.isArray(raw) &&
+    Array.isArray((raw as { labels?: string[] }).labels)
+  ) {
     labels.push(...((raw as { labels: string[] }).labels || []))
   } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     labels.push(...Object.keys(raw as Record<string, unknown>))
@@ -1724,7 +1799,9 @@ function renderSection(
     case 'chart': {
       const chartId = `${chartIdPrefix}-${index}`
       const cfg = buildChartData(section)
-      const usePieLegend = section.chart_layout === 'pie_with_legend' && (cfg.type === 'pie' || cfg.type === 'doughnut')
+      const usePieLegend =
+        section.chart_layout === 'pie_with_legend' &&
+        (cfg.type === 'pie' || cfg.type === 'doughnut')
       const canvasHtml = `<canvas id="${chartId}"></canvas>`
       const paletteStr = JSON.stringify(CHART_PALETTE)
       const cfgStr = JSON.stringify(cfg)
@@ -1774,8 +1851,14 @@ function renderHeatmapSection(section: DashboardSectionV2): string {
     colTotals.set(ck, (colTotals.get(ck) || 0) + v)
     if (v > maxV) maxV = v
   }
-  const rowLabels = [...rowTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k]) => k)
-  const colLabels = [...colTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16).map(([k]) => k)
+  const rowLabels = [...rowTotals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([k]) => k)
+  const colLabels = [...colTotals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 16)
+    .map(([k]) => k)
 
   function cellBg(v: number): string {
     if (maxV <= 0 || v <= 0) return '#f8fafc'
@@ -1795,7 +1878,10 @@ function renderHeatmapSection(section: DashboardSectionV2): string {
   }
 
   const head = `<th class="row-head">${escapeHtml(section.row_label || rowKey)} \\ ${escapeHtml(section.col_label || colKey)}</th>${colLabels
-    .map((c) => `<th title="${escapeHtml(c)}">${escapeHtml(c.length > 10 ? c.slice(0, 10) + '…' : c)}</th>`)
+    .map(
+      (c) =>
+        `<th title="${escapeHtml(c)}">${escapeHtml(c.length > 10 ? c.slice(0, 10) + '…' : c)}</th>`
+    )
     .join('')}`
 
   const body = rowLabels
@@ -1827,7 +1913,9 @@ function renderHeatmapSection(section: DashboardSectionV2): string {
 
 /** Filter-bar section（高亮当前过滤条件） */
 function renderFilterBarSection(section: DashboardSectionV2): string {
-  const keys = (section.filter_keys || []).map((k) => `<strong>${escapeHtml(k)}</strong>`).join('、')
+  const keys = (section.filter_keys || [])
+    .map((k) => `<strong>${escapeHtml(k)}</strong>`)
+    .join('、')
   const desc = section.filter_desc || '已应用过滤'
   return `
 <div class="filter-bar">
@@ -1855,7 +1943,8 @@ function renderStatsSection(section: DashboardSectionV2): string {
   if (data && !Array.isArray(data) && typeof data === 'object') {
     const items = Object.entries(data as Record<string, string | number>)
       .map(([key, value]) => {
-        const color = (typeof value === 'number' && value > 0 && /率|pct|percent/i.test(key)) ? 'primary' : ''
+        const color =
+          typeof value === 'number' && value > 0 && /率|pct|percent/i.test(key) ? 'primary' : ''
         return `<div class="metric-card"><div class="label">${escapeHtml(key)}</div><div class="value num ${color}">${escapeHtml(String(value))}</div></div>`
       })
       .join('')
@@ -1925,7 +2014,11 @@ function renderChartsGrid(sections: DashboardSectionV2[], chartIdPrefix = 'chart
   const charts = sections.map((s, i) => renderSection(s, i, chartIdPrefix, viewId))
   if (charts.length === 0) return ''
   const cls =
-    sections.length >= 3 ? 'charts-grid three' : sections.length === 2 ? 'charts-grid two' : 'charts-grid'
+    sections.length >= 3
+      ? 'charts-grid three'
+      : sections.length === 2
+        ? 'charts-grid two'
+        : 'charts-grid'
   return `<div class="${cls}">${charts.join('')}</div>`
 }
 
@@ -2099,7 +2192,11 @@ function renderFilterPanel(section: DashboardSectionV2): string {
 </div>`
   }
 
-  function renderNumberMin(label: string, id: string, presets: Array<string | number> | undefined): string {
+  function renderNumberMin(
+    label: string,
+    id: string,
+    presets: Array<string | number> | undefined
+  ): string {
     return renderSelect(label, id, presets, '全部')
   }
 
@@ -2187,13 +2284,15 @@ function buildSidebar(
   viewLabels: Array<{ id: string; label: string }>,
   filterPanelContent?: string
 ): string {
-  const navItems = viewCount > 1
-    ? viewLabels
-        .map((v, i) =>
-          `<button type="button" class="nav-item${i === 0 ? ' active' : ''}" data-go-view="${escapeHtml(v.id)}">${escapeHtml(v.label)}</button>`
-        )
-        .join('')
-    : ''
+  const navItems =
+    viewCount > 1
+      ? viewLabels
+          .map(
+            (v, i) =>
+              `<button type="button" class="nav-item${i === 0 ? ' active' : ''}" data-go-view="${escapeHtml(v.id)}">${escapeHtml(v.label)}</button>`
+          )
+          .join('')
+      : ''
   const navListHtml = navItems
     ? `<div class="sidebar-section"><h3>视图</h3><div class="nav-list">${navItems}</div></div>`
     : ''
@@ -2219,12 +2318,20 @@ function buildSidebar(
   </div>
 </aside>`
 }
-function buildTopbar(title: string, views: Array<{ id: string; label: string }>, totalViewCount: number): string {
-  const tabsHtml = totalViewCount > 1
-    ? `<div class="nav-tabs">${views
-        .map((v, i) => `<button type="button" data-view="${escapeHtml(v.id)}"${i === 0 ? ' class="active"' : ''}>${escapeHtml(v.label)}</button>`)
-        .join('')}</div>`
-    : ''
+function buildTopbar(
+  title: string,
+  views: Array<{ id: string; label: string }>,
+  totalViewCount: number
+): string {
+  const tabsHtml =
+    totalViewCount > 1
+      ? `<div class="nav-tabs">${views
+          .map(
+            (v, i) =>
+              `<button type="button" data-view="${escapeHtml(v.id)}"${i === 0 ? ' class="active"' : ''}>${escapeHtml(v.label)}</button>`
+          )
+          .join('')}</div>`
+      : ''
   return `
 <div class="topbar">
   <h2>${escapeHtml(title)}</h2>
@@ -2259,7 +2366,10 @@ function buildDashboardHtml(
   const sidebar = buildSidebar(title, viewCount, viewList, sidebarContent)
   const topbar = buildTopbar(title, viewList, viewCount)
   const sectionsHtml = renderViewSections(sections, `chart-${viewList[0]?.id || 'overview'}`)
-  const js = buildBaseJs(viewCount, sections.some((s) => s.type === 'filter_bar'))
+  const js = buildBaseJs(
+    viewCount,
+    sections.some((s) => s.type === 'filter_bar')
+  )
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -2303,10 +2413,12 @@ function buildMultiViewDashboardHtml(
   const sidebar = buildSidebar(title, views.length, viewMeta, sidebarContent)
   const topbar = buildTopbar(title, viewMeta, views.length)
   const viewsHtml = views
-    .map((v, i) => `
+    .map(
+      (v, i) => `
 <div class="view${i === 0 ? ' active' : ''}" id="view-${v.id}">
   ${renderViewSections(v.sections, `chart-${v.id}`)}
-</div>`)
+</div>`
+    )
     .join('')
   const hasFilterBar = views.some((v) => v.sections.some((s) => s.type === 'filter_bar'))
   const js = buildBaseJs(views.length, hasFilterBar)
@@ -2370,7 +2482,12 @@ function setActiveViewInHtml(html: string, viewId: string): string {
 }
 
 /** 把新增视图拼进已有看板：在 </main> 前插入 <div id="view-X" class="view">...</div>；同时在 sidebar 加导航项 */
-function injectViewIntoHtml(html: string, viewId: string, label: string, sectionsHtml: string): string {
+function injectViewIntoHtml(
+  html: string,
+  viewId: string,
+  label: string,
+  sectionsHtml: string
+): string {
   const viewSection = `<div id="view-${viewId}" class="view">${sectionsHtml}</div>`
   let next = html.replace('</main>', `${viewSection}\n</main>`)
   // 在 sidebar .nav-list 末尾插入新导航项（若 sidebar 已存在）
@@ -2392,9 +2509,12 @@ function injectViewIntoHtml(html: string, viewId: string, label: string, section
     next = next.replace(/<main class="main">([\s\S]*?)<\/main>/, (_full, inner) => {
       return `<main class="main"><div class="nav-tabs">${newTabBtn}</div>${inner}</main>`
     })
-    next = next.replace(/<div class="nav-tabs">([\s\S]*?)<\/div>([\s\S]*?<div id="view-)/, (_full, _tabs, rest) => {
-      return `<div class="nav-tabs">${_tabs}</div>${rest}`
-    })
+    next = next.replace(
+      /<div class="nav-tabs">([\s\S]*?)<\/div>([\s\S]*?<div id="view-)/,
+      (_full, _tabs, rest) => {
+        return `<div class="nav-tabs">${_tabs}</div>${rest}`
+      }
+    )
   }
   return setActiveViewInHtml(next, viewId)
 }
@@ -2466,8 +2586,7 @@ function isTooSimpleDashboard(views: ViewSpec[]): boolean {
   if (views.length === 0) return true
   const hasDetail = views.some((v) => v.sections.some((s) => s.type === 'detail_table'))
   const hasCross =
-    views.some((v) => v.id === 'cross') ||
-    views.some((v) => /交叉|cross|pivot/i.test(v.label))
+    views.some((v) => v.id === 'cross') || views.some((v) => /交叉|cross|pivot/i.test(v.label))
   // 至少「有明细 +（有交叉或 ≥2 视图）」才算合格
   if (hasDetail && (hasCross || views.length >= 2)) return false
   if (views.length === 1 && !hasDetail) return true
@@ -2498,7 +2617,11 @@ function findQueryStyleInSectionsArray(sections: unknown[], label: string): stri
   if (!Array.isArray(sections)) return null
   for (let i = 0; i < sections.length; i++) {
     const item = sections[i]
-    if (item && typeof item === 'object' && isQueryStyleSectionRaw(item as Record<string, unknown>)) {
+    if (
+      item &&
+      typeof item === 'object' &&
+      isQueryStyleSectionRaw(item as Record<string, unknown>)
+    ) {
       return `${label}[${i}] 疑似 csv_query 参数（含 agg/groupby/dimensions/filters 等但缺少 type），不能直接塞进看板 sections`
     }
   }
@@ -2577,7 +2700,11 @@ interface BuildViewsResult {
   complianceError?: string
 }
 
-function buildViewsFromArgs(args: Record<string, unknown>, sessionId: string, byteUnit?: ByteUnit): BuildViewsResult {
+function buildViewsFromArgs(
+  args: Record<string, unknown>,
+  sessionId: string,
+  byteUnit?: ByteUnit
+): BuildViewsResult {
   const allowSimple = String(args.allow_simple ?? '').toLowerCase() === 'true'
   const queryStyleErr = findQueryStyleInManualArgs(args)
   if (queryStyleErr) {
@@ -2611,8 +2738,12 @@ function buildViewsFromArgs(args: Record<string, unknown>, sessionId: string, by
   }
 
   const preset = (args.preset as string | undefined)?.toLowerCase()
-  const hasManualSections =
-    !!(args.overview_json || args.cross_json || args.detail_json || args.sections_json)
+  const hasManualSections = !!(
+    args.overview_json ||
+    args.cross_json ||
+    args.detail_json ||
+    args.sections_json
+  )
 
   // preset=auto，或未指定内容时：自动从 SQLite 构建三视图
   if (preset === 'auto' || (!preset && !hasManualSections)) {
@@ -2629,8 +2760,12 @@ function buildViewsFromArgs(args: Record<string, unknown>, sessionId: string, by
       if (maps.length > 0) views.push({ id: 'maps', label: '地图分析', sections: maps })
       const reuse = parseSectionsJson(args.reuse_json as string | undefined, 'reuse_json')
       if (reuse.length > 0) views.push({ id: 'reuse', label: '复用分析', sections: reuse })
-      const opportunity = parseSectionsJson(args.opportunity_json as string | undefined, 'opportunity_json')
-      if (opportunity.length > 0) views.push({ id: 'opportunity', label: '优化机会', sections: opportunity })
+      const opportunity = parseSectionsJson(
+        args.opportunity_json as string | undefined,
+        'opportunity_json'
+      )
+      if (opportunity.length > 0)
+        views.push({ id: 'opportunity', label: '优化机会', sections: opportunity })
     }
 
     const cross = parseSectionsJson(args.cross_json as string | undefined, 'cross_json')
@@ -2698,7 +2833,9 @@ interface DashboardSuccessPayload {
   hint?: string
 }
 
-function buildDashboardSuccessPayload(input: Omit<DashboardSuccessPayload, 'status' | 'ops'> & { hint?: string }): string {
+function buildDashboardSuccessPayload(
+  input: Omit<DashboardSuccessPayload, 'status' | 'ops'> & { hint?: string }
+): string {
   const { hint, ...rest } = input
   return JSON.stringify({
     status: 'ok' as const,
@@ -3013,7 +3150,9 @@ export async function executeCsvDashboard(
       })
 
       const wantLive =
-        liveFlag || views.some((v) => needsLive(v.sections)) || viewsForHtml.some((v) => needsLive(v.sections))
+        liveFlag ||
+        views.some((v) => needsLive(v.sections)) ||
+        viewsForHtml.some((v) => needsLive(v.sections))
 
       const html = buildMultiViewDashboardHtml(
         title,

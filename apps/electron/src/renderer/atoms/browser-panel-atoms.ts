@@ -59,9 +59,7 @@ export const writeBrowserSessionStatesAtom = atom(
     update: (prev: Map<string, BrowserSessionState>) => Map<string, BrowserSessionState>
   ) => {
     const stored = _get(browserSessionStatesStorageAtom)
-    const prev = new Map(
-      Object.entries(stored).map(([k, v]) => [k, migrateState(v)] as const)
-    )
+    const prev = new Map(Object.entries(stored).map(([k, v]) => [k, migrateState(v)] as const))
     const next = update(prev)
     const obj: Record<string, BrowserSessionState> = {}
     next.forEach((value, key) => {

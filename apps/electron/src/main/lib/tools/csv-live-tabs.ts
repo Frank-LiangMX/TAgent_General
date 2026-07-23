@@ -35,7 +35,10 @@ export function listLiveTabs(sessionId: string): EphemeralView[] {
 }
 
 /** upsert：同 id 替换，否则追加 */
-export function upsertLiveTab(sessionId: string, tab: Omit<EphemeralView, 'updatedAt'>): EphemeralView {
+export function upsertLiveTab(
+  sessionId: string,
+  tab: Omit<EphemeralView, 'updatedAt'>
+): EphemeralView {
   const list = tabList(sessionId)
   const now = new Date().toISOString()
   const entry: EphemeralView = { ...tab, updatedAt: now }

@@ -49,7 +49,9 @@ import {
 } from './atoms/agent-atoms'
 import { appModeAtom } from './atoms/app-mode'
 import {
+  assistantPresenceMotionAtom,
   assistantPresenceStyleAtom,
+  initializeAssistantPresenceMotion,
   initializeAssistantPresenceStyle,
 } from './atoms/assistant-presence'
 import { channelsAtom, channelsLoadedAtom, selectedModelAtom } from './atoms/model-atoms'
@@ -577,11 +579,13 @@ function TAgentBrandInitializer(): null {
  * 欢迎页 Agent 形象初始化
  */
 function AssistantPresenceStyleInitializer(): null {
+  const setMotion = useSetAtom(assistantPresenceMotionAtom)
   const setStyle = useSetAtom(assistantPresenceStyleAtom)
 
   useEffect(() => {
+    void initializeAssistantPresenceMotion(setMotion)
     void initializeAssistantPresenceStyle(setStyle)
-  }, [setStyle])
+  }, [setMotion, setStyle])
 
   return null
 }

@@ -15,6 +15,7 @@ import * as React from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 import type {
   AdvancedMaterialOnMode,
+  AssistantPresenceMotion,
   AssistantPresenceStyle,
   MarkdownFontSize,
   ThemeMode,
@@ -33,7 +34,9 @@ import {
   updateAdvancedMaterialOnMode,
 } from '@/atoms/advanced-material'
 import {
+  assistantPresenceMotionAtom,
   assistantPresenceStyleAtom,
+  updateAssistantPresenceMotion,
   updateAssistantPresenceStyle,
 } from '@/atoms/assistant-presence'
 import { markdownFontSizeAtom, updateMarkdownFontSize } from '@/atoms/markdown-font-size'
@@ -73,6 +76,14 @@ const ASSISTANT_PRESENCE_STYLE_OPTIONS: {
 }[] = [
   { value: 'ribbon', label: '流光' },
   { value: 'fluid', label: '柔液' },
+]
+
+const ASSISTANT_PRESENCE_MOTION_OPTIONS: {
+  value: AssistantPresenceMotion
+  label: string
+}[] = [
+  { value: 'rich', label: '丰富' },
+  { value: 'reduced', label: '较少' },
 ]
 
 /** 主题色系（default = 默认中性色，也进风格库） */
@@ -228,6 +239,7 @@ export function AppearanceSettings(): React.ReactElement {
   const [advancedMaterialEnabled, setAdvancedMaterialEnabled] = useAtom(advancedMaterialEnabledAtom)
   const [advancedMaterialOnMode, setAdvancedMaterialOnMode] = useAtom(advancedMaterialOnModeAtom)
   const [officeMotionMode, setOfficeMotionMode] = useAtom(officeMotionModeAtom)
+  const [assistantPresenceMotion, setAssistantPresenceMotion] = useAtom(assistantPresenceMotionAtom)
   const [assistantPresenceStyle, setAssistantPresenceStyle] = useAtom(assistantPresenceStyleAtom)
 
   /** 当前解析后的深浅（system 模式跟系统，special 模式看风格后缀） */
@@ -333,6 +345,15 @@ export function AppearanceSettings(): React.ReactElement {
     [setAssistantPresenceStyle]
   )
 
+  const handleAssistantPresenceMotionChange = React.useCallback(
+    (value: string) => {
+      const motion = value as AssistantPresenceMotion
+      setAssistantPresenceMotion(motion)
+      void updateAssistantPresenceMotion(motion)
+    },
+    [setAssistantPresenceMotion]
+  )
+
   return (
     <SettingsPage variant="dense">
       <SettingsPageIntro title="外观" description="主题、风格库、字号与材质" />
@@ -389,6 +410,13 @@ export function AppearanceSettings(): React.ReactElement {
             value={assistantPresenceStyle}
             onValueChange={handleAssistantPresenceStyleChange}
             options={ASSISTANT_PRESENCE_STYLE_OPTIONS}
+          />
+          <SettingsSegmentedControl
+            label="动画效果"
+            description="丰富动效包含漫游、粒子与完整状态动作；较少动效保留呼吸、表情和点击反馈"
+            value={assistantPresenceMotion}
+            onValueChange={handleAssistantPresenceMotionChange}
+            options={ASSISTANT_PRESENCE_MOTION_OPTIONS}
           />
         </SettingsCard>
       </SettingsSection>

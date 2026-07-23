@@ -30,6 +30,7 @@ import {
   agentSessionsAtom,
 } from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
+import { assistantPresenceMotionAtom } from '@/atoms/assistant-presence'
 import { channelsAtom } from '@/atoms/model-atoms'
 import { settingsOpenAtom, settingsTabAtom } from '@/atoms/settings-tab'
 import { userProfileAtom } from '@/atoms/user-profile'
@@ -238,6 +239,7 @@ export function WelcomeEmptyState(): React.ReactElement {
   const userProfile = useAtomValue(userProfileAtom)
   const topLevelMode = useAtomValue(topLevelModeAtom)
   const channels = useAtomValue(channelsAtom)
+  const assistantPresenceMotion = useAtomValue(assistantPresenceMotionAtom)
   const sessions = useAtomValue(agentSessionsAtom)
   const { createAgent } = useCreateSession()
   const openSession = useOpenSession()
@@ -272,7 +274,8 @@ export function WelcomeEmptyState(): React.ReactElement {
       if (busyId) return
       setBusyId(key)
       const transition = beginAssistantPresenceTransition(
-        document.querySelector<HTMLElement>('[data-assistant-transition-source="true"]')
+        document.querySelector<HTMLElement>('[data-assistant-transition-source="true"]'),
+        assistantPresenceMotion === 'reduced'
       )
       try {
         const draftText = prompt?.trim() ?? ''
@@ -310,7 +313,7 @@ export function WelcomeEmptyState(): React.ReactElement {
         setBusyId(null)
       }
     },
-    [busyId, createAgent, mode, setDraftHtmlMap, setDraftsMap]
+    [assistantPresenceMotion, busyId, createAgent, mode, setDraftHtmlMap, setDraftsMap]
   )
 
   const handleGuide = React.useCallback(

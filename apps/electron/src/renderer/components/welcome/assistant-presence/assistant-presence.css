@@ -286,13 +286,13 @@ html[data-assistant-presence-transition='pending'] [data-assistant-transition-ta
 .assistant-presence[data-variant='compact'] .assistant-presence__canvas {
   /* Windows Chromium 偶尔会露出 WebGL 合成纹理的右、下边缘。
      最外圈强制淡出为全透明，并避免 opacity 过渡创建额外合成层。 */
-  -webkit-mask-image: radial-gradient(circle closest-side, #000 0%, #000 82%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 0%, #000 92%, transparent 100%);
   border: 0;
   outline: 0;
   background: transparent;
   box-shadow: none;
   filter: none;
-  mask-image: radial-gradient(circle closest-side, #000 0%, #000 82%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, #000 0%, #000 92%, transparent 100%);
   transition: none;
 }
 
@@ -330,42 +330,66 @@ html[data-assistant-presence-transition='pending'] [data-assistant-transition-ta
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .assistant-presence-roam-cue {
-    display: none;
-  }
+.assistant-presence[data-motion='reduced'] .assistant-presence__canvas,
+.assistant-presence[data-motion='reduced'] .assistant-presence__fallback {
+  transition: none;
+}
 
-  .assistant-presence__canvas,
+.assistant-presence[data-motion='reduced'][data-ready='false'] .assistant-presence__fallback {
+  animation: assistant-presence-fallback-quiet 8s ease-in-out infinite;
+}
+
+.assistant-presence[data-motion='reduced'][data-ready='false'][data-reacting='true']
   .assistant-presence__fallback {
-    transition: none;
-  }
+  animation: assistant-presence-fallback-react-quiet 520ms ease-out both;
+}
 
-  .assistant-presence[data-ready='false'] .assistant-presence__fallback {
-    animation: assistant-presence-fallback-quiet 8s ease-in-out infinite;
-  }
+.assistant-presence[data-motion='reduced'] .assistant-presence__fallback-eye {
+  animation-duration: 7s;
+}
 
-  .assistant-presence[data-ready='false'][data-reacting='true'] .assistant-presence__fallback {
-    animation: assistant-presence-fallback-react-quiet 520ms ease-out both;
-  }
+.assistant-presence[data-motion='reduced'] .assistant-presence__speech {
+  transform: translate(-50%, -100%);
+  transition: opacity var(--motion-duration-fast, 160ms) ease-out;
+}
 
-  .assistant-presence__fallback-eye {
-    animation-duration: 7s;
-  }
+/* 世界坐标地面阴影：独立于 host CSS transform，锚定在 stage 底部 */
+/* top/left/transform 由 portal 内联 style 消费 stage 测量结果覆盖 */
+.assistant-world-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  height: 5px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse farthest-corner at center,
+    hsl(var(--foreground) / 0.28) 0%,
+    hsl(var(--foreground) / 0.12) 50%,
+    transparent 100%
+  );
+}
 
-  .assistant-presence__speech {
-    transform: translate(-50%, -100%);
-    transition: opacity var(--motion-duration-fast, 160ms) ease-out;
-  }
+html[data-theme='dark'] .assistant-world-shadow {
+  background: radial-gradient(
+    ellipse farthest-corner at center,
+    hsl(var(--foreground) / 0.34) 0%,
+    hsl(var(--foreground) / 0.16) 50%,
+    transparent 100%
+  );
+}
 
-  .assistant-presence[data-roaming='true'] {
-    transition: none;
-  }
+.assistant-presence[data-motion='reduced'][data-roaming='true'] {
+  transition: none;
+}
 
-  .assistant-presence[data-ready='false'][data-gesture='tired'] .assistant-presence__fallback,
-  .assistant-presence[data-ready='false'][data-gesture='recover'] .assistant-presence__fallback {
-    transform: scale(0.55);
-    animation: none;
-  }
+.assistant-presence[data-motion='reduced'][data-ready='false'][data-gesture='tired']
+  .assistant-presence__fallback,
+.assistant-presence[data-motion='reduced'][data-ready='false'][data-gesture='recover']
+  .assistant-presence__fallback {
+  transform: scale(0.55);
+  animation: none;
 }
 
 @keyframes assistant-presence-fallback-float {

@@ -4753,13 +4753,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     CSV_IPC_CHANNELS.ENSURE_LIVE_SERVER,
-    async (
-      _,
-      sessionId: string
-    ): Promise<import('@tagent/shared').EnsureCsvLiveServerResult> => {
-      const { ensureCsvLiveServer, findSessionIdByLiveUrl } = await import(
-        './lib/tools/csv-live-server'
-      )
+    async (_, sessionId: string): Promise<import('@tagent/shared').EnsureCsvLiveServerResult> => {
+      const { ensureCsvLiveServer, findSessionIdByLiveUrl } =
+        await import('./lib/tools/csv-live-server')
       let id = typeof sessionId === 'string' ? sessionId.trim() : ''
       // 兼容旧版：只存了 URL 没存 sessionId
       if (!id) {

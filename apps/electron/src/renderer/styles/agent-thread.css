@@ -41,8 +41,7 @@
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
   /* 用户气泡：轻量向下柔影（负 spread），禁止高不透明度黑影糊角 */
   --agent-surface-shadow:
-    0 6px 16px -10px rgb(0 0 0 / 0.22),
-    0 1px 2px -1px rgb(0 0 0 / 0.1),
+    0 6px 16px -10px rgb(0 0 0 / 0.22), 0 1px 2px -1px rgb(0 0 0 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / 0.07);
 }
 
@@ -53,8 +52,7 @@
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 7%, transparent);
   --agent-process-blur: 12px;
   --agent-surface-shadow:
-    0 8px 18px -10px rgb(0 0 0 / 0.08),
-    0 2px 4px -2px rgb(0 0 0 / 0.04),
+    0 8px 18px -10px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04),
     inset 0 1px 0 rgb(255 255 255 / 0.42);
 }
 
@@ -63,8 +61,7 @@
   --agent-bubble-blur: 0px;
   --agent-process-bg: color-mix(in srgb, hsl(var(--foreground)) 4.5%, transparent);
   --agent-surface-shadow:
-    0 8px 18px -10px rgb(0 0 0 / 0.22),
-    0 2px 4px -2px rgb(0 0 0 / 0.1),
+    0 8px 18px -10px rgb(0 0 0 / 0.22), 0 2px 4px -2px rgb(0 0 0 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
@@ -73,16 +70,14 @@
   --agent-process-border: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
   --agent-process-shadow: inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent);
   --agent-surface-shadow:
-    0 4px 12px -6px rgb(145 158 175 / 0.14),
-    0 1px 2px -1px rgb(145 158 175 / 0.06),
+    0 4px 12px -6px rgb(145 158 175 / 0.14), 0 1px 2px -1px rgb(145 158 175 / 0.06),
     inset 0 1px 0 rgb(255 255 255 / 0.55);
 }
 
 .dark[data-material='soft'] .tagent-agent-thread,
 [data-material='soft'].dark .tagent-agent-thread {
   --agent-surface-shadow:
-    0 5px 14px -8px rgb(0 0 0 / 0.18),
-    0 1px 2px -1px rgb(0 0 0 / 0.1),
+    0 5px 14px -8px rgb(0 0 0 / 0.18), 0 1px 2px -1px rgb(0 0 0 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
@@ -488,7 +483,7 @@
   line-height: 1;
 }
 
-/* ===== 运行中胶囊（原型 .running-badge） ===== */
+/* ===== 完成状态胶囊（运行中铭牌已迁移至 Composer） ===== */
 
 .tagent-agent-thread .agent-running-badge {
   position: relative;
@@ -503,24 +498,21 @@
   font-size: 11.5px;
   font-weight: 550;
   letter-spacing: -0.01em;
-  color: var(--md-on-primary-container, hsl(var(--primary)));
-  background: var(
-    --md-primary-container,
-    color-mix(in srgb, hsl(var(--primary)) 12%, hsl(var(--card)))
-  );
+  color: hsl(var(--tooltip-foreground, var(--foreground)) / 0.94);
+  background: var(--surface-role-tooltip-fill, var(--surface-role-navigation-fill));
   border: 1px solid
-    var(--md-primary-outline, color-mix(in srgb, hsl(var(--primary)) 22%, hsl(var(--border))));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
-    0 1px 2px color-mix(in srgb, hsl(var(--primary)) 10%, transparent);
+    var(--surface-role-tooltip-rim, var(--surface-role-navigation-rim, var(--surface-rim)));
+  box-shadow: var(
+    --surface-role-tooltip-shadow,
+    var(--surface-role-navigation-shadow, var(--surface-shadow-chip))
+  );
+  -webkit-backdrop-filter: blur(
+      var(--surface-role-tooltip-blur, var(--surface-role-navigation-blur, 15px))
+    )
+    saturate(var(--surface-saturate, 1.06));
+  backdrop-filter: blur(var(--surface-role-tooltip-blur, var(--surface-role-navigation-blur, 15px)))
+    saturate(var(--surface-saturate, 1.06));
   cursor: default;
-}
-
-/* 完成态：同款胶囊，无扫光；勾替换 spinner */
-.tagent-agent-thread .agent-running-badge--done {
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 55%, transparent),
-    0 1px 2px color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
 }
 
 .tagent-agent-thread .agent-running-badge__check {
@@ -534,38 +526,19 @@
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
-  color: var(--md-on-primary-container, hsl(var(--primary)));
+  color: hsl(var(--primary));
 }
 
 .dark .tagent-agent-thread .agent-running-badge {
-  background: color-mix(in srgb, hsl(var(--primary)) 20%, hsl(var(--card)));
-  border-color: color-mix(in srgb, hsl(var(--primary)) 34%, hsl(var(--border)));
-  box-shadow: 0 1px 3px color-mix(in srgb, hsl(var(--primary)) 18%, transparent);
+  color: hsl(var(--tooltip-foreground, var(--foreground)) / 0.94);
 }
 
 [data-material='soft'] .tagent-agent-thread .agent-running-badge {
-  box-shadow:
-    0 1px 0 color-mix(in srgb, hsl(var(--background)) 80%, transparent) inset,
-    1px 1px 3px color-mix(in srgb, hsl(var(--primary)) 14%, transparent);
+  background: hsl(var(--tooltip, var(--background)) / 0.98);
 }
 
 [data-material='glass'] .tagent-agent-thread .agent-running-badge {
-  background: color-mix(in srgb, hsl(var(--primary)) 16%, hsl(var(--background) / 0.55));
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.tagent-agent-thread .agent-running-badge__spinner {
-  position: relative;
-  z-index: 1;
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, hsl(var(--primary)) 28%, transparent);
-  border-top-color: hsl(var(--primary));
-  border-right-color: color-mix(in srgb, hsl(var(--primary)) 65%, transparent);
-  animation: agent-running-spin 0.8s linear infinite;
+  background: var(--surface-role-tooltip-fill, var(--surface-role-navigation-fill));
 }
 
 .tagent-agent-thread .agent-running-badge__label {
@@ -581,52 +554,6 @@
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   min-width: 1.6em;
-}
-
-/*
- * 扫光：窄色带 translateX，起止都在胶囊外（看不见的地方接循环）
- * 避免 background-position 循环时色块跳回左侧闪一下
- */
-.tagent-agent-thread .agent-running-badge__pulse {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 0;
-  width: 42%;
-  pointer-events: none;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, hsl(var(--primary)) 22%, transparent) 50%,
-    transparent 100%
-  );
-  transform: translateX(-130%);
-  animation: agent-running-shimmer 2.2s linear infinite;
-  will-change: transform;
-}
-
-@keyframes agent-running-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 0% / 100% 都在屏幕外；中间扫过；两端各留一点「空档」便于无缝循环 */
-@keyframes agent-running-shimmer {
-  0% {
-    transform: translateX(-130%);
-  }
-  12% {
-    transform: translateX(-130%);
-  }
-  78% {
-    transform: translateX(260%);
-  }
-  100% {
-    transform: translateX(260%);
-  }
 }
 
 /* ===== 流式 shimmer ===== */
@@ -671,7 +598,10 @@
 [data-conversation-scroll-btn] {
   color: var(--spatial-muted, hsl(var(--muted-foreground) / 0.85));
   background: var(--surface-role-composer-fill, var(--surface-bg-elevated)) !important;
-  border-color: var(--surface-role-composer-rim, var(--surface-rim, hsl(var(--border) / 0.5))) !important;
+  border-color: var(
+    --surface-role-composer-rim,
+    var(--surface-rim, hsl(var(--border) / 0.5))
+  ) !important;
   box-shadow: var(
     --surface-role-composer-shadow,
     var(--surface-shadow-elevated, 0 8px 20px rgb(23 30 40 / 0.1))
@@ -704,16 +634,16 @@
 .dark [data-conversation-scroll-btn] {
   background: var(--surface-role-composer-fill, var(--surface-bg-elevated)) !important;
   border-color: var(--surface-role-composer-rim, var(--surface-rim)) !important;
-  box-shadow: var(
-    --surface-role-composer-shadow,
-    0 10px 24px rgb(0 0 0 / 0.28)
-  ) !important;
+  box-shadow: var(--surface-role-composer-shadow, 0 10px 24px rgb(0 0 0 / 0.28)) !important;
 }
 
 [data-material='glass'] .conversation-scroll-btn,
 [data-material='glass'] [data-conversation-scroll-btn] {
   background: var(--surface-role-composer-fill, var(--surface-bg)) !important;
-  border-color: var(--surface-role-composer-rim, hsl(var(--glass-rim, var(--border)) / 0.45)) !important;
+  border-color: var(
+    --surface-role-composer-rim,
+    hsl(var(--glass-rim, var(--border)) / 0.45)
+  ) !important;
   box-shadow:
     inset 0 1px 0 hsl(var(--glass-shine, 0 0% 100%) / 0.35),
     0 8px 22px rgba(0, 0, 0, 0.14) !important;

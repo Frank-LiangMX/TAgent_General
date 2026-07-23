@@ -22,7 +22,12 @@ import {
   previewFileMapAtom,
   previewModePreferenceAtom,
 } from '@/atoms/preview-atoms'
-import { activeTabIdAtom, getPreviewTabTitleFromPreview, openTab, tabsAtom } from '@/atoms/tab-atoms'
+import {
+  activeTabIdAtom,
+  getPreviewTabTitleFromPreview,
+  openTab,
+  tabsAtom,
+} from '@/atoms/tab-atoms'
 import { WebPreviewFrame } from '@/components/agent/WebPreviewFrame'
 import { detectIsWindows } from '@/lib/platform'
 import { getActiveAccelerator, getAcceleratorDisplay } from '@/lib/shortcut-registry'
@@ -79,9 +84,7 @@ export function PreviewPanel({ sessionId }: PreviewPanelProps): React.ReactEleme
   const defaultAppTargetPath =
     currentFile && !isUrl ? getDefaultAppTargetPath(currentFile, sessionPath) : ''
   const defaultAppAccess =
-    currentFile && !isUrl
-      ? getPreviewFileAccess(sessionId, currentFile, sessionPath)
-      : undefined
+    currentFile && !isUrl ? getPreviewFileAccess(sessionId, currentFile, sessionPath) : undefined
 
   const renderPreviewActions = (): React.ReactElement => (
     <div className="ml-auto flex items-center gap-0.5 shrink-0">

@@ -81,10 +81,7 @@ import {
   sessionChangedFilesAtom,
 } from '@/atoms/agent-atoms'
 import { channelsAtom } from '@/atoms/model-atoms'
-import {
-  appModeAtom,
-  setRightRailItemForSession,
-} from '@/atoms/app-mode'
+import { appModeAtom, setRightRailItemForSession } from '@/atoms/app-mode'
 import { openCsvDashboard } from '@/lib/open-csv-dashboard'
 import {
   setDesignHtmlAtom,

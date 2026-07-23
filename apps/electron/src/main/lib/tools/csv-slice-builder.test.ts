@@ -72,14 +72,20 @@ describe('csv-slice-builder 列/值解析', () => {
   })
 
   test('filter_column=fcat + filter_value=模型', () => {
-    const r = resolveSliceTarget(SESSION, { filter_column: 'fcat', filter_value: '模型', label: '模型专页' })
+    const r = resolveSliceTarget(SESSION, {
+      filter_column: 'fcat',
+      filter_value: '模型',
+      label: '模型专页',
+    })
     expect(r.filterColumn).toBe('fcat')
     expect(r.filterValue).toBe('模型')
     expect(r.label).toBe('模型专页')
   })
 
   test('无匹配值时抛错', () => {
-    expect(() => resolveSliceTarget(SESSION, { slice_query: '不存在的类别xyz' })).toThrow(/未能在维度列中/)
+    expect(() => resolveSliceTarget(SESSION, { slice_query: '不存在的类别xyz' })).toThrow(
+      /未能在维度列中/
+    )
   })
 
   test('无 query 参数时抛错', () => {

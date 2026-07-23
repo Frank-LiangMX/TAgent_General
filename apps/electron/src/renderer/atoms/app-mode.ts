@@ -242,11 +242,7 @@ const rightRailBySessionStorageAtom = atomWithStorage<Record<string, RightRailIt
 
 const writeRightRailBySessionAtom = atom(
   null,
-  (
-    _get,
-    set,
-    update: (prev: Map<string, RightRailItem>) => Map<string, RightRailItem>
-  ) => {
+  (_get, set, update: (prev: Map<string, RightRailItem>) => Map<string, RightRailItem>) => {
     const stored = _get(rightRailBySessionStorageAtom)
     const prev = new Map(
       Object.entries(stored).map(([k, v]) => [k, migrateRightRailItem(v)] as const)

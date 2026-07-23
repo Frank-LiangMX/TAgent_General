@@ -46,7 +46,11 @@ async function main() {
     process.exit(1)
   }
   const prep = JSON.parse(prepareResult.content)
-  console.log('[smoke] prepare', { rows: prep.row_count, cols: prep.columns?.length, ms: Date.now() - t0 })
+  console.log('[smoke] prepare', {
+    rows: prep.row_count,
+    cols: prep.columns?.length,
+    ms: Date.now() - t0,
+  })
 
   const dims = (prep.columns || []).filter(
     (c: { role: string; unique_count?: number }) =>
@@ -90,7 +94,10 @@ async function main() {
 
   const bad = Object.entries(checks).filter(([, v]) => !v)
   if (bad.length) {
-    console.error('[smoke] FAIL', bad.map(([k]) => k))
+    console.error(
+      '[smoke] FAIL',
+      bad.map(([k]) => k)
+    )
     process.exit(1)
   }
 

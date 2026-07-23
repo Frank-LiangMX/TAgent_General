@@ -227,6 +227,17 @@ export function normalizeAssistantPresenceStyle(value: unknown): AssistantPresen
   return value === 'fluid' ? 'fluid' : DEFAULT_ASSISTANT_PRESENCE_STYLE
 }
 
+/** Agent 拟人形象的应用内动效强度；不跟随操作系统或远程会话设置 */
+export type AssistantPresenceMotion = 'rich' | 'reduced'
+
+/** 默认保留完整的角色状态、漫游与粒子交互 */
+export const DEFAULT_ASSISTANT_PRESENCE_MOTION: AssistantPresenceMotion = 'rich'
+
+/** 将旧设置或无效值安全回退到丰富动效 */
+export function normalizeAssistantPresenceMotion(value: unknown): AssistantPresenceMotion {
+  return value === 'reduced' ? 'reduced' : DEFAULT_ASSISTANT_PRESENCE_MOTION
+}
+
 /** 应用设置 */
 export interface AppSettings {
   /** 主题模式 */
@@ -301,6 +312,8 @@ export interface AppSettings {
   tagentBrand?: TAgentBrand
   /** 欢迎页 Agent 拟人形象：现有流光形态或更柔和的液态形态 */
   assistantPresenceStyle?: AssistantPresenceStyle
+  /** Agent 拟人形象动效强度，仅由应用内外观设置控制 */
+  assistantPresenceMotion?: AssistantPresenceMotion
   /** 上次是否在草稿页（用于重启恢复） */
   draftActive?: boolean
   /** 应用图标变体 ID（dock + window icon），'default' 或 logo 变体 id */

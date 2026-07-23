@@ -355,10 +355,7 @@ export function buildSliceViewSections(
   }
 
   // 筛选 + live 明细（切片维默认选中）
-  const filterDims = pickFilterSelectDims(
-    pickChartDimensions(columns, rowCount),
-    8
-  )
+  const filterDims = pickFilterSelectDims(pickChartDimensions(columns, rowCount), 8)
   const dimensions: Array<Record<string, unknown>> = []
   for (const d of filterDims) {
     const id = colSql(d)

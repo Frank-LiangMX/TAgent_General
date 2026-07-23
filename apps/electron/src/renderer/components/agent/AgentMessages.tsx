@@ -198,12 +198,10 @@ function EmptyState(): React.ReactElement {
  * 会出现「侧栏在跑、会话区长时间无反馈，最后一次性倒出」的假静默。
  */
 function PendingStreamTurn({
-  startedAt,
   streamingText,
   streamingThinking,
   retrying,
 }: {
-  startedAt?: number
   streamingText?: string
   streamingThinking?: string
   retrying?: AgentStreamState['retrying']
@@ -223,12 +221,13 @@ function PendingStreamTurn({
           {hasText && <MessageResponse>{streamingText}</MessageResponse>}
         </div>
       </MessageContent>
-      <div className="agent-turn-footer">
-        <div className="agent-turn-footer__meta">
-          {retrying && <RetryingNotice retrying={retrying} />}
-          <AgentStatusBadge status="running" startedAt={startedAt} />
+      {retrying && (
+        <div className="agent-turn-footer">
+          <div className="agent-turn-footer__meta">
+            <RetryingNotice retrying={retrying} />
+          </div>
         </div>
-      </div>
+      )}
     </Message>
   )
 }
@@ -457,76 +456,46 @@ export function buildUsageTooltip(durationMs: number, usage?: AgentEventUsage): 
 }
 
 /**
- * 运行 / 完成 状态胶囊 — 对齐 glass-studio `.running-badge`
- * - running：spinner + 扫光 + 实时秒数
+ * 完成 状态胶囊
  * - completed：同款样式，文案「完成」+ 固定耗时（无动画）
+ * - running 状态已迁移至 ComposerAssistantPresence 铭牌
  */
 export function AgentStatusBadge({
   status,
-  startedAt,
   durationMs,
+  transitionSessionId,
   usage,
 }: {
-  status: 'running' | 'completed'
-  /** running 时用开始时间实时计时 */
-  startedAt?: number
-  /** completed 时用最终耗时（ms） */
+  status: 'completed'
+  /** 最终耗时（ms） */
   durationMs?: number
+  transitionSessionId?: string
   usage?: AgentEventUsage
 }): React.ReactElement {
-  const [elapsedSec, setElapsedSec] = React.useState(0)
-  const isRunning = status === 'running'
-
-  React.useEffect(() => {
-    if (!isRunning) return
-    const start = startedAt ?? Date.now()
-    const update = (): void => setElapsedSec(Math.floor((Date.now() - start) / 1000))
-    update()
-    const timer = window.setInterval(update, 1000)
-    return () => window.clearInterval(timer)
-  }, [isRunning, startedAt])
-
-  const formatLiveTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}s`
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}m ${s}s`
-  }
-
-  const timeLabel = isRunning
-    ? formatLiveTime(elapsedSec)
-    : formatDuration(durationMs ?? elapsedSec * 1000)
-  const title = isRunning ? '运行中' : '完成'
-  const ariaLabel = `${title} ${timeLabel}`
+  const timeLabel = formatDuration(durationMs ?? 0)
 
   const badge = (
-    <div
-      className={cn('agent-running-badge select-none', !isRunning && 'agent-running-badge--done')}
-      role="status"
-      aria-live={isRunning ? 'polite' : 'off'}
-      aria-label={ariaLabel}
-    >
-      {isRunning ? (
-        <span className="agent-running-badge__spinner" aria-hidden />
-      ) : (
-        <span className="agent-running-badge__check" aria-hidden>
-          ✓
-        </span>
-      )}
+    <div className="agent-running-badge select-none" role="status" aria-label={`完成 ${timeLabel}`}>
+      <span className="agent-running-badge__check" aria-hidden>
+        ✓
+      </span>
       <span className="agent-running-badge__label">
-        {title}
+        完成
         <span className="agent-running-badge__time tabular-nums">{timeLabel}</span>
       </span>
-      {isRunning && <span className="agent-running-badge__pulse" aria-hidden />}
     </div>
   )
 
-  // 完成态：悬浮显示 token 明细（兼容原 DurationBadge）
-  if (!isRunning && durationMs != null) {
+  if (durationMs != null) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex cursor-default">{badge}</span>
+          <span
+            className="inline-flex cursor-default"
+            data-run-badge-complete-target={transitionSessionId}
+          >
+            {badge}
+          </span>
         </TooltipTrigger>
         <TooltipContent side="top">
           <p className="whitespace-pre-line text-left">{buildUsageTooltip(durationMs, usage)}</p>
@@ -535,7 +504,14 @@ export function AgentStatusBadge({
     )
   }
 
-  return badge
+  return (
+    <span
+      className="inline-flex cursor-default"
+      data-run-badge-complete-target={transitionSessionId}
+    >
+      {badge}
+    </span>
+  )
 }
 
 /** @deprecated 使用 AgentStatusBadge status=completed；保留导出以免外部引用断裂 */
@@ -642,7 +618,6 @@ function AgentMessagesImpl({
   const streamingContent = streamState?.content ?? ''
   const streamingThinkingContent = streamState?.thinkingContent ?? ''
   const retrying = streamState?.retrying
-  const startedAt = streamState?.startedAt
 
   const { displayedContent: rawSmoothContent } = useSmoothStream({
     content: streamingContent,
@@ -967,6 +942,7 @@ function AgentMessagesImpl({
                 return (
                   <MessageGroupRenderer
                     key={getGroupId(group)}
+                    sessionId={sessionId}
                     group={group}
                     allMessages={allSDKMessages}
                     historicalTaskSubjects={historicalTaskSubjects}
@@ -992,7 +968,6 @@ function AgentMessagesImpl({
                     isContextCompacting={streamState?.isCompacting}
                     stoppedByUser={isLastAssistantTurn || undefined}
                     sessionModelId={sessionModelId}
-                    streamStartedAt={isLive ? startedAt : undefined}
                     retrying={isLive ? retrying : undefined}
                   />
                 )
@@ -1004,7 +979,6 @@ function AgentMessagesImpl({
                 hasLiveAssistantContent,
               }) && (
                 <PendingStreamTurn
-                  startedAt={startedAt}
                   streamingText={smoothContent || undefined}
                   streamingThinking={smoothThinking || undefined}
                   retrying={retrying}

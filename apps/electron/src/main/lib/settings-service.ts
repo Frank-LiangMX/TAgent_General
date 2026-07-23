@@ -9,8 +9,10 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 import {
   DEFAULT_ADVANCED_MATERIAL_MODE,
+  DEFAULT_ASSISTANT_PRESENCE_MOTION,
   DEFAULT_ASSISTANT_PRESENCE_STYLE,
   DEFAULT_THEME_MODE,
+  normalizeAssistantPresenceMotion,
   normalizeAssistantPresenceStyle,
 } from '../../types'
 
@@ -49,6 +51,7 @@ function createDefaultSettings(): AppSettings {
   return {
     themeMode: DEFAULT_THEME_MODE,
     advancedMaterialMode: DEFAULT_ADVANCED_MATERIAL_MODE,
+    assistantPresenceMotion: DEFAULT_ASSISTANT_PRESENCE_MOTION,
     assistantPresenceStyle: DEFAULT_ASSISTANT_PRESENCE_STYLE,
     onboardingCompleted: false,
     environmentCheckSkipped: false,
@@ -65,6 +68,7 @@ function normalizeSettings(data: Partial<AppSettings>): AppSettings {
     ...data,
     themeMode: data.themeMode || DEFAULT_THEME_MODE,
     advancedMaterialMode: resolveAdvancedMaterialMode(data),
+    assistantPresenceMotion: normalizeAssistantPresenceMotion(data.assistantPresenceMotion),
     assistantPresenceStyle: normalizeAssistantPresenceStyle(data.assistantPresenceStyle),
     onboardingCompleted: data.onboardingCompleted ?? false,
     environmentCheckSkipped: data.environmentCheckSkipped ?? false,

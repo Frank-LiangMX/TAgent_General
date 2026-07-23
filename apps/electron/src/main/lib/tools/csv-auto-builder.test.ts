@@ -25,7 +25,14 @@ describe('csv-auto-builder 维度/度量选择', () => {
 
   const columns: CsvColumnMeta[] = [
     { name: 'path', sql_name: 'path', type: 'text', role: 'dimension', unique_count: 999000 },
-    { name: 'fcat', sql_name: 'fcat', type: 'text', role: 'dimension', unique_count: 8, values: ['贴图', '模型'] },
+    {
+      name: 'fcat',
+      sql_name: 'fcat',
+      type: 'text',
+      role: 'dimension',
+      unique_count: 8,
+      values: ['贴图', '模型'],
+    },
     { name: 'module', sql_name: 'module', type: 'text', role: 'dimension', unique_count: 20 },
     { name: 'owner', sql_name: 'owner', type: 'text', role: 'dimension', unique_count: 3 },
     { name: 'compress', sql_name: 'compress', type: 'integer', role: 'metric' },
@@ -103,7 +110,13 @@ describe('csv-auto-builder 语义打分与排序', () => {
 
   test('pickChartDimensions 语义序：owner/fcat/module 优先于 scene 旗标', () => {
     const cols: CsvColumnMeta[] = [
-      { name: 'scene_flag', sql_name: 'scene_flag', type: 'text', role: 'dimension', unique_count: 2 },
+      {
+        name: 'scene_flag',
+        sql_name: 'scene_flag',
+        type: 'text',
+        role: 'dimension',
+        unique_count: 2,
+      },
       { name: 'fcat', sql_name: 'fcat', type: 'text', role: 'dimension', unique_count: 8 },
       { name: 'module', sql_name: 'module', type: 'text', role: 'dimension', unique_count: 20 },
       { name: 'owner', sql_name: 'owner', type: 'text', role: 'dimension', unique_count: 4 },

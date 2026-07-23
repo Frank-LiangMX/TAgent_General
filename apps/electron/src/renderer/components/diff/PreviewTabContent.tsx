@@ -15,16 +15,8 @@ import { tearOffPreviewToSplit } from './preview-opener'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
 import { agentSessionPathMapAtom } from '@/atoms/agent-atoms'
-import {
-  getPreviewDisplayTitle,
-  isUrlPreview,
-  previewFileMapAtom,
-} from '@/atoms/preview-atoms'
-import {
-  createPreviewTabId,
-  getPreviewTabTitleFromPreview,
-  tabsAtom,
-} from '@/atoms/tab-atoms'
+import { getPreviewDisplayTitle, isUrlPreview, previewFileMapAtom } from '@/atoms/preview-atoms'
+import { createPreviewTabId, getPreviewTabTitleFromPreview, tabsAtom } from '@/atoms/tab-atoms'
 import { WebPreviewFrame } from '@/components/agent/WebPreviewFrame'
 
 interface PreviewTabContentProps {
@@ -102,9 +94,7 @@ export function PreviewTabContent({ sessionId }: PreviewTabContentProps): React.
     sessionPath ||
     (currentFile.filePath ? getFallbackDirPath(currentFile.filePath, sessionPath) : sessionPath)
   const defaultAppTargetPath =
-    !isUrl && currentFile.filePath
-      ? getDefaultAppTargetPath(currentFile, sessionPath)
-      : ''
+    !isUrl && currentFile.filePath ? getDefaultAppTargetPath(currentFile, sessionPath) : ''
   const defaultAppAccess =
     !isUrl && currentFile.filePath
       ? getPreviewFileAccess(sessionId, currentFile, sessionPath)

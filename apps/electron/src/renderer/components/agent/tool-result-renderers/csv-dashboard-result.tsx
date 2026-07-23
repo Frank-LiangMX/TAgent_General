@@ -48,10 +48,7 @@ function parsePayload(text: string): CsvDashboardToolPayload | null {
   }
 }
 
-function pickTitle(
-  payload: CsvDashboardToolPayload,
-  input: Record<string, unknown>
-): string {
+function pickTitle(payload: CsvDashboardToolPayload, input: Record<string, unknown>): string {
   if (typeof payload.title === 'string' && payload.title.trim()) return payload.title.trim()
   if (typeof input.title === 'string' && input.title.trim()) return input.title.trim()
   return 'CSV 数据看板'
@@ -96,8 +93,7 @@ export function CsvDashboardResultRenderer({
         ? payload.views.length
         : null
 
-  const hint =
-    typeof payload.hint === 'string' && payload.hint.trim() ? payload.hint.trim() : null
+  const hint = typeof payload.hint === 'string' && payload.hint.trim() ? payload.hint.trim() : null
 
   const metaParts: string[] = []
   if (viewCount !== null) metaParts.push(`${viewCount} 个视图`)
@@ -119,8 +115,7 @@ export function CsvDashboardResultRenderer({
         filePath,
         title,
         url,
-        activeView:
-          typeof payload.active_view === 'string' ? payload.active_view : undefined,
+        activeView: typeof payload.active_view === 'string' ? payload.active_view : undefined,
       })
       if (!res.ok) {
         setOpenError(res.error ?? '打开失败')

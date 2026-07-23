@@ -652,7 +652,7 @@ export function RichTextInput({
       <style>{`
         .ProseMirror {
           outline: none;
-          padding: 9px 15px 0px;
+          padding: 9px 15px 15px;
           font-style: normal;
         }
         .ProseMirror p {

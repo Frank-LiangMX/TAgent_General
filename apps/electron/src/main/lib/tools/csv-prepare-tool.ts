@@ -225,7 +225,9 @@ function processCsvStream(
 
     const colNames = columnInfos.map((c) => c.name.replace(/[^a-zA-Z0-9_]/g, '_'))
     const placeholders = colNames.map(() => '?').join(', ')
-    const insertStmt = db.prepare(`INSERT INTO assets (${colNames.join(', ')}) VALUES (${placeholders})`)
+    const insertStmt = db.prepare(
+      `INSERT INTO assets (${colNames.join(', ')}) VALUES (${placeholders})`
+    )
     const compressIdx = columnInfos.findIndex((c) => c.name === 'compress')
 
     let rowCount = 0
@@ -247,7 +249,10 @@ function processCsvStream(
     }
 
     // 使用 Papa.parse 流式 API
-    const fileStream = fs.createReadStream(filePath, { encoding: 'utf-8', highWaterMark: 64 * 1024 })
+    const fileStream = fs.createReadStream(filePath, {
+      encoding: 'utf-8',
+      highWaterMark: 64 * 1024,
+    })
     let leftover = ''
 
     fileStream.on('data', (chunk: string | Buffer) => {
@@ -368,7 +373,10 @@ export async function executeCsvPrepare(toolCall: ToolCall): Promise<ToolResult>
     const startTime = Date.now()
 
     // 第一遍：读取头部采样推断列类型
-    const fileStream = fs.createReadStream(resolvedPath, { encoding: 'utf-8', highWaterMark: 64 * 1024 })
+    const fileStream = fs.createReadStream(resolvedPath, {
+      encoding: 'utf-8',
+      highWaterMark: 64 * 1024,
+    })
     const sampleRows: Record<string, string>[] = []
     let header: string[] = []
     let headerParsed = false

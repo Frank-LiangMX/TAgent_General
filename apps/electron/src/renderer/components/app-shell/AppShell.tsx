@@ -56,10 +56,7 @@ import {
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
 import { workspaceManagerOpenAtom } from '@/atoms/workspace'
-import {
-  designEnabledAtom,
-  designImmersiveAtom,
-} from '@/atoms/design-preview-atoms'
+import { designEnabledAtom, designImmersiveAtom } from '@/atoms/design-preview-atoms'
 import { DesignImmersiveLayout } from '@/components/design-preview/DesignImmersiveLayout'
 import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
@@ -254,7 +251,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const exclusiveControlVisibleRef = React.useRef(exclusiveControlVisible)
   exclusiveControlVisibleRef.current = exclusiveControlVisible
 
-
   const shellChromeCollapsedForLayout =
     (chromeCollapsedByRight || inspectorExclusive) &&
     inspectorOpen &&
@@ -262,9 +258,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   const effectiveNavClusterWidth = shellChromeCollapsedForLayout ? 0 : navClusterWidth
   const exclusiveRightWidth = getInspectorExclusiveWidth(viewportWidth, effectiveNavClusterWidth)
   const inspectorExclusiveActive = inspectorExclusive && inspectorOpen
-  const layoutTargetWidth = inspectorExclusiveActive
-    ? exclusiveRightWidth
-    : clampedRightPanelWidth
+  const layoutTargetWidth = inspectorExclusiveActive ? exclusiveRightWidth : clampedRightPanelWidth
   /** 拖拽中只改 DOM，松手再写 atom，避免整树重渲导致卡顿 */
   const sceneRef = React.useRef<HTMLDivElement>(null)
   const liveRightWidthRef = React.useRef(clampedRightPanelWidth)
@@ -755,15 +749,31 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
     })
   }, [])
 
+  /** 拖宽会话结束回调（失焦/卸载时兜底清 data-right-resizing） */
+  const endRightPanelDragSessionRef = React.useRef<(() => void) | null>(null)
+
+  React.useEffect(() => {
+    return () => {
+      endRightPanelDragSessionRef.current?.()
+      endRightPanelDragSessionRef.current = null
+    }
+  }, [])
+
   /**
    * 右栏左缘拖拽：宽度走 DOM；越过 30% / 回到 28% 时各触发一次左栏收起/展开（带现有侧栏动画）。
    * 接近 50% 有平分吸力；独占按钮随宽度实时显隐。松手再写 atom。
+   *
+   * 清理必须幂等且覆盖失焦/隐藏/卸载：仅 mouseup 时，Alt-Tab 或点到其它窗
+   * 会丢事件，data-right-resizing 卡住 → main 永久 transition:none。
    */
   const handleRightPanelResizeDrag = React.useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
       // 浮层不占列，禁止拖分界
       if (rightPanelPlacement !== 'dock' || inspectorExclusiveActive) return
+      // 避免重复 pointerdown 叠两套监听
+      endRightPanelDragSessionRef.current?.()
+
       dragging.current = true
       const startX = e.clientX
       const startWidth = liveRightWidthRef.current
@@ -802,6 +812,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         if (!dragging.current || rafId) return
         rafId = requestAnimationFrame(() => {
           rafId = 0
+          if (!dragging.current) return
           const liveViewport = window.innerWidth
           const raw = startWidth + (startX - ev.clientX)
           const magnet = applyHalfSplitMagnet(raw, liveViewport, halfSnapped)
@@ -843,10 +854,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             setChromeCollapsedByRight(true)
           }
 
-          if (
-            chromeCollapsedByRightRef.current &&
-            shouldAutoShowShellChrome(next, liveViewport)
-          ) {
+          if (chromeCollapsedByRightRef.current && shouldAutoShowShellChrome(next, liveViewport)) {
             chromeCollapsedByRightRef.current = false
             chromeHideArmed = true
             setChromeCollapsedByRight(false)
@@ -854,21 +862,54 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
         })
       }
 
-      const onMouseUp = () => {
+      let detachListeners = (): void => {}
+
+      const endDrag = () => {
+        // 只允许当前会话结束一次，避免 blur+mouseup 双触发重复写 atom
+        if (endRightPanelDragSessionRef.current !== endDrag) return
+        endRightPanelDragSessionRef.current = null
+
+        const wasDragging = dragging.current
         dragging.current = false
-        if (rafId) cancelAnimationFrame(rafId)
-        const finalWidth = liveRightWidthRef.current
-        const liveViewport = window.innerWidth
+        if (rafId) {
+          cancelAnimationFrame(rafId)
+          rafId = 0
+        }
+
+        // 无论是否仍标记 dragging，都清掉 transition:none 相关属性
         releaseRightPanelDrag()
-        setViewportWidth(liveViewport)
-        setRightPanelWidth(finalWidth)
-        syncExclusiveControlVisible(finalWidth, liveViewport)
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
+
+        if (wasDragging) {
+          const finalWidth = liveRightWidthRef.current
+          const liveViewport = window.innerWidth
+          setViewportWidth(liveViewport)
+          setRightPanelWidth(finalWidth)
+          syncExclusiveControlVisible(finalWidth, liveViewport)
+        }
+
+        detachListeners()
       }
 
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') endDrag()
+      }
+
+      detachListeners = () => {
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', endDrag)
+        document.removeEventListener('pointerup', endDrag)
+        document.removeEventListener('pointercancel', endDrag)
+        window.removeEventListener('blur', endDrag)
+        document.removeEventListener('visibilitychange', onVisibilityChange)
+      }
+
+      endRightPanelDragSessionRef.current = endDrag
       document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
+      document.addEventListener('mouseup', endDrag)
+      document.addEventListener('pointerup', endDrag)
+      document.addEventListener('pointercancel', endDrag)
+      window.addEventListener('blur', endDrag)
+      document.addEventListener('visibilitychange', onVisibilityChange)
     },
     [
       applyLiveRightPanelWidth,
@@ -1017,12 +1058,11 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
           ['--nav-island-outer-radius-tl' as string]: `${isMac ? NAV_ISLAND_MAC_TOP_LEFT_RADIUS : NAV_ISLAND_OUTER_RADIUS}px`,
           /* dock 占位：跟 phase 同步过渡，与 morph / 左栏让位同拍 */
           ['--right-inspector-width' as string]: `${layoutRightWidth}px`,
-          ['--right-inspector-reserve' as string]:
-            inspectorExclusiveActive
-              ? '0px'
-              : dockReserveActive
-                ? `calc(${layoutRightWidth}px + var(--spatial-gutter))`
-                : '0px',
+          ['--right-inspector-reserve' as string]: inspectorExclusiveActive
+            ? '0px'
+            : dockReserveActive
+              ? `calc(${layoutRightWidth}px + var(--spatial-gutter))`
+              : '0px',
           ['--right-inspector-layout-ms' as string]: `${rightLayoutMotionMs}ms`,
           ['--right-inspector-layout-ease' as string]: INSPECTOR_MOTION_EASE,
         }}
@@ -1031,9 +1071,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
 
         <InertRegion
           className="app-shell-nav"
-          data-presence={
-            shellChromeCollapsedForLayout ? 'hidden' : shellLayout.navigation
-          }
+          data-presence={shellChromeCollapsedForLayout ? 'hidden' : shellLayout.navigation}
           inactive={shellLayout.navigation === 'hidden' || shellChromeCollapsedForLayout}
         >
           <NavIsland
@@ -1176,9 +1214,7 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
                           )}
                           onClick={handleToggleInspectorExclusive}
                           aria-pressed={inspectorExclusiveActive}
-                          aria-label={
-                            inspectorExclusiveActive ? '显示会话' : '隐藏会话，右栏全宽'
-                          }
+                          aria-label={inspectorExclusiveActive ? '显示会话' : '隐藏会话，右栏全宽'}
                         >
                           {inspectorExclusiveActive ? (
                             <PanelLeft className="size-4" aria-hidden />

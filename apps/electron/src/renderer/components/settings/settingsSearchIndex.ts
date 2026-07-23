@@ -205,8 +205,8 @@ export const SETTINGS_SEARCH_INDEX: SearchableTab[] = [
       {
         id: 'assistant-presence-style',
         title: 'Agent 形象',
-        description: '流光 / 柔液欢迎页角色形态',
-        keywords: ['avatar', 'assistant', 'chatbot', '角色'],
+        description: '流光 / 柔液角色形态与丰富 / 较少动画效果',
+        keywords: ['avatar', 'assistant', 'chatbot', '角色', '动画', '动效'],
       },
       { id: 'brand-color', title: '品牌色', description: 'TAgent 品牌色' },
       { id: 'markdown-font-size', title: 'Markdown 字号', description: '阅读字号档位' },

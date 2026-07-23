@@ -8,12 +8,7 @@
 import type { ToolCall, ToolResult, ToolDefinition } from '@tagent/core'
 import type { ChatToolMeta } from '@tagent/shared'
 import * as fs from 'fs'
-import {
-  getCsvDbPath,
-  parseGroupByColumns,
-  runCsvQuery,
-  type CsvFilter,
-} from './csv-shared'
+import { getCsvDbPath, parseGroupByColumns, runCsvQuery, type CsvFilter } from './csv-shared'
 
 // ===== 工具元数据 =====
 
@@ -28,7 +23,11 @@ export const CSV_QUERY_TOOL_META: ChatToolMeta = {
       type: 'string',
       description: '分组字段，单列或多列逗号分隔，如 "fcat" 或 "fcat,module"',
     },
-    { name: 'agg', type: 'string', description: '聚合函数，逗号分隔，如 "count,sum(compress),avg(compress)"' },
+    {
+      name: 'agg',
+      type: 'string',
+      description: '聚合函数，逗号分隔，如 "count,sum(compress),avg(compress)"',
+    },
     {
       name: 'filters',
       type: 'string',
@@ -76,7 +75,8 @@ export const CSV_QUERY_TOOL_DEFINITIONS: ToolDefinition[] = [
         session_id: { type: 'string', description: 'Session ID' },
         groupby: {
           type: 'string',
-          description: 'Group by column(s), comma-separated for cross-dim. e.g. "fcat" or "fcat,module"',
+          description:
+            'Group by column(s), comma-separated for cross-dim. e.g. "fcat" or "fcat,module"',
         },
         agg: {
           type: 'string',

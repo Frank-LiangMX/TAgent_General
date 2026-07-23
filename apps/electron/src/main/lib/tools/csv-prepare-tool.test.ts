@@ -107,7 +107,9 @@ describe('csv_prepare 缓存', () => {
 
     const primed = await executeCsvPrepare(call)
     expect(primed.isError).toBeFalsy()
-    const metaBefore = JSON.parse(fs.readFileSync(path.join(sessionDir(), 'meta.json'), 'utf-8')) as {
+    const metaBefore = JSON.parse(
+      fs.readFileSync(path.join(sessionDir(), 'meta.json'), 'utf-8')
+    ) as {
       csv_mtime: number
       row_count: number
     }
@@ -126,7 +128,9 @@ describe('csv_prepare 缓存', () => {
     const body = JSON.parse(rebuilt.content) as { row_count: number; from_cache?: boolean }
     expect(body.from_cache).toBe(false)
     expect(body.row_count).toBe(3)
-    const metaAfter = JSON.parse(fs.readFileSync(path.join(sessionDir(), 'meta.json'), 'utf-8')) as {
+    const metaAfter = JSON.parse(
+      fs.readFileSync(path.join(sessionDir(), 'meta.json'), 'utf-8')
+    ) as {
       csv_mtime: number
       row_count: number
     }

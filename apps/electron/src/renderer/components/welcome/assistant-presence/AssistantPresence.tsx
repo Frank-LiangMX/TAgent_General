@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@tagent/ui'
 
-import { AssistantPresenceRenderer } from './assistant-renderer'
+import { AssistantPresenceRenderer, BODY_BOTTOM_RATIO } from './assistant-renderer'
 import {
   ASSISTANT_TIRED_DURATION_MS,
   INITIAL_ASSISTANT_CLICK_STATE,
@@ -12,14 +12,18 @@ import {
   resolveAssistantClick,
 } from './assistant-interaction'
 import {
+  computeWorldShadowParams,
   getAssistantGestureDuration,
   type AssistantGesture,
   type AssistantPresenceState,
 } from './assistant-motion'
 
-import { assistantPresenceStyleAtom } from '@/atoms/assistant-presence'
+import { assistantPresenceMotionAtom, assistantPresenceStyleAtom } from '@/atoms/assistant-presence'
 import { resolvedThemeAtom } from '@/atoms/theme'
 import './assistant-presence.css'
+
+/** 地面在 stage 底部的内缩量（px），与 CSS anchor 一致 */
+const GROUND_INSET_PX = 8
 
 interface AssistantPresenceProps {
   ariaLabel?: string
@@ -53,8 +57,11 @@ export function AssistantPresence({
   variant = 'hero',
 }: AssistantPresenceProps = {}): React.ReactElement {
   const theme = useAtomValue(resolvedThemeAtom)
+  const motionMode = useAtomValue(assistantPresenceMotionAtom)
   const style = useAtomValue(assistantPresenceStyleAtom)
+  const reducedMotion = motionMode === 'reduced'
   const hostRef = React.useRef<HTMLDivElement>(null)
+  const stageRef = React.useRef<HTMLElement | null>(null)
   const rendererRef = React.useRef<AssistantPresenceRenderer | null>(null)
   const gestureTimerRef = React.useRef<number | null>(null)
   const messageTimerRef = React.useRef<number | null>(null)
@@ -67,10 +74,12 @@ export function AssistantPresence({
   const roamPoseRef = React.useRef({ rotation: 0, x: 0, y: 0 })
   const roamWorldRef = React.useRef({ x: 0, y: 0 })
   const roamXRef = React.useRef(0)
+  const shadowElRef = React.useRef<HTMLSpanElement | null>(null)
+  const groundedRef = React.useRef(false)
+  const reducedMotionRef = React.useRef(reducedMotion)
   const [ready, setReady] = React.useState(false)
   const [reacting, setReacting] = React.useState(false)
   const [exhausted, setExhausted] = React.useState(false)
-  const [reducedMotion, setReducedMotion] = React.useState(false)
   const [gesture, setGesture] = React.useState<AssistantGesture | null>(null)
   const [playfulMessage, setPlayfulMessage] = React.useState<string | null>(null)
   const [roamCue, setRoamCue] = React.useState<AssistantRoamCue | null>(null)
@@ -82,6 +91,11 @@ export function AssistantPresence({
   const [roamPose, setRoamPose] = React.useState({ rotation: 0, x: 0, y: 0 })
   const [grounded, setGrounded] = React.useState(false)
   const [contactOffset, setContactOffset] = React.useState(0)
+  const [satelliteCount, setSatelliteCount] = React.useState(0)
+  const [stageRect, setStageRect] = React.useState<{ width: number; height: number } | null>(null)
+  // 同步 ref 供 rAF 闭包读取最新值（render 阶段同步，保证 effect 执行前已是最新）
+  groundedRef.current = grounded
+  reducedMotionRef.current = reducedMotion
 
   const measureCardContactOffset = React.useCallback((): number => {
     const host = hostRef.current
@@ -93,7 +107,7 @@ export function AssistantPresence({
 
     const stageRect = stage.getBoundingClientRect()
     const surfaceRect = surface.getBoundingClientRect()
-    const bodyContactY = host.offsetHeight * 0.78
+    const bodyContactY = host.offsetHeight * BODY_BOTTOM_RATIO
     return surfaceRect.top - stageRect.top - host.offsetTop - bodyContactY
   }, [])
 
@@ -102,15 +116,45 @@ export function AssistantPresence({
     setContactOffset(nextOffset)
   }, [])
 
+  /**
+   * 从 host 实际 DOM 位置同步 shadow 样式。
+   * 直接写 DOM ref style，不触发 React 重渲染。
+   */
+  const syncShadow = React.useCallback((): void => {
+    const shadow = shadowElRef.current
+    const host = hostRef.current
+    const stage = stageRef.current
+    if (!shadow || !host || !stage) return
+
+    const hostRect = host.getBoundingClientRect()
+    const stageRect = stage.getBoundingClientRect()
+    const hostCenterX = hostRect.left + hostRect.width / 2 - stageRect.left
+    const groundY = stageRect.height - GROUND_INSET_PX
+    const bodyBottomWorldY = hostRect.top - stageRect.top + hostRect.height * BODY_BOTTOM_RATIO
+    const signedDistanceToGround = groundY - bodyBottomWorldY
+    const cardContactHidden = groundedRef.current || cardContactRef.current
+    const shadowParams = computeWorldShadowParams(
+      signedDistanceToGround,
+      cardContactHidden,
+      reducedMotionRef.current
+    )
+    const shadowScaleX = 1 + shadowParams.groundContactWidthBonus / Math.max(1, shadowParams.width)
+
+    shadow.style.left = `${hostCenterX}px`
+    shadow.style.top = `${groundY}px`
+    shadow.style.opacity = String(shadowParams.alpha)
+    shadow.style.width = `${shadowParams.width}px`
+    shadow.style.transform = `translate(-50%, -50%) scaleX(${shadowScaleX})`
+  }, [])
+
   React.useEffect(() => {
     const host = hostRef.current
     if (!host) return
 
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReducedMotion(motionQuery.matches)
-    const renderer = new AssistantPresenceRenderer(host, theme, motionQuery.matches, style, state)
+    const renderer = new AssistantPresenceRenderer(host, theme, reducedMotion, style, state)
     let disposed = false
     rendererRef.current = renderer
+    renderer.onSatelliteCountChange = setSatelliteCount
 
     void renderer
       .init()
@@ -128,12 +172,6 @@ export function AssistantPresence({
         if (rendererRef.current === renderer) rendererRef.current = null
       })
 
-    const onMotionPreferenceChange = (event: MediaQueryListEvent): void => {
-      renderer.setReducedMotion(event.matches)
-      setReducedMotion(event.matches)
-    }
-    motionQuery.addEventListener('change', onMotionPreferenceChange)
-
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       renderer.setActive(entry?.isIntersecting ?? false)
     })
@@ -142,11 +180,74 @@ export function AssistantPresence({
     return () => {
       disposed = true
       visibilityObserver.disconnect()
-      motionQuery.removeEventListener('change', onMotionPreferenceChange)
       renderer.destroy()
       rendererRef.current = null
     }
   }, [])
+
+  // 追踪 stage 容器 + ResizeObserver 测量，用于世界坐标阴影 portal
+  React.useEffect(() => {
+    const host = hostRef.current
+    if (!host) return
+    const stage = host.parentElement
+    if (!stage || !stage.classList.contains('assistant-presence-stage')) return
+
+    stageRef.current = stage
+
+    const syncStageRect = (): void => {
+      const rect = stage.getBoundingClientRect()
+      setStageRect({ width: rect.width, height: rect.height })
+      syncShadow()
+    }
+    syncStageRect()
+
+    const observer = new ResizeObserver(syncStageRect)
+    observer.observe(stage)
+
+    return () => {
+      observer.disconnect()
+      stageRef.current = null
+      setStageRect(null)
+    }
+  }, [syncShadow])
+
+  // 世界坐标阴影：hero + shadow 存在时立即 sync；rich 模式 rAF 跟随 CSS transition
+  React.useEffect(() => {
+    if (variant !== 'hero') return
+    const shadow = shadowElRef.current
+    if (!shadow || !stageRef.current || !hostRef.current) return
+
+    // 立即 sync 一次
+    syncShadow()
+
+    if (reducedMotion) return
+
+    // rich 模式：rAF 循环跟随 CSS transition，持续 roamDuration + 100ms（上限 6500ms）
+    let rafId = 0
+    const startTime = performance.now()
+    const duration = Math.min(roamDuration + 100, 6500)
+
+    const tick = (): void => {
+      syncShadow()
+      if (performance.now() - startTime < duration) {
+        rafId = requestAnimationFrame(tick)
+      }
+    }
+
+    rafId = requestAnimationFrame(tick)
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [
+    roamPose,
+    contactOffset,
+    roamDuration,
+    grounded,
+    stageRect,
+    reducedMotion,
+    variant,
+    syncShadow,
+  ])
 
   React.useEffect(() => {
     rendererRef.current?.setTheme(theme)
@@ -155,6 +256,10 @@ export function AssistantPresence({
   React.useEffect(() => {
     rendererRef.current?.setStyle(style)
   }, [style])
+
+  React.useEffect(() => {
+    rendererRef.current?.setReducedMotion(reducedMotion)
+  }, [reducedMotion])
 
   React.useEffect(() => {
     rendererRef.current?.setPresenceState(state)
@@ -311,7 +416,15 @@ export function AssistantPresence({
 
           later(() => {
             if (disposed) return
-            setRoamCue((cue) => (cue ? { ...cue, phase: 'caught' } : null))
+            setRoamCue((cue) => {
+              if (cue) {
+                // 粒子被捕获 → 转为卫星；count 由 renderer 回调驱动
+                const colorIndex = Math.floor(Math.random() * 4)
+                rendererRef.current?.addSatellite(colorIndex)
+                return { ...cue, phase: 'caught' }
+              }
+              return null
+            })
             chasingRef.current = false
             bubbleDrifts = 0
             later(() => {
@@ -417,6 +530,20 @@ export function AssistantPresence({
     [onPlayfulMessage, showPlayfulBubble]
   )
 
+  // 卫星数量变化 → 显示消息（由 renderer 回调驱动，保证吸收归零后可再次循环）
+  const prevSatelliteCountRef = React.useRef(0)
+  React.useEffect(() => {
+    const prev = prevSatelliteCountRef.current
+    prevSatelliteCountRef.current = satelliteCount
+    if (satelliteCount <= prev) return
+    if (satelliteCount >= 5) {
+      rendererRef.current?.setGreenMode(true)
+      showMessage('✨ 集齐了！', 2200)
+    } else if (satelliteCount >= 3) {
+      showMessage(`已有 ${satelliteCount} 颗卫星`, 1400)
+    }
+  }, [satelliteCount, showMessage])
+
   const playGesture = React.useCallback((nextGesture: AssistantGesture) => {
     rendererRef.current?.triggerGesture(nextGesture)
     setGesture(nextGesture)
@@ -498,6 +625,8 @@ export function AssistantPresence({
       data-ready={ready ? 'true' : 'false'}
       data-exhausted={exhausted ? 'true' : 'false'}
       data-gesture={gesture ?? undefined}
+      data-green-mode={satelliteCount >= 5 ? 'true' : undefined}
+      data-motion={motionMode}
       data-roam-mode={roaming && variant === 'hero' ? roamMode : undefined}
       data-roaming={roaming && variant === 'hero' ? 'true' : undefined}
       data-style={style}
@@ -546,6 +675,23 @@ export function AssistantPresence({
           {playfulMessage}
         </span>
       )}
+      {/* 世界坐标地面阴影：portal 到 stage，由 syncShadow 驱动 */}
+      {variant === 'hero' && stageRef.current && stageRect
+        ? createPortal(
+            <span
+              ref={shadowElRef}
+              aria-hidden="true"
+              className="assistant-world-shadow"
+              data-world-shadow="ground"
+              style={{
+                opacity: 0,
+                left: '50%',
+                top: `${stageRect.height - GROUND_INSET_PX}px`,
+              }}
+            />,
+            stageRef.current!
+          )
+        : null}
       {roamCue && roamStage
         ? createPortal(
             <span

@@ -6,12 +6,7 @@
  * 维度排序以语义名优先，避免只按 unique_count 选出场景旗标类列。
  */
 
-import {
-  getFacetValues,
-  readCsvCacheMeta,
-  runCsvQuery,
-  type CsvColumnMeta,
-} from './csv-shared'
+import { getFacetValues, readCsvCacheMeta, runCsvQuery, type CsvColumnMeta } from './csv-shared'
 
 export interface AutoDashboardSection {
   type: string
@@ -482,7 +477,9 @@ function appendCrossPairSections(
     sections.push({
       type: 'opportunity_intro',
       title: '交叉分析',
-      data: [`交叉查询失败 (${dimA.name}×${dimB.name}): ${e instanceof Error ? e.message : String(e)}`],
+      data: [
+        `交叉查询失败 (${dimA.name}×${dimB.name}): ${e instanceof Error ? e.message : String(e)}`,
+      ],
     })
   }
 }
@@ -522,7 +519,11 @@ export function buildAutoDashboardViews(
       const sumVal = Number(sumRes.rows[0]?.[`sum_${metricSql}`] ?? 0)
       statsData[primaryMetric.name || metricSql] = formatMetric(sumVal, metricSql, byteUnit)
       if (rowCount > 0) {
-        statsData[`平均 ${primaryMetric.name}`] = formatMetric(sumVal / rowCount, metricSql, byteUnit)
+        statsData[`平均 ${primaryMetric.name}`] = formatMetric(
+          sumVal / rowCount,
+          metricSql,
+          byteUnit
+        )
       }
     } catch {
       /* ignore */
@@ -618,16 +619,7 @@ export function buildAutoDashboardViews(
   const pairs = pickCrossPairs(dims)
   if (pairs.length > 0) {
     pairs.forEach(([a, b], i) => {
-      appendCrossPairSections(
-        crossSections,
-        sessionId,
-        a,
-        b,
-        metricSql,
-        valueAlias,
-        agg,
-        i
-      )
+      appendCrossPairSections(crossSections, sessionId, a, b, metricSql, valueAlias, agg, i)
     })
   } else if (dims.length === 1) {
     crossSections.push({

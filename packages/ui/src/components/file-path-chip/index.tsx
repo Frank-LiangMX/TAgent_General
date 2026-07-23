@@ -50,9 +50,7 @@ export function FilePathChip({
   const filename = getFileName(cleanPath)
   // 与 @tagent/shared isAbsoluteFilePath 对齐：Windows 盘符大小写 + 正/反斜杠 + UNC
   const isAbsolute =
-    cleanPath.startsWith('/') ||
-    cleanPath.startsWith('\\\\') ||
-    /^[A-Za-z]:[\\/]/.test(cleanPath)
+    cleanPath.startsWith('/') || cleanPath.startsWith('\\\\') || /^[A-Za-z]:[\\/]/.test(cleanPath)
 
   const chipRef = React.useRef<HTMLButtonElement>(null)
 

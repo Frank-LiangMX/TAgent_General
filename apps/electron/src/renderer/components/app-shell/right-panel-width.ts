@@ -153,10 +153,7 @@ export function clampRightPanelWidth(width: number, viewportWidth: number): numb
  * 独占模式下右栏可用宽度：视口减去左导航占位与右缘 gutter。
  * @param leftChromeWidth 左导航集群宽度（rail + sidebar，不含 rail 外距）
  */
-export function getInspectorExclusiveWidth(
-  viewportWidth: number,
-  leftChromeWidth: number
-): number {
+export function getInspectorExclusiveWidth(viewportWidth: number, leftChromeWidth: number): number {
   const safeViewport = Math.max(1, viewportWidth)
   const leftReserve = Math.max(0, leftChromeWidth) + SPATIAL_RAIL_EDGE_LEFT + SPATIAL_GUTTER
   return Math.max(MIN_RIGHT_PANEL_WIDTH, Math.floor(safeViewport - leftReserve))

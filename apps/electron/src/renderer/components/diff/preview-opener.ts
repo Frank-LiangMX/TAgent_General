@@ -86,11 +86,7 @@ export function openPreview(store: JotaiStore, sessionId: string, file: PreviewF
 }
 
 /** 打开网页 / CSV live dashboard 预览（与会话分屏或 Tab 同一壳） */
-export function openUrlPreview(
-  store: JotaiStore,
-  sessionId: string,
-  input: UrlPreviewInput
-): void {
+export function openUrlPreview(store: JotaiStore, sessionId: string, input: UrlPreviewInput): void {
   const url = input.url.trim()
   if (!sessionId || !url) {
     console.warn('[openUrlPreview] 缺少 sessionId 或 url')

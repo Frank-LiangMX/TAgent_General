@@ -15,8 +15,7 @@ async function main() {
   process.env.TAGENT_DEV = '1'
 
   const csvPath =
-    process.env.CSV_SMOKE_PATH ||
-    path.join(os.homedir(), 'Downloads', '进包被引用资源.csv')
+    process.env.CSV_SMOKE_PATH || path.join(os.homedir(), 'Downloads', '进包被引用资源.csv')
 
   if (!fs.existsSync(csvPath)) {
     console.error('[smoke] CSV 不存在:', csvPath)
@@ -95,7 +94,10 @@ async function main() {
 
   const failed = Object.entries(checks).filter(([, ok]) => !ok)
   if (failed.length) {
-    console.error('[smoke] 失败项:', failed.map(([k]) => k))
+    console.error(
+      '[smoke] 失败项:',
+      failed.map(([k]) => k)
+    )
     process.exit(1)
   }
 
@@ -110,7 +112,11 @@ async function main() {
         offset: 0,
       }),
     })
-    const body = (await res.json()) as { total_before_limit?: number; row_count?: number; error?: string }
+    const body = (await res.json()) as {
+      total_before_limit?: number
+      row_count?: number
+      error?: string
+    }
     console.log('[smoke] live /api/rows:', body)
     if (body.error || !(body.total_before_limit! > 0)) {
       console.error('[smoke] live API 异常')
