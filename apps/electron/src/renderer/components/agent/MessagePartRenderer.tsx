@@ -26,6 +26,7 @@ import type {
   ResultPart,
   ToolCallState,
 } from '@/lib/streaming-message-parser'
+import { MessageResponse } from '@/components/ai-elements/message'
 import { cn } from '@/lib/utils'
 
 // ===== 主分派器 =====
@@ -81,7 +82,7 @@ function PartRenderer({
 function TextPartRenderer({ part }: { part: TextPart }): React.ReactElement {
   return (
     <div className={cn('agent-turn-answer', part.isStreaming && 'animate-in fade-in duration-100')}>
-      <div className="prose prose-sm dark:prose-invert max-w-none">{part.text}</div>
+      <MessageResponse>{part.text}</MessageResponse>
     </div>
   )
 }
