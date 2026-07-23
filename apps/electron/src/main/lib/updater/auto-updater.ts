@@ -80,15 +80,19 @@ export function quitAndInstall(): void {
   setQuitting()
 
   // 移除所有窗口的 close 监听器，避免 Windows 托盘隐藏逻辑阻止退出
-  for (const w of BrowserWindow.getAllWindows()) {
+  const windows = BrowserWindow.getAllWindows()
+  console.log(`[更新] quitAndInstall：清理 ${windows.length} 个窗口的 close 监听器`)
+  for (const w of windows) {
     w.removeAllListeners('close')
   }
 
   const isSilent = shouldUseSilentInstall()
-  console.log(`[更新] 退出并安装（silent=${isSilent}）`)
+  console.log(`[更新] 退出并安装（silent=${isSilent}，forceRunAfter=true）`)
 
-  // 延迟调用确保 IPC 响应已发送回渲染进程
+  // 延迟调用确保 IPC 响应已发送回渲染进程，
+  // 同时让 before-quit 中的 runApplicationShutdown() 有足够时间清理子进程
   setImmediate(() => {
+    console.log('[更新] 调用 autoUpdater.quitAndInstall()')
     autoUpdater.quitAndInstall(isSilent, true)
   })
 }

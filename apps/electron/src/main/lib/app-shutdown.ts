@@ -59,17 +59,20 @@ export function runApplicationShutdown(): void {
 
   setQuitting()
 
-  // 第一步：立即销毁所有窗口，阻止 Electron 给窗口发 close 事件导致白屏
-  destroyAllAppWindows()
-
-  // 安装更新：仅释放可能锁住安装目录的 Agent 子进程，其余交给 NSIS 安装器
+  // 安装更新：仅释放可能锁住安装目录的 Agent 子进程，其余交给 NSIS 安装器。
+  // 注意：不销毁 BrowserWindow，让 Electron 自然退出流程接管，
+  // 避免 destroy() 强制中断导致 NSIS 来不及替换文件句柄。
   if (getIsQuittingForUpdate()) {
+    console.log('[退出] 更新安装模式：跳过窗口销毁，仅清理子进程')
     stopIdleConsolidationScheduler()
     stopAllAgents()
     killOrphanedClaudeSubprocesses()
     cleanupUpdater()
     return
   }
+
+  // 第一步：立即销毁所有窗口，阻止 Electron 给窗口发 close 事件导致白屏
+  destroyAllAppWindows()
 
   destroyAllDetachedPreviewWindows()
   stopIdleConsolidationScheduler()
