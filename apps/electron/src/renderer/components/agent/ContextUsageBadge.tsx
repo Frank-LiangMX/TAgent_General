@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from '@tagent/ui'
 import { ContextUsageTermHint } from './ContextUsageTermHint'
+import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { getContextUsageDescription } from '@/lib/context-usage-labels'
 import { cn } from '@/lib/utils'
 
@@ -65,15 +66,23 @@ function formatTokens(tokens: number): string {
   return `${tokens}`
 }
 
-/** 圆环进度指示器 — toolbar 16 / inline 底栏 12（原型 status 细读数） */
+/** 圆环进度 — toolbar 16 / inline 12 / 面板 hero 用更大 size */
 interface UsageRingProps {
   ratio: number
   isWarning: boolean
   isDanger: boolean
-  /** 像素边长，inline 用 12 压低 token 栏高度 */
+  /** 像素边长 */
   size?: number
+  /** 描边宽度（viewBox 坐标） */
+  strokeWidth?: number
 }
-function UsageRing({ ratio, isWarning, isDanger, size = 16 }: UsageRingProps): React.ReactElement {
+function UsageRing({
+  ratio,
+  isWarning,
+  isDanger,
+  size = 16,
+  strokeWidth = 2,
+}: UsageRingProps): React.ReactElement {
   const radius = 8
   const circumference = 2 * Math.PI * radius
   const clamped = Math.max(0, Math.min(1, ratio))
@@ -100,8 +109,8 @@ function UsageRing({ ratio, isWarning, isDanger, size = 16 }: UsageRingProps): R
         r={radius}
         fill="none"
         stroke="currentColor"
-        strokeOpacity="0.2"
-        strokeWidth="2"
+        strokeOpacity="0.15"
+        strokeWidth={strokeWidth}
       />
       <circle
         cx="10"
@@ -109,7 +118,7 @@ function UsageRing({ ratio, isWarning, isDanger, size = 16 }: UsageRingProps): R
         r={radius}
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={dashOffset}
@@ -117,6 +126,33 @@ function UsageRing({ ratio, isWarning, isDanger, size = 16 }: UsageRingProps): R
         style={{ transition: 'stroke-dashoffset 300ms ease-out' }}
       />
     </svg>
+  )
+}
+
+/** 面板内一行明细 */
+function MetricRow({
+  label,
+  value,
+  hintTerm,
+}: {
+  label: string
+  value: string
+  hintTerm?: string
+}): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5 text-[12px] leading-none">
+      {hintTerm ? (
+        <ContextUsageTermHint
+          term={hintTerm}
+          display={label}
+          className="md-text-faint shrink-0"
+          inline
+        />
+      ) : (
+        <span className="md-text-faint shrink-0">{label}</span>
+      )}
+      <span className="md-text tabular-nums font-medium">{value}</span>
+    </div>
   )
 }
 
@@ -134,6 +170,10 @@ export function ContextUsageBadge({
   variant = 'toolbar',
 }: ContextUsageBadgeProps): React.ReactElement | null {
   const isInline = variant === 'inline'
+  const { channel } = useAgentSessionChannelModel(sessionId ?? '')
+  /** kscc 内网 CLI 的 usage/窗口与官方 Anthropic 口径不一致，圆环会严重失真 */
+  const isKsccChannel = channel?.provider === 'kscc-internal'
+
   // 保留最近一次有效的 token 值，避免切换会话时闪烁消失
   const stableRef = React.useRef<{
     inputTokens: number
@@ -149,7 +189,7 @@ export function ContextUsageBadge({
       lastSessionRef.current = sessionId ?? undefined
     }
   }, [sessionId])
-  if (inputTokens && inputTokens > 0) {
+  if (!isKsccChannel && inputTokens && inputTokens > 0) {
     stableRef.current = {
       inputTokens,
       outputTokens,
@@ -170,10 +210,6 @@ export function ContextUsageBadge({
     }
   }, [sessionId])
 
-  const lastNudgeFired = sessionId
-    ? (lastNudgeFiredMapRef.current.get(sessionId) ?? 'none')
-    : 'none'
-
   const [open, setOpen] = React.useState(false)
   const closeTimerRef = React.useRef<number | null>(null)
 
@@ -191,19 +227,12 @@ export function ContextUsageBadge({
 
   React.useEffect(() => cancelClose, [cancelClose])
 
-  const stable = stableRef.current
-  const hasCurrent = inputTokens != null && inputTokens > 0
+  const stable = isKsccChannel ? null : stableRef.current
+  const hasCurrent = !isKsccChannel && inputTokens != null && inputTokens > 0
   const streamTokens = hasCurrent ? inputTokens : stable?.inputTokens
   const streamWindow = hasCurrent ? contextWindow : stable?.contextWindow
 
-  // 流式预览：允许超过 100% 显示，避免压缩过程中圆环消失
-  const streamPreview =
-    streamWindow && streamTokens && streamTokens > 0
-      ? { totalTokens: streamTokens, maxTokens: streamWindow }
-      : null
-
-  // 不再调用 SDK getContextUsage，直接使用流式 usage 数据
-  // 直接使用流式 usage 数据（不再调用 SDK getContextUsage）
+  // 直接使用流式 usage（不再调用 SDK getContextUsage）
   const streamRatio =
     streamWindow && streamTokens && streamTokens > 0 ? streamTokens / streamWindow : undefined
   const displayTokens = streamTokens
@@ -212,7 +241,8 @@ export function ContextUsageBadge({
   const percent = streamRatio != null ? Math.round(streamRatio * 100) : undefined
 
   React.useEffect(() => {
-    if (!sessionId || ratio <= 0) return
+    // kscc 占用率不可信，禁止据此弹 80%/90% 压缩 Nudge
+    if (isKsccChannel || !sessionId || ratio <= 0) return
     const ratioForNudge = ratio
 
     const currentNudgeState = lastNudgeFiredMapRef.current.get(sessionId) ?? 'none'
@@ -238,7 +268,7 @@ export function ContextUsageBadge({
     } else if (ratioForNudge < NUDGE_80_RATIO && currentNudgeState !== 'none') {
       lastNudgeFiredMapRef.current.set(sessionId, 'none')
     }
-  }, [ratio, sessionId, onCompact])
+  }, [isKsccChannel, ratio, sessionId, onCompact])
 
   const compactThreshold = displayWindow
     ? Math.floor(displayWindow * COMPACT_THRESHOLD_RATIO)
@@ -276,6 +306,9 @@ export function ContextUsageBadge({
         ? '上下文接近压缩阈值'
         : '查看 Context 占用'
 
+  // kscc：不展示 Context 圆环/面板（usage 与窗口推断不可靠）
+  if (isKsccChannel) return null
+
   if (isCompacting) {
     if (isInline) {
       return (
@@ -312,141 +345,152 @@ export function ContextUsageBadge({
     setOpen(false)
   }
 
+  const statusHint = isDanger
+    ? '窗口即将撑满，建议立即压缩或新开会话'
+    : isWarning
+      ? '接近自动压缩阈值，可考虑手动压缩'
+      : '占用正常'
+
+  const barToneClass = isDanger
+    ? 'bg-red-500 dark:bg-red-400'
+    : isWarning
+      ? 'bg-amber-500 dark:bg-amber-400'
+      : 'bg-primary'
+
+  const compactBtnClass = cn(
+    'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+    'disabled:cursor-not-allowed disabled:opacity-50',
+    isDanger
+      ? 'bg-red-500/15 text-red-600 hover:bg-red-500/22 dark:text-red-300'
+      : isWarning
+        ? 'bg-amber-500/15 text-amber-700 hover:bg-amber-500/22 dark:text-amber-300'
+        : 'bg-primary/12 text-primary hover:bg-primary/18'
+  )
+
   const popoverContent = (
     <PopoverContent
       side="top"
       align={isInline ? 'start' : 'center'}
       sideOffset={8}
-      className={cn(
-        'context-usage-popover w-[280px] overflow-hidden p-3',
-        isInline ? 'max-w-[280px]' : ''
-      )}
+      className="context-usage-popover session-glass-popover w-[300px] overflow-hidden p-0"
       onMouseEnter={isInline ? undefined : cancelClose}
       onMouseLeave={isInline ? undefined : scheduleClose}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-      <div className="space-y-3">
-        {/* 占用概览 */}
-        <div className="space-y-1.5">
-          <div className="text-xs font-medium text-foreground/80">Context 占用</div>
-          {displayWindow && displayTokens != null ? (
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-semibold tabular-nums text-foreground">
-                {formatTokens(displayTokens)}
-              </span>
-              <span className="text-xs text-muted-foreground/60">
-                / {formatTokens(displayWindow)}
-              </span>
-              {percent != null && (
-                <span
-                  className={cn(
-                    'text-xs font-medium',
-                    percent >= 90
-                      ? 'text-red-500'
-                      : percent >= 80
-                        ? 'text-amber-500'
-                        : 'text-muted-foreground/60'
-                  )}
-                >
-                  {percent}%
-                </span>
+      {/* 概览：圆环 + 用量 + 进度条 */}
+      <div className="px-4 pb-3 pt-4">
+        <div className="flex items-center gap-3.5">
+          <div className="relative flex size-[52px] shrink-0 items-center justify-center">
+            <UsageRing
+              ratio={effectiveRatio}
+              isWarning={isWarning}
+              isDanger={isDanger}
+              size={52}
+              strokeWidth={2.25}
+            />
+            <span
+              className={cn(
+                'pointer-events-none absolute text-[11px] font-semibold tabular-nums leading-none',
+                isDanger
+                  ? 'text-red-600 dark:text-red-400'
+                  : isWarning
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'md-text'
               )}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground/50">等待数据...</div>
-          )}
-        </div>
-
-        {/* Token 明细 */}
-        <div className="space-y-1 rounded-glass-popover bg-background/50 p-2">
-          <ContextUsageTermHint term="输入" display="输入 Token" inline />
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground/60">本次输入</span>
-            <span className="tabular-nums text-foreground/80">
-              {inputTokens != null ? formatTokens(inputTokens) : '—'}
+            >
+              {percent != null ? `${Math.min(percent, 999)}%` : '—'}
             </span>
           </div>
-          {outputTokens != null && outputTokens > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground/60">输出</span>
-              <span className="tabular-nums text-foreground/80">{formatTokens(outputTokens)}</span>
-            </div>
-          )}
-          {cacheReadTokens != null && cacheReadTokens > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground/60">缓存读取</span>
-              <span className="tabular-nums text-foreground/80">
-                {formatTokens(cacheReadTokens)}
-              </span>
-            </div>
-          )}
-          {cacheCreationTokens != null && cacheCreationTokens > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground/60">缓存写入</span>
-              <span className="tabular-nums text-foreground/80">
-                {formatTokens(cacheCreationTokens)}
-              </span>
-            </div>
-          )}
+          <div className="min-w-0 flex-1">
+            <div className="md-text text-[12px] font-medium">Context 占用</div>
+            {displayWindow && displayTokens != null ? (
+              <>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="md-text text-[18px] font-semibold tabular-nums tracking-tight">
+                    {formatTokens(displayTokens)}
+                  </span>
+                  <span className="md-text-faint text-[11px] tabular-nums">
+                    / {formatTokens(displayWindow)}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                  <div
+                    className={cn('h-full rounded-full transition-[width] duration-300', barToneClass)}
+                    style={{ width: `${Math.min(100, Math.max(0, percent ?? 0))}%` }}
+                  />
+                </div>
+                <p className="md-text-faint mt-1.5 text-[10px] leading-snug">{statusHint}</p>
+              </>
+            ) : (
+              <p className="md-text-faint mt-1 text-[11px]">等待用量数据…</p>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="shrink-0 bg-background/12 px-3 pb-3 pt-2 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.14)]">
-        {displayWindow && streamRatio != null ? (
-          <div className="mb-2.5 flex flex-col gap-1 text-xs">
-            <div className="flex items-center justify-between gap-3">
-              <ContextUsageTermHint term="流式估算" display="流式估算（仅供参考）" inline />
-              <span className="tabular-nums font-medium text-foreground/90">
-                {formatTokens(displayTokens!)} / {formatTokens(displayWindow)}
-                {percent != null ? ` (${percent}%)` : ''}
-              </span>
-            </div>
-          </div>
-        ) : null}
+      {/* 明细：去掉重复的「流式估算」块，只保留一行表 */}
+      <div className="mx-3 mb-1 rounded-glass-popover border border-border/40 bg-muted/25 px-3 py-1">
+        <MetricRow
+          label="输入"
+          hintTerm="累计输入"
+          value={inputTokens != null ? formatTokens(inputTokens) : '—'}
+        />
+        {(outputTokens == null || outputTokens > 0) && (
+          <MetricRow
+            label="输出"
+            hintTerm="累计输出"
+            value={outputTokens != null ? formatTokens(outputTokens) : '—'}
+          />
+        )}
+        {cacheReadTokens != null && cacheReadTokens > 0 && (
+          <MetricRow label="缓存读取" hintTerm="缓存读取" value={formatTokens(cacheReadTokens)} />
+        )}
+        {cacheCreationTokens != null && cacheCreationTokens > 0 && (
+          <MetricRow
+            label="缓存写入"
+            value={formatTokens(cacheCreationTokens)}
+          />
+        )}
+      </div>
 
-        <div className="flex items-center gap-2">
+      {/* 操作 */}
+      <div className="flex items-center gap-2 border-t border-border/40 px-3 py-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={compactBtnClass}
+              onClick={handleCompactClick}
+              disabled={isProcessing}
+            >
+              <Minimize2 className="size-3.5 shrink-0" />
+              {isProcessing ? '对话进行中' : '压缩上下文'}
+            </button>
+          </TooltipTrigger>
+          {!isProcessing && (
+            <TooltipContent side="top">{getContextUsageDescription('压缩上下文')}</TooltipContent>
+          )}
+        </Tooltip>
+        {onClientCompact && (
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className={cn(
-                  'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
-                  'bg-background/22 text-foreground/82 shadow-[inset_0_1px_0_hsl(var(--glass-shine)/0.18),0_0_0_1px_hsl(var(--foreground)/0.08)]',
-                  'hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55',
-                  isDanger && 'bg-red-500/12 text-red-600 hover:bg-red-500/16 dark:text-red-300',
-                  isWarning &&
-                    !isDanger &&
-                    'bg-amber-500/12 text-amber-700 hover:bg-amber-500/16 dark:text-amber-300'
-                )}
-                onClick={handleCompactClick}
+                className="inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3 text-[11px] font-medium md-text-faint transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  onClientCompact()
+                  setOpen(false)
+                }}
                 disabled={isProcessing}
               >
-                <Minimize2 className="size-3.5" />
-                {isProcessing ? '对话进行中' : '压缩上下文'}
+                快速
               </button>
             </TooltipTrigger>
-            {!isProcessing && (
-              <TooltipContent side="top">{getContextUsageDescription('压缩上下文')}</TooltipContent>
-            )}
+            <TooltipContent side="top">
+              {getContextUsageDescription('客户端快速压缩')}
+            </TooltipContent>
           </Tooltip>
-          {onClientCompact && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="h-8 shrink-0 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-55"
-                  onClick={onClientCompact}
-                  disabled={isProcessing}
-                >
-                  快速
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {getContextUsageDescription('客户端快速压缩')}
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
+        )}
       </div>
     </PopoverContent>
   )

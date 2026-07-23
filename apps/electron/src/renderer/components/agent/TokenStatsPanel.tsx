@@ -26,6 +26,7 @@ import {
   currentSessionTokenStatsAtom,
 } from '@/atoms/agent-atoms'
 import { topLevelModeAtom } from '@/atoms/app-mode'
+import { useAgentSessionChannelModel } from '@/hooks/useAgentSessionChannelModel'
 import { cn } from '@/lib/utils'
 import { getContextUsageDescription } from '@/lib/context-usage-labels'
 
@@ -62,8 +63,15 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
   const stats = useAtomValue(currentSessionTokenStatsAtom)
   const contextStatus = useAtomValue(agentContextStatusAtom)
   const cacheHitRate = useAtomValue(cacheHitRateAtom)
+  const { channel } = useAgentSessionChannelModel(sessionId ?? '')
   const callStats = stats.lastCallStats
   const modelCallCount = callStats ? callStats.modelCalls + callStats.subagentCalls : 0
+
+  /**
+   * kscc 内网 CLI 的 usage / contextWindow 与 Anthropic 口径不一致，
+   * 圆环分母/分子经常虚高或失真 → 对用户误导。kscc 会话不展示 Context 占用。
+   */
+  const isKsccChannel = channel?.provider === 'kscc-internal'
 
   const cacheSavedTokens = stats.totalCacheReadTokens
   const hasCacheData = stats.totalCacheReadTokens > 0 || stats.totalCacheCreationTokens > 0
@@ -86,7 +94,7 @@ export const TokenStatsPanel = React.memo(function TokenStatsPanel({
 
   const hasTokenStats = stats.totalInputTokens > 0 || stats.totalOutputTokens > 0
   const hasContextData = (contextStatus.inputTokens ?? 0) > 0
-  const showContextUsage = hasContextData && onCompact != null
+  const showContextUsage = !isKsccChannel && hasContextData && onCompact != null
   const empty = !hasTokenStats && !showContextUsage && !callStats
 
   return (

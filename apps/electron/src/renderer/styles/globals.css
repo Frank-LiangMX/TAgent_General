@@ -6252,96 +6252,13 @@ html:not(.dark) .rail-island-btn--active:hover {
   box-shadow: var(--surface-shadow-chip) !important;
 }
 
+/*
+ * Context 占用面板：叠在 session-glass-popover 上，只补尺寸/裁剪；
+ * 材质与阴影跟全局 Popover 一致，不再另起一套径向渐变。
+ */
 .context-usage-popover {
-  border-radius: 20px;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: hsl(var(--popover));
-  border: 1px solid hsl(var(--border) / 0.5);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
-}
-
-[data-material='glass'] .context-usage-popover {
-  -webkit-backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
-  backdrop-filter: blur(30px) saturate(1.68) brightness(1.04);
-  background:
-    radial-gradient(ellipse 82% 62% at 18% 0%, hsl(var(--glass-shine) / 0.3), transparent 64%),
-    radial-gradient(
-      ellipse 68% 58% at 100% 100%,
-      hsl(var(--glass-ambient) / 0.34),
-      transparent 64%
-    ),
-    linear-gradient(
-      168deg,
-      hsl(var(--popover) / 0.62) 0%,
-      hsl(var(--background) / 0.7) 50%,
-      hsl(var(--popover) / 0.56) 100%
-    );
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.context-usage-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-}
-
-.context-usage-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-  background: transparent;
-}
-
-.context-usage-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.context-usage-scroll::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 3px;
-  min-height: 32px;
-}
-
-.context-usage-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--muted-foreground) / 0.5);
-}
-
-.context-usage-scroll::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* Windows/Chromium：用 0 高度占位替代 display:none，避免仍渲染上下箭头 */
-.context-usage-scroll::-webkit-scrollbar-button,
-.context-usage-scroll::-webkit-scrollbar-button:vertical:start:decrement,
-.context-usage-scroll::-webkit-scrollbar-button:vertical:end:increment,
-.context-usage-scroll::-webkit-scrollbar-button:horizontal:start:decrement,
-.context-usage-scroll::-webkit-scrollbar-button:horizontal:end:increment {
-  display: block;
-  width: 6px;
-  height: 0;
-  background: transparent;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.dark .context-usage-popover {
-  background: hsl(var(--popover));
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
-}
-
-.dark[data-material='glass'] .context-usage-popover,
-[data-material='glass'].dark .context-usage-popover {
-  -webkit-backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
-  backdrop-filter: blur(30px) saturate(1.54) brightness(0.96);
-  background:
-    radial-gradient(ellipse 82% 62% at 18% 0%, hsl(var(--glass-shine) / 0.12), transparent 64%),
-    radial-gradient(ellipse 68% 58% at 100% 100%, hsl(var(--primary) / 0.08), transparent 64%),
-    linear-gradient(
-      168deg,
-      hsl(var(--popover) / 0.48) 0%,
-      hsl(var(--background) / 0.6) 50%,
-      hsl(var(--popover) / 0.44) 100%
-    );
+  border-radius: var(--radius-glass-modal, 20px);
+  border: 1px solid var(--surface-rim, hsl(var(--border) / 0.5));
 }
 
 @keyframes agent-model-popover-in {
