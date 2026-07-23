@@ -14,7 +14,6 @@ import * as React from 'react'
 import { ListTree } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useStickToBottomContext } from 'use-stick-to-bottom'
 
 import { SearchInput } from '../search-input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip'
@@ -39,6 +38,10 @@ interface ScrollMinimapProps {
   onShortcutOpen?: () => void
   /** 获取模型 logo URL（应用层注入） */
   getModelLogo?: (model: string) => string | null
+  /** 滚动容器 ref（用于获取 scrollTop、scrollHeight 等） */
+  scrollContainerRef: React.RefObject<HTMLElement | null>
+  /** 手动停止自动滚动的回调 */
+  onStopScroll?: () => void
 }
 
 const MIN_ITEMS = 1
@@ -103,8 +106,11 @@ function fisheyeSize(distance: number): { width: number; height: number } {
 export function ScrollMinimap({
   items,
   onShortcutOpen,
+  scrollContainerRef,
+  onStopScroll,
 }: ScrollMinimapProps): React.ReactElement | null {
-  const { scrollRef, stopScroll, state: stickyState } = useStickToBottomContext()
+  const scrollRef = scrollContainerRef
+  const stopScroll = onStopScroll
   const [panelOpen, setPanelOpen] = React.useState(false)
   const [isLeaving, setIsLeaving] = React.useState(false)
   const [peekIndex, setPeekIndex] = React.useState<number | null>(null)
@@ -287,10 +293,7 @@ export function ScrollMinimap({
         (node) => node.getAttribute('data-message-id') === id
       )
       if (!target) return
-      stopScroll()
-      stickyState.animation = undefined
-      stickyState.velocity = 0
-      stickyState.accumulated = 0
+      stopScroll?.()
       const offsetTop = getOffsetTopRelativeTo(target, el)
       const targetHeight = target.offsetHeight
       const viewportHeight = el.clientHeight
@@ -306,7 +309,7 @@ export function ScrollMinimap({
       setPanelOpen(false)
       setPeekIndex(null)
     },
-    [scrollRef, stopScroll, stickyState]
+    [scrollRef, stopScroll]
   )
 
   const scrollToGroup = React.useCallback(
@@ -342,10 +345,7 @@ export function ScrollMinimap({
       const el = scrollRef.current
       const track = trackRef.current
       if (!el || !track) return
-      stopScroll()
-      stickyState.animation = undefined
-      stickyState.velocity = 0
-      stickyState.accumulated = 0
+      stopScroll?.()
       setIsDragging(true)
       const startY = e.clientY
       const startScrollTop = el.scrollTop
@@ -372,7 +372,7 @@ export function ScrollMinimap({
       document.addEventListener('mousemove', onMouseMove)
       document.addEventListener('mouseup', onMouseUp)
     },
-    [scrollRef, stopScroll, stickyState]
+    [scrollRef, stopScroll]
   )
 
   const handleTrackMouseDown = React.useCallback(
@@ -381,10 +381,7 @@ export function ScrollMinimap({
       const track = trackRef.current
       const el = scrollRef.current
       if (!track || !el) return
-      stopScroll()
-      stickyState.animation = undefined
-      stickyState.velocity = 0
-      stickyState.accumulated = 0
+      stopScroll?.()
       const rect = track.getBoundingClientRect()
       const clickRatio = (e.clientY - rect.top) / rect.height
       const { scrollHeight, clientHeight } = el
@@ -395,7 +392,7 @@ export function ScrollMinimap({
         behavior: reducedMotion ? 'auto' : 'smooth',
       })
     },
-    [scrollRef, stopScroll, stickyState]
+    [scrollRef, stopScroll]
   )
 
   const bars = React.useMemo((): NavBar[] => {
@@ -443,7 +440,7 @@ export function ScrollMinimap({
     else if (event.key === 'End') next = scrollRange
     else return
     event.preventDefault()
-    stopScroll()
+    stopScroll?.()
     el.scrollTo({ top: Math.max(0, Math.min(scrollRange, next)), behavior: 'auto' })
   }
 

@@ -581,6 +581,7 @@ function AgentMessagesImpl({
 
   // react-virtuoso 滚动容器 ref 和到底部状态
   const virtuosoRef = React.useRef<VirtuosoHandle>(null)
+  const scrollContainerRef = React.useRef<HTMLElement | null>(null)
   const [isAtBottom, setIsAtBottom] = React.useState(true)
 
   // 拉取初始 Ask 消息（会话切换 + 流式完成后 refreshVersion 触发）
@@ -937,6 +938,7 @@ function AgentMessagesImpl({
         ) : (
           <VirtualizedConversationContent
             ref={virtuosoRef}
+            scrollerRef={scrollContainerRef}
             items={mergedTimeline}
             renderItem={(index, entry) => {
               if (entry.kind === 'ask') {
@@ -1030,7 +1032,15 @@ function AgentMessagesImpl({
             }
           />
         )}
-        {showMinimap && <ScrollMinimap items={minimapItems} />}
+        {showMinimap && (
+          <ScrollMinimap
+            items={minimapItems}
+            scrollContainerRef={scrollContainerRef}
+            onStopScroll={() => {
+              /* virtuoso 没有 stopScroll，followOutput 会在用户上滚时自动停止 */
+            }}
+          />
+        )}
         <VirtualizedConversationScrollButton
           virtuosoRef={virtuosoRef}
           visible={!isAtBottom}

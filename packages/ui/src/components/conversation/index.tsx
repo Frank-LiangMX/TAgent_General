@@ -13,7 +13,7 @@
  */
 
 import { ArrowDownIcon } from 'lucide-react'
-import { useCallback } from 'react'
+import { useCallback, forwardRef } from 'react'
 import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 
@@ -118,6 +118,8 @@ export interface VirtualizedConversationContentProps<T = unknown> {
   onScroll?: (event: { scrollTop: number }) => void
   /** 到底部状态变化回调 */
   atBottomStateChange?: (isAtBottom: boolean) => void
+  /** 滚动容器 ref（供 ScrollMinimap 等外部组件使用） */
+  scrollerRef?: React.RefObject<HTMLElement | null>
 }
 
 export function VirtualizedConversationContent<T = unknown>({
@@ -133,6 +135,7 @@ export function VirtualizedConversationContent<T = unknown>({
   footer,
   onScroll,
   atBottomStateChange,
+  scrollerRef,
 }: VirtualizedConversationContentProps<T>): React.ReactElement {
   return (
     <Virtuoso
@@ -153,6 +156,24 @@ export function VirtualizedConversationContent<T = unknown>({
           ? () => <>{emptyComponent}</>
           : undefined,
         Footer: footer ? () => <>{footer}</> : undefined,
+        Scroller: forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+          (props, forwardedRef) => (
+            <div
+              ref={(el) => {
+                if (typeof forwardedRef === 'function') forwardedRef(el)
+                else if (forwardedRef) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  ;(forwardedRef as any).current = el
+                }
+                if (scrollerRef) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  ;(scrollerRef as any).current = el
+                }
+              }}
+              {...props}
+            />
+          )
+        ),
       }}
     />
   )
