@@ -3,12 +3,10 @@
  *
  * 当任意用户消息完全滚出 Conversation 视口顶部时，
  * 在顶部显示该消息的精简版悬浮条，点击可回滚到原始消息位置。
- * 必须放在 StickToBottom（Conversation）内部使用。
  */
 
 import { ChevronUp } from 'lucide-react'
 import * as React from 'react'
-import { useStickToBottomContext } from 'use-stick-to-bottom'
 
 import { cn } from '../../lib/utils'
 
@@ -30,15 +28,20 @@ interface UserMessageData {
 
 interface StickyUserMessageProps {
   userMessages: UserMessageData[]
+  /** 滚动容器 ref（用于监听滚动位置） */
+  scrollContainerRef: React.RefObject<HTMLElement | null>
+  /** 手动停止自动滚动的回调 */
+  onStopScroll?: () => void
   /** 是否启用悬浮置顶功能 */
   enabled?: boolean
 }
 
 export function StickyUserMessage({
   userMessages,
+  scrollContainerRef,
+  onStopScroll,
   enabled = true,
 }: StickyUserMessageProps): React.ReactElement {
-  const { scrollRef, stopScroll, state: stickyState } = useStickToBottomContext()
 
   const [stickyMessage, setStickyMessage] = React.useState<UserMessageData | null>(null)
 
@@ -51,7 +54,7 @@ export function StickyUserMessage({
   }, [userMessages])
 
   React.useEffect(() => {
-    const el = scrollRef.current
+    const el = scrollContainerRef.current
     if (!el || userMessages.length === 0 || !enabled) {
       setStickyMessage(null)
       return
@@ -108,10 +111,10 @@ export function StickyUserMessage({
       cancelAnimationFrame(initialRafId)
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
-  }, [scrollRef, userMessages, messageMap, enabled])
+  }, [scrollContainerRef, userMessages, messageMap, enabled])
 
   const scrollToOriginal = React.useCallback(() => {
-    const el = scrollRef.current
+    const el = scrollContainerRef.current
     if (!el || !stickyMessage?.id) return
 
     const target = Array.from(el.querySelectorAll<HTMLElement>('[data-message-id]')).find(
@@ -119,10 +122,7 @@ export function StickyUserMessage({
     )
     if (!target) return
 
-    stopScroll()
-    stickyState.animation = undefined
-    stickyState.velocity = 0
-    stickyState.accumulated = 0
+    onStopScroll?.()
 
     const containerRect = el.getBoundingClientRect()
     const targetRect = target.getBoundingClientRect()
@@ -132,7 +132,7 @@ export function StickyUserMessage({
       top: Math.max(0, targetScrollTop - 24),
       behavior: reducedMotion ? 'auto' : 'smooth',
     })
-  }, [scrollRef, stopScroll, stickyState, stickyMessage])
+  }, [scrollContainerRef, onStopScroll, stickyMessage])
 
   const isSticky = stickyMessage !== null
   const hasContent = stickyMessage && (stickyMessage.text || stickyMessage.attachments.length > 0)

@@ -1046,7 +1046,13 @@ function AgentMessagesImpl({
           visible={!isAtBottom}
         />
         {showStickyUserMessage && allUserMessagesData.length > 0 && (
-          <StickyUserMessage userMessages={allUserMessagesData} />
+          <StickyUserMessage
+            userMessages={allUserMessagesData}
+            scrollContainerRef={scrollContainerRef}
+            onStopScroll={() => {
+              /* virtuoso 没有 stopScroll，followOutput 会在用户交互时自动停止 */
+            }}
+          />
         )}
       </div>
     </BasePathsProvider>
