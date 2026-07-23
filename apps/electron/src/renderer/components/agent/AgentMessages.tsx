@@ -937,7 +937,7 @@ function AgentMessagesImpl({
           <EmptyState />
         ) : (
           <VirtualizedConversationContent
-            ref={virtuosoRef}
+            virtuosoRef={virtuosoRef}
             scrollerRef={scrollContainerRef}
             items={mergedTimeline}
             renderItem={(index, entry) => {

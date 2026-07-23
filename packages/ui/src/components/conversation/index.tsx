@@ -108,8 +108,10 @@ export interface VirtualizedConversationContentProps<T = unknown> {
   overscan?: number
   /** 初始顶部对齐索引 */
   initialTopMostItemIndex?: number
-  /** ref 获取 VirtuosoHandle */
-  ref?: React.Ref<VirtuosoHandle>
+  /** ref 获取 VirtuosoHandle — 已废弃，改用 virtuosoRef */
+  ref?: never
+  /** 获取 VirtuosoHandle 的 ref */
+  virtuosoRef?: React.Ref<VirtuosoHandle>
   /** 空状态渲染 */
   emptyComponent?: ReactNode
   /** 底部内容（如加载更多） */
@@ -130,7 +132,7 @@ export function VirtualizedConversationContent<T = unknown>({
   followOutput,
   overscan = 200,
   initialTopMostItemIndex,
-  ref,
+  virtuosoRef,
   emptyComponent,
   footer,
   onScroll,
@@ -139,7 +141,7 @@ export function VirtualizedConversationContent<T = unknown>({
 }: VirtualizedConversationContentProps<T>): React.ReactElement {
   return (
     <Virtuoso
-      ref={ref}
+      ref={virtuosoRef}
       data={items}
       itemContent={renderItem}
       computeItemKey={computeItemKey}
