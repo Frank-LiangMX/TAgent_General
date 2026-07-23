@@ -2321,6 +2321,32 @@ html.theme-neumorph-dark .settings-profile-action-btn {
     var(--surface-shadow-elevated, 0 16px 38px rgb(0 0 0 / 0.32));
 }
 
+/* 权限模式 focus 描边着色（非 shell 场景）：bypassPermissions 红、plan 蓝 */
+.chat-input-glass[data-permission-mode='bypassPermissions']:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 0 2px rgb(239 68 68 / 0.3),
+    var(--surface-shadow-elevated, 0 12px 30px rgb(23 30 40 / 0.1));
+}
+.chat-input-glass[data-permission-mode='plan']:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 0 2px rgb(59 130 246 / 0.3),
+    var(--surface-shadow-elevated, 0 12px 30px rgb(23 30 40 / 0.1));
+}
+.dark .chat-input-glass[data-permission-mode='bypassPermissions']:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 2px rgb(239 68 68 / 0.34),
+    var(--surface-shadow-elevated, 0 16px 38px rgb(0 0 0 / 0.32));
+}
+.dark .chat-input-glass[data-permission-mode='plan']:focus-within {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 2px rgb(59 130 246 / 0.34),
+    var(--surface-shadow-elevated, 0 16px 38px rgb(0 0 0 / 0.32));
+}
+
 /*
  * 输入框 / 工具栏图标按钮 hover：用 --hover-fill 轻底，压过 ghost 默认 accent
  * 发送主按钮（bg-primary）排除；停止按钮用 --stop-hover-bg

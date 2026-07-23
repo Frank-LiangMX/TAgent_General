@@ -277,9 +277,10 @@ export function ComposerUnderlay({
             type="button"
             onClick={handleThinkingOff}
             className={cn(
-              'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left',
-              'hover:bg-accent hover:text-accent-foreground',
-              thinkingOff && 'agent-toolbar-popover-item--active bg-accent/50'
+              'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 text-left',
+              thinkingOff
+                ? 'bg-primary/10 border border-primary/40 rounded-glass-sidebar shadow-sm'
+                : 'border border-transparent text-foreground/80 hover:bg-accent hover:text-accent-foreground rounded-glass-sidebar'
             )}
           >
             <span className="text-xs">关闭</span>
@@ -291,11 +292,10 @@ export function ComposerUnderlay({
               type="button"
               onClick={() => handleEffort(opt.value)}
               className={cn(
-                'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left',
-                'hover:bg-accent hover:text-accent-foreground',
-                !thinkingOff &&
-                  effectiveEffort === opt.value &&
-                  'agent-toolbar-popover-item--active bg-accent/50'
+                'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 text-left',
+                !thinkingOff && effectiveEffort === opt.value
+                  ? 'bg-primary/10 border border-primary/40 rounded-glass-sidebar shadow-sm'
+                  : 'border border-transparent text-foreground/80 hover:bg-accent hover:text-accent-foreground rounded-glass-sidebar'
               )}
             >
               <span className="text-xs">{opt.label}</span>
@@ -328,9 +328,10 @@ export function ComposerUnderlay({
                 type="button"
                 onClick={() => void handlePermission(mode)}
                 className={cn(
-                  'agent-toolbar-popover-item flex flex-col items-start gap-0.5 px-2 py-1.5 rounded-md text-left',
-                  'hover:bg-accent hover:text-accent-foreground',
-                  permissionMode === mode && 'agent-toolbar-popover-item--active bg-accent/50'
+                  'agent-toolbar-popover-item flex flex-col items-start gap-0.5 px-2 py-1.5 text-left',
+                  permissionMode === mode
+                    ? 'bg-primary/10 border border-primary/40 rounded-glass-sidebar shadow-sm'
+                    : 'border border-transparent text-foreground/80 hover:bg-accent hover:text-accent-foreground rounded-glass-sidebar'
                 )}
               >
                 <span className="text-xs">{cfg.label}</span>
@@ -362,9 +363,10 @@ export function ComposerUnderlay({
               type="button"
               onClick={() => handleSubagent(opt.value)}
               className={cn(
-                'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-left',
-                'hover:bg-accent hover:text-accent-foreground',
-                subagentEagerness === opt.value && 'agent-toolbar-popover-item--active bg-accent/50'
+                'agent-toolbar-popover-item flex items-center justify-between gap-3 px-2 py-1.5 text-left',
+                subagentEagerness === opt.value
+                  ? 'bg-primary/10 border border-primary/40 rounded-glass-sidebar shadow-sm'
+                  : 'border border-transparent text-foreground/80 hover:bg-accent hover:text-accent-foreground rounded-glass-sidebar'
               )}
             >
               <span className="text-xs">{opt.label}</span>

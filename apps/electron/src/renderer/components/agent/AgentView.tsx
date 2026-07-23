@@ -72,7 +72,6 @@ import { dispatchAssistantTyping } from './assistant-microcopy'
 import { ExitPlanModeBanner } from './ExitPlanModeBanner'
 import { KsccInstallGuide } from './KsccInstallGuide'
 import { PermissionBanner } from './PermissionBanner'
-import { PlanModeDashedBorder } from './PlanModeDashedBorder'
 import { TokenStatsPanel } from './TokenStatsPanel'
 
 import { TaskProgressDock } from './TaskProgressDock'
@@ -3091,19 +3090,14 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
                           className={cn(
                             'chat-input-glass transition-colors duration-200',
                             isOfficeDock ? 'office-conversation-input' : 'session-glass',
-                            (isPlanMode || isPermissionPlanMode) &&
-                              !isDragOver &&
-                              'plan-mode-border',
                             isDragOver &&
                               'border-[2px] border-dashed border-[#2ecc71] bg-[#2ecc71]/[0.03]'
                           )}
+                          data-permission-mode={isDragOver ? undefined : permissionMode}
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
                         >
-                          {(isPlanMode || isPermissionPlanMode) && !isDragOver && (
-                            <PlanModeDashedBorder />
-                          )}
 
                           {/* 无 Agent 渠道或无可用模型提示 */}
                           {(!agentChannelId || !hasAvailableModel) && (

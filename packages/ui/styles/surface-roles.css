@@ -228,7 +228,7 @@
    * 负 spread 把影拉离圆角，避免半透明底板透出阴影时在四角糊成实心黑块。
    * 复用 --surface-shadow-chip 时 glass 的 ±x 色散同样会糊角，故不复用。
    */
-  --surface-role-message-user-fill: rgb(var(--glass-rgb) / min(0.9, calc(var(--surface-opacity-chip, 0.62) * 1.35)));
+  --surface-role-message-user-fill: rgb(var(--glass-rgb) / min(0.72, calc(var(--surface-opacity-chip, 0.62) * 0.95)));
   --surface-role-message-user-rim: var(--surface-rim);
   --surface-role-message-user-shadow:
     0 6px 14px -8px rgb(23 30 40 / 0.1),

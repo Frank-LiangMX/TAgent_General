@@ -38,11 +38,18 @@ const MODE_ICONS: Record<TAgentPermissionMode, React.ComponentType<{ className?:
   plan: MapIcon,
 }
 
-/** 权限模式对应视觉颜色 */
-const MODE_COLORS: Record<TAgentPermissionMode, string> = {
-  auto: 'text-foreground/60',
-  bypassPermissions: 'text-amber-500 dark:text-amber-400',
-  plan: 'text-blue-500 dark:text-blue-400',
+/** 权限模式对应视觉颜色（内联 style，绕过 Tailwind 扫描） */
+const MODE_COLORS: Record<TAgentPermissionMode, React.CSSProperties> = {
+  auto: { color: 'hsl(var(--muted-foreground))' },
+  bypassPermissions: { color: '#ef4444' }, // red-500
+  plan: { color: '#3b82f6' }, // blue-500
+}
+
+/** 选中态颜色（背景/边框/文字） */
+const MODE_ACTIVE_STYLES: Record<TAgentPermissionMode, string> = {
+  auto:   'bg-primary/10 text-primary border border-primary/40',
+  bypassPermissions: 'bg-red-500/10 text-red-600 border border-red-400/40 dark:text-red-400',
+  plan:   'bg-blue-500/10 text-blue-600 border border-blue-400/40 dark:text-blue-400',
 }
 
 interface PermissionModeSelectorProps {
@@ -115,7 +122,7 @@ export function PermissionModeSelector({
 
   const config = TAGENT_PERMISSION_MODE_CONFIG[mode]
   const Icon = MODE_ICONS[mode]
-  const colorClass = MODE_COLORS[mode]
+  const colorStyle = MODE_COLORS[mode]
 
   if (disabled) {
     // Ask 档位下：纯展示（不接收点击），Tooltip 文案改为说明
@@ -128,10 +135,10 @@ export function PermissionModeSelector({
               variant="ghost"
               aria-label={config.label}
               disabled
+              style={colorStyle}
               className={cn(
                 'agent-toolbar-pill-btn agent-toolbar-pill-btn--disabled h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5 opacity-50 cursor-not-allowed',
-                'text-[12px] font-medium',
-                colorClass
+                'text-[12px] font-medium'
               )}
             >
               <Icon className="size-3.5 shrink-0" />
@@ -160,11 +167,11 @@ export function PermissionModeSelector({
                 type="button"
                 variant="ghost"
                 aria-label={config.label}
+                style={colorStyle}
                 className={cn(
                   'agent-toolbar-pill-btn h-[28px] min-w-[88px] rounded-full px-2.5 gap-1.5',
                   'text-[12px] font-medium hover:bg-accent',
-                  open && 'agent-toolbar-pill-btn--active',
-                  colorClass
+                  open && 'agent-toolbar-pill-btn--active'
                 )}
               >
                 <Icon className="size-3.5 shrink-0" />
@@ -199,12 +206,24 @@ export function PermissionModeSelector({
                   selectMode(k)
                 }}
                 className={cn(
-                  'agent-toolbar-popover-item flex items-start gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors',
-                  'hover:bg-accent hover:text-accent-foreground',
-                  mode === k && 'agent-toolbar-popover-item--active'
+                  'agent-toolbar-popover-item flex items-start gap-2.5 px-2 py-1.5 text-left transition-colors',
+                  mode === k
+                    ? cn(MODE_ACTIVE_STYLES[k], 'rounded-glass-sidebar shadow-sm')
+                    : 'border border-transparent text-foreground/80 hover:bg-accent hover:text-accent-foreground rounded-glass-sidebar'
                 )}
               >
-                <ModeIcon className="size-4 mt-0.5 shrink-0 text-foreground/70" />
+                <ModeIcon
+                  className={cn(
+                    'size-4 mt-0.5 shrink-0',
+                    mode === k
+                      ? k === 'bypassPermissions'
+                        ? 'text-red-500/80 dark:text-red-400/80'
+                        : k === 'plan'
+                          ? 'text-blue-500/80 dark:text-blue-400/80'
+                          : 'text-primary/80'
+                      : 'text-foreground/70'
+                  )}
+                />
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-medium">{cfg.label}</span>
                   <span className="text-[10px] text-muted-foreground leading-tight">
