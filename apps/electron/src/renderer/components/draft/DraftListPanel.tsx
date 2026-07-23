@@ -33,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@tagent/ui'
+import { SidebarTooltip } from '@/components/app-shell/SidebarTooltip'
 import { STATUS_LABELS, STATUS_ORDER } from './draft-status-styles'
 import { useOpenSession } from '@/hooks/useOpenSession'
 import { tabsAtom, activeTabIdAtom, closeTab, createDraftTabId } from '@/atoms/tab-atoms'
@@ -167,11 +168,11 @@ const DraftItem = React.memo(function DraftItem({
             startEdit()
           }}
           className={cn(
-            'session-list-row session-row-shell group relative w-full min-w-0 titlebar-no-drag text-left',
+            'session-list-row session-row-shell group relative w-full min-w-0 max-w-full overflow-hidden titlebar-no-drag text-left',
             active ? 'session-list-item-active' : undefined
           )}
         >
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1 overflow-hidden">
             {editing ? (
               <input
                 ref={inputRef}
@@ -180,23 +181,24 @@ const DraftItem = React.memo(function DraftItem({
                 onKeyDown={handleKeyDown}
                 onBlur={saveTitle}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+                className="w-full min-w-0 bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
                 maxLength={100}
               />
             ) : (
               <div
                 className={cn(
-                  'session-row-actions-pad truncate text-[13px] leading-5 flex items-center gap-1.5 transition-[padding] duration-150 pr-1',
-                  'group-hover:pr-4',
+                  'flex min-w-0 items-center gap-1.5 pr-7 text-[13px] leading-5',
                   !active && 'text-foreground/80'
                 )}
               >
-                <span className={cn('truncate flex-1 min-w-0', active && 'session-row-title')}>
-                  {draft.title || '未命名草稿'}
-                </span>
+                <SidebarTooltip label={draft.title || '未命名草稿'} multiline>
+                  <span className={cn('min-w-0 flex-1 truncate', active && 'session-row-title')}>
+                    {draft.title || '未命名草稿'}
+                  </span>
+                </SidebarTooltip>
                 <span
                   className={cn(
-                    'flex-shrink-0 text-[9px] tabular-nums',
+                    'shrink-0 text-[9px] tabular-nums',
                     active ? 'session-row-meta' : 'md-text-faint'
                   )}
                 >

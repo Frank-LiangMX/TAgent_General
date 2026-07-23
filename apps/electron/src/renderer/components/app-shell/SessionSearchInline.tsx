@@ -15,6 +15,7 @@ import * as React from 'react'
 
 import type { AgentMessageSearchResult } from '@tagent/shared'
 import { SearchInput } from '@tagent/ui'
+import { SidebarTooltip } from './SidebarTooltip'
 import { activeViewAtom } from '@/atoms/active-view'
 import {
   agentSessionsAtom,
@@ -374,21 +375,22 @@ export function SessionSearchInline({
                   : `标题 ${titleResults.length} · 内容 ${contentResults.length}`}
               </span>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => void handleAgentSearch()}
-                  disabled={trimmedQuery.length < 2}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                    trimmedQuery.length >= 2
-                      ? 'text-primary hover:bg-primary/10'
-                      : 'cursor-not-allowed text-foreground/25'
-                  )}
-                  title="语义搜索：新开 Agent 翻历史"
-                >
-                  <Bot size={11} strokeWidth={1.75} />
-                  Agent
-                </button>
+                <SidebarTooltip label="语义搜索：新开 Agent 翻历史">
+                  <button
+                    type="button"
+                    onClick={() => void handleAgentSearch()}
+                    disabled={trimmedQuery.length < 2}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                      trimmedQuery.length >= 2
+                        ? 'text-primary hover:bg-primary/10'
+                        : 'cursor-not-allowed text-foreground/25'
+                    )}
+                  >
+                    <Bot size={11} strokeWidth={1.75} />
+                    Agent
+                  </button>
+                </SidebarTooltip>
                 <button
                   type="button"
                   onClick={handleClear}

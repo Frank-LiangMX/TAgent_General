@@ -27,22 +27,21 @@ describe('generateLocalTitle', () => {
     expect(generateLocalTitle('Hello\t\tWorld  Test')).toBe('Hello World Test')
   })
 
-  test('truncates to 20 characters', () => {
-    const longText = 'This is a very long title that exceeds the maximum length'
-    const result = generateLocalTitle(longText)
-    expect(result).toBe('This is a very long ')
-    expect(result!.length).toBe(20)
+  test('keeps full long title (no char-count truncation)', () => {
+    const longText =
+      '分析[http://10.11.177.100:8080/path/to/resource] 的性能问题以及后续优化建议'
+    expect(generateLocalTitle(longText)).toBe(longText)
+    // 禁止旧 slice(0,20) 硬截
+    expect(generateLocalTitle(longText)).not.toBe(longText.slice(0, 20))
   })
 
   test('preserves Chinese characters', () => {
     expect(generateLocalTitle('你好世界')).toBe('你好世界')
   })
 
-  test('truncates Chinese text to 20 characters', () => {
-    const longChinese = '这是一段很长的中文标题用来测试截断功能是否正常工作'
-    const result = generateLocalTitle(longChinese)
-    expect(result).toBe('这是一段很长的中文标题用来测试截断功能是')
-    expect(result!.length).toBe(20)
+  test('keeps long Chinese full title', () => {
+    const longChinese = '这是一段很长的中文标题用来测试落盘是否保留完整内容并且不按字数截断'
+    expect(generateLocalTitle(longChinese)).toBe(longChinese)
   })
 
   test('handles mixed Chinese and English', () => {
@@ -66,15 +65,11 @@ describe('generateLocalTitle', () => {
     expect(generateLocalTitle(undefined as unknown as string)).toBeNull()
   })
 
-  test('exactly 20 characters is not truncated', () => {
-    const exact20 = '12345678901234567890'
-    expect(generateLocalTitle(exact20)).toBe('12345678901234567890')
-    expect(generateLocalTitle(exact20)!.length).toBe(20)
-  })
-
-  test('21 characters is truncated to 20', () => {
-    const exact21 = '123456789012345678901'
-    expect(generateLocalTitle(exact21)).toBe('12345678901234567890')
-    expect(generateLocalTitle(exact21)!.length).toBe(20)
+  test('does not append ellipsis for long strings', () => {
+    const long = 'a'.repeat(200)
+    const result = generateLocalTitle(long)
+    expect(result).toBe(long)
+    expect(result!.endsWith('\u2026')).toBe(false)
+    expect(result!.endsWith('...')).toBe(false)
   })
 })

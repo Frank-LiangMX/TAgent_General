@@ -1208,15 +1208,7 @@
   padding-right: 3rem;
 }
 
-/*
- * 侧栏列表行（会话 / 草稿 / 看板等）：三点菜单打开时保�?hover 右让位�? * 操作钮多�?absolute，仅�?group-hover:pr-4；菜单打开�?hover 丢失会导致叠层�? */
-.session-list-row[data-actions-open] .session-row-actions-pad {
-  padding-right: 1rem; /* = pr-4 / group-hover:pr-4 */
-}
-
-.session-list-row[data-actions-open] .session-row-detail-pad {
-  padding-right: 1rem; /* 时间行与标题行同样为三点菜单让位 */
-}
+/* 菜单 open 时标题行已固定 pr-7，无需再改 padding */
 
 .app-nav-sidebar .app-sidebar-project-button:hover {
   background: rgb(255 255 255 / 34%);
@@ -1239,8 +1231,8 @@
 
 .app-nav-sidebar .app-sidebar-session-row {
   min-height: 49px;
-  /* 预留 hover translateX 空间，避免右移裁切三点菜�?*/
-  margin-right: 0;
+  /* 预留 hover translateX(2px)，避免右移被 session-well overflow 硬裁 */
+  margin-right: 2px;
   padding: 8px 9px;
   border: 1px solid transparent;
   border-radius: 12px;
@@ -1281,11 +1273,37 @@
 .app-nav-sidebar .session-row-shell,
 .app-nav-sidebar .session-list-row {
   max-width: 100%;
-  margin-right: 0;
+  min-width: 0;
+  /* 与 glass.css / session-row-shell 一致：保留 2px 给 hover 右移 */
+  margin-right: 2px;
 }
 
 /*
- * 深色：侧�?spatial 列表/项目控件原先写死浅色半透白，会整块发灰白�? * 一律改�?glass-rgb + 轻高光，�?scene/dark glass-rgb token 对齐�? */
+ * 会话标题：对齐标签页 app-workspace-tab__title
+ * 只按「格子宽度」ellipsis，不按字数。
+ * width:0 + flex:1 是 flex 子项可收缩的标准写法（仅标题行，不动模型名）。
+ */
+.app-nav-sidebar .session-title-line {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-nav-sidebar .session-title-line > .session-title-text {
+  flex: 1 1 0%;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * 深色：侧栏 spatial 列表/项目控件，glass-rgb + 轻高光
+ */
 .dark .app-nav-sidebar .app-sidebar-project-button:hover {
   background: rgb(var(--glass-rgb, 50 52 56) / 0.42);
 }
@@ -2235,7 +2253,7 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   backdrop-filter: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  font-weight: 570;
+  font-weight: 520;
 }
 
 .app-shell-content-stage .app-workspace-tab__icon {
@@ -2256,6 +2274,9 @@ html:not(.dark) .app-shell-right-stack .rail-island-btn--active:not(.rail-avatar
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app-shell-content-stage .app-workspace-tab-close {

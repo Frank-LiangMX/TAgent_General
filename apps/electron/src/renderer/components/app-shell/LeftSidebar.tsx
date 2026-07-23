@@ -64,11 +64,9 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
 } from '@tagent/ui'
 import { SessionSearchInline } from './SessionSearchInline'
+import { SidebarTooltip } from './SidebarTooltip'
 import { DraftSearchDialog } from '@/components/draft/DraftSearchDialog'
 
 import type { ActiveView } from '@/atoms/active-view'
@@ -1541,23 +1539,25 @@ export function LeftSidebar({
               <h2 className="sidebar-head-title">会话</h2>
             </div>
             <div className="tool-cluster" role="group" aria-label="会话操作">
-              <button
-                type="button"
-                className="tool-cluster-icon"
-                onClick={() => setNavigationSidebarOpen(false)}
-                aria-label="折叠侧栏"
-                title="折叠侧栏"
-              >
-                <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="tool-cluster-accent"
-                onClick={handleNewAgentSession}
-                title="新建会话"
-              >
-                新会话
-              </button>
+              <SidebarTooltip label="折叠侧栏">
+                <button
+                  type="button"
+                  className="tool-cluster-icon"
+                  onClick={() => setNavigationSidebarOpen(false)}
+                  aria-label="折叠侧栏"
+                >
+                  <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              </SidebarTooltip>
+              <SidebarTooltip label="新建会话">
+                <button
+                  type="button"
+                  className="tool-cluster-accent"
+                  onClick={handleNewAgentSession}
+                >
+                  新会话
+                </button>
+              </SidebarTooltip>
             </div>
           </div>
 
@@ -1652,23 +1652,21 @@ export function LeftSidebar({
               <h2 className="sidebar-head-title">草稿</h2>
             </div>
             <div className="tool-cluster" role="group" aria-label="草稿操作">
-              <button
-                type="button"
-                className="tool-cluster-icon"
-                onClick={() => setNavigationSidebarOpen(false)}
-                aria-label="折叠侧栏"
-                title="折叠侧栏"
-              >
-                <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="tool-cluster-accent"
-                onClick={handleNewDraft}
-                title="新建草稿"
-              >
-                新草稿
-              </button>
+              <SidebarTooltip label="折叠侧栏">
+                <button
+                  type="button"
+                  className="tool-cluster-icon"
+                  onClick={() => setNavigationSidebarOpen(false)}
+                  aria-label="折叠侧栏"
+                >
+                  <PanelLeftClose size={14} strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              </SidebarTooltip>
+              <SidebarTooltip label="新建草稿">
+                <button type="button" className="tool-cluster-accent" onClick={handleNewDraft}>
+                  新草稿
+                </button>
+              </SidebarTooltip>
             </div>
           </div>
 
@@ -1812,19 +1810,16 @@ function SessionsRailContent({
     <div className="app-spatial-session-well list-well session-well flex-1 min-h-0 titlebar-no-drag">
       <div className="group-label shrink-0">
         <span>项目</span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className="ghost-plus opacity-100"
-              onClick={() => void onCreateProject()}
-              aria-label="新建项目"
-            >
-              +
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">选择目录新建项目</TooltipContent>
-        </Tooltip>
+        <SidebarTooltip label="选择目录新建项目">
+          <button
+            type="button"
+            className="ghost-plus opacity-100"
+            onClick={() => void onCreateProject()}
+            aria-label="新建项目"
+          >
+            +
+          </button>
+        </SidebarTooltip>
       </div>
       <div ref={listRef} className="session-scroll scrollbar-autohide min-h-0 relative">
         {/* 置顶分区（原型：位于 session-well 最上方） */}
@@ -2075,20 +2070,19 @@ const ConversationItem = React.memo(function ConversationItem({
             ) : (
               <div
                 className={cn(
-                  'flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden pr-2 text-[13px] leading-5',
+                  'flex min-w-0 items-center gap-1.5 pr-2 text-[13px] leading-5',
                   active ? 'session-row-title' : 'text-foreground/80'
                 )}
               >
-                {/* 置顶标记 */}
-                {showPinIcon && <Pin size={11} className="flex-shrink-0 text-primary/60" />}
+                {showPinIcon && <Pin size={11} className="shrink-0 text-primary/60" />}
                 <ChatsCircle
                   size={13}
                   weight="regular"
-                  className={cn('flex-shrink-0', active ? 'opacity-80' : 'opacity-45')}
+                  className={cn('shrink-0', active ? 'opacity-80' : 'opacity-45')}
                 />
-                <span className="block min-w-0 max-w-full flex-1 truncate">
-                  {conversation.title}
-                </span>
+                <SidebarTooltip label={conversation.title} multiline>
+                  <span className="min-w-0 flex-1 truncate">{conversation.title}</span>
+                </SidebarTooltip>
               </div>
             )}
           </div>
@@ -2292,10 +2286,11 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   const metaModelName = modelName?.trim() || '未选择模型'
 
   const rowClassName = cn(
-    'session-list-row group relative min-w-0 titlebar-no-drag text-left',
-    isBatchMode && '!flex !w-full !max-w-full !items-center gap-2 overflow-hidden',
-    surface === 'well' && 'session-row-shell app-sidebar-session-row w-full',
-    surface === 'compact' && 'w-full py-[7px] px-1',
+    // 与 TabBar 同款：min-w-0 + 可截断子项；菜单 absolute 用 pr 留白
+    'session-list-row group relative min-w-0 w-full max-w-full overflow-hidden titlebar-no-drag text-left',
+    isBatchMode && 'flex items-center gap-2',
+    surface === 'well' && 'session-row-shell app-sidebar-session-row',
+    surface === 'compact' && 'flex items-center gap-2 py-[7px] px-1',
     isBatchMode && 'session-list-row--batch',
     childClassName,
     selectionClassName
@@ -2333,7 +2328,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                   e.stopPropagation()
                   onToggleBatchSelect?.(session.id)
                 }}
-                className="flex-shrink-0 w-[18px] flex items-center justify-center text-foreground/60 hover:text-foreground"
+                className="flex w-[18px] shrink-0 items-center justify-center text-foreground/60 hover:text-foreground"
                 aria-label={isBatchSelected ? '取消选中' : '选中'}
               >
                 {isBatchSelected ? (
@@ -2342,16 +2337,16 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                   <Square className="size-3.5" />
                 )}
               </button>
-              <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 overflow-hidden">
+              {/* 同 TabBar：min-w-0 flex-1 + truncate */}
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[12px] leading-[18px] text-foreground/80">
                 <ChatsCircle size={13} weight="regular" className="shrink-0 opacity-45" />
-                <span className="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] leading-[18px] text-foreground/80">
-                  {session.title}
-                </span>
+                <SidebarTooltip label={session.title} multiline>
+                  <span className="min-w-0 flex-1 truncate">{session.title}</span>
+                </SidebarTooltip>
               </div>
             </>
           ) : (
             <>
-              {/* 底部状态横条：仅用于非选中会话（后台会话）的状态指示 */}
               {hasIndicatorStatus && statusLineClass && (
                 <span
                   className={cn('session-status-line agent-session-status-line', statusLineClass)}
@@ -2361,7 +2356,12 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
               {showRunningSweep && (
                 <span className="session-active-running-sweep" aria-hidden="true" />
               )}
-              <div className="flex-1 min-w-0">
+              {/*
+               * 标题截断 = 标签页同款（按宽度，不是按字数）：
+               * 外层 w-full min-w-0 → 标题行 flex → 文字 flex-1 min-w-0 + truncate
+               * pr-7：absolute 三点菜单留白（与 tab 的 pr-6 同理）
+               */}
+              <div className="w-full min-w-0 flex-1 overflow-hidden pr-7">
                 {editing ? (
                   <input
                     ref={inputRef}
@@ -2370,47 +2370,47 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
                     onKeyDown={handleKeyDown}
                     onBlur={saveTitle}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
-                    maxLength={100}
+                    className="w-full min-w-0 border-b border-primary/50 bg-transparent px-0 py-0 text-[12px] leading-5 text-foreground outline-none"
+                    maxLength={200}
                   />
                 ) : (
-                  <div
-                    className="w-full min-w-0"
-                  >
+                  <>
                     <div
                       className={cn(
-                        'session-row-actions-pad flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden pr-7 text-[13px] leading-[18px] transition-[padding] duration-150 group-hover:pr-4',
+                        'session-title-line flex w-full min-w-0 items-center gap-1.5 text-[12px] leading-[18px]',
                         !active && 'text-foreground/80'
                       )}
                     >
                       <ChatsCircle
                         size={13}
                         weight="regular"
-                        className={cn('flex-shrink-0', active ? 'opacity-80' : 'opacity-45')}
+                        className={cn('shrink-0', active ? 'opacity-80' : 'opacity-45')}
                       />
-                      <span
-                        className={cn(
-                          'block min-w-0 max-w-full flex-1 truncate',
-                          active && 'session-row-title'
-                        )}
-                      >
-                        {session.title}
-                      </span>
+                      <SidebarTooltip label={session.title} multiline>
+                        <span
+                          className={cn(
+                            'session-title-text min-w-0 flex-1 truncate',
+                            active && 'session-row-title'
+                          )}
+                        >
+                          {session.title}
+                        </span>
+                      </SidebarTooltip>
                     </div>
                     <div
                       className={cn(
-                        'app-sidebar-session-detail session-row-detail-pad mt-0.5 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 pl-5 pr-0 text-[9px] transition-[padding] duration-150 group-hover:pr-4',
+                        'app-sidebar-session-detail mt-0.5 flex w-full min-w-0 items-center gap-2 pl-5 text-[9px]',
                         active ? 'session-row-meta' : 'md-text-faint'
                       )}
                     >
-                      <span className="block min-w-0 truncate" title={metaModelName}>
-                        {metaModelName}
-                      </span>
-                      <span className="flex-shrink-0 tabular-nums">
+                      <SidebarTooltip label={metaModelName} multiline>
+                        <span className="min-w-0 flex-1 truncate">{metaModelName}</span>
+                      </SidebarTooltip>
+                      <span className="shrink-0 tabular-nums">
                         {formatSessionTime(session.updatedAt)}
                       </span>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </>
@@ -2628,18 +2628,19 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
       >
         {/* 拖拽手柄：hover 显示，draggable 触发排序（选择模式下隐藏） */}
         {!isBatchMode && (
-          <span
-            draggable
-            onDragStart={(e) => onProjectDragStart(e, group.workspace.id)}
-            title="拖拽排序"
-            className={cn(
-              'absolute -left-0.5 top-1/2 z-10 flex size-[18px] -translate-y-1/2 cursor-grab items-center justify-center text-foreground/20 opacity-0 transition-opacity group-hover/project:opacity-100 active:cursor-grabbing',
-              projectActionsActive && 'opacity-100'
-            )}
-            aria-hidden="true"
-          >
-            <GripVertical size={12} />
-          </span>
+          <SidebarTooltip label="拖拽排序">
+            <span
+              draggable
+              onDragStart={(e) => onProjectDragStart(e, group.workspace.id)}
+              className={cn(
+                'absolute -left-0.5 top-1/2 z-10 flex size-[18px] -translate-y-1/2 cursor-grab items-center justify-center text-foreground/20 opacity-0 transition-opacity group-hover/project:opacity-100 active:cursor-grabbing',
+                projectActionsActive && 'opacity-100'
+              )}
+              aria-hidden="true"
+            >
+              <GripVertical size={12} />
+            </span>
+          </SidebarTooltip>
         )}
         {renaming ? (
           <div
@@ -2688,34 +2689,33 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   !collapsed && 'rotate-90'
                 )}
               />
-              <span className="flex-1 min-w-0 truncate text-[13px] font-medium leading-[18px]">
-                {group.workspace.name}
-              </span>
+              <SidebarTooltip label={group.workspace.name} multiline>
+                <span className="min-w-0 flex-1 truncate text-[13px] font-medium leading-[18px]">
+                  {group.workspace.name}
+                </span>
+              </SidebarTooltip>
               <span className="app-sidebar-project-count">{group.sessions.length}</span>
             </button>
           )
         )}
 
         {!isBatchMode && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label={`在「${group.workspace.name}」中新建会话`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onNewSession(group.workspace.id)
-                }}
-                className={cn(
-                  'absolute right-7 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag',
-                  projectActionsActive && 'opacity-100'
-                )}
-              >
-                <Plus size={13} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">在此项目中新建会话</TooltipContent>
-          </Tooltip>
+          <SidebarTooltip label="在此项目中新建会话">
+            <button
+              type="button"
+              aria-label={`在「${group.workspace.name}」中新建会话`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onNewSession(group.workspace.id)
+              }}
+              className={cn(
+                'absolute right-7 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-md text-foreground/30 opacity-0 transition-colors hover:bg-foreground/[0.055] hover:text-foreground/65 group-hover/project:opacity-100 titlebar-no-drag',
+                projectActionsActive && 'opacity-100'
+              )}
+            >
+              <Plus size={13} />
+            </button>
+          </SidebarTooltip>
         )}
 
         {isBatchMode ? (
@@ -2826,12 +2826,16 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
       </div>
 
       <div
-        className="mt-px grid transition-[grid-template-rows] duration-200 ease-in-out"
+        className="mt-px grid min-w-0 transition-[grid-template-rows] duration-200 ease-in-out"
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
-        <div className={cn('min-h-0', collapsed ? 'overflow-hidden' : 'overflow-visible')}>
+        {/*
+         * 必须 min-w-0 + overflow-hidden：展开时若 overflow-visible，
+         * 子行标题会按内容撑宽，再被侧栏祖先硬裁 → 无省略号。
+         */}
+        <div className="min-h-0 min-w-0 overflow-hidden">
           {!collapsed && sortedSessions.length > 0 ? (
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-col">
               {sortedSessions.map((session) => (
                 <AgentSessionItem
                   key={session.id}

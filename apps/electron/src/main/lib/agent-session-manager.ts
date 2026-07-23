@@ -69,6 +69,8 @@ const INDEX_VERSION = 1
 
 /**
  * 读取会话索引文件
+ *
+ * 标题落盘为完整字符串；侧栏/标签页省略号由 UI truncate（宽度）负责，不在此按字数截断。
  */
 function readIndex(): AgentSessionsIndex {
   const indexPath = getAgentSessionsIndexPath()

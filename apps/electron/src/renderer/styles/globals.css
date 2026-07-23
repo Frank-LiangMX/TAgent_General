@@ -4683,10 +4683,14 @@ html.material-frosted .tool-cluster {
   box-sizing: border-box;
 }
 
-/* 会话行：更紧凑的横纵间距；margin-right 预留 hover 右移，避免裁切 */
+/*
+ * 会话行：单列 flex（三点菜单 absolute，不再用 2 列 grid）。
+ * 旧 grid（1fr + auto）在菜单不占第二列时，会让标题按内容撑宽，
+ * 再被 .session-well / .app-nav-sidebar 的 overflow:hidden 硬裁，出现「无省略号」。
+ * margin-right 预留 hover translateX(2px)，避免右移被父级裁切。
+ */
 :is(.list-well, .session-well) .session-row-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
@@ -4695,7 +4699,7 @@ html.material-frosted .tool-cluster {
   box-sizing: border-box;
   margin: 2px 2px 2px 0;
   padding: 7px 8px;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid transparent;
   border-radius: calc(var(--radius-glass-rail) - 1px);
   transition:
@@ -4705,6 +4709,8 @@ html.material-frosted .tool-cluster {
     box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
     transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* 标题截断对齐 TabBar：组件内用 min-w-0 flex-1 truncate，此处不再叠一套 */
 
 :is(.list-well, .session-well) .session-row-shell:not(.session-list-item-active):hover {
   background: var(
@@ -4754,7 +4760,8 @@ html.material-frosted .tool-cluster {
   position: relative;
   z-index: 1;
   isolation: isolate;
-  overflow: visible;
+  /* 保持 hidden：visible 会让长标题溢出后再被侧栏硬裁，ellipsis 失效 */
+  overflow: hidden;
   color: var(--selection-text) !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

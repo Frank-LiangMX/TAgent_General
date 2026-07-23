@@ -30,10 +30,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
 } from '@tagent/ui'
+import { SidebarTooltip } from '@/components/app-shell/SidebarTooltip'
 import type { KanbanBoardMode } from '@tagent/shared'
 
 import { KanbanCreateBoardDialog } from './KanbanCreateBoardDialog'
@@ -121,34 +119,29 @@ function KanbanBoardItem({
         }
       }}
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-hidden pr-7">
         <div
           className={cn(
-            'session-row-actions-pad min-w-0 transition-[padding] duration-150',
-            'group-hover:pr-4'
+            'flex min-w-0 items-center text-[13px] leading-[18px]',
+            !selected && 'text-foreground/80'
           )}
         >
-          <div
-            className={cn(
-              'flex items-center gap-1.5 truncate text-[13px] leading-[18px]',
-              !selected && 'text-foreground/80'
-            )}
-          >
+          <SidebarTooltip label={displayName} multiline>
             <span className={cn('min-w-0 flex-1 truncate', selected && 'session-row-title')}>
               {displayName}
             </span>
-          </div>
-          <div
-            className={cn(
-              'app-sidebar-session-detail mt-0.5 flex min-w-0 items-center justify-between gap-2 text-[9px]',
-              selected ? 'session-row-meta' : 'md-text-faint'
-            )}
-          >
-            <span className="truncate">
-              {isCancelled ? '已取消' : board.mode === 'ta' ? 'TA 看板' : '通用看板'}
-            </span>
-            <span className="flex-shrink-0 tabular-nums">{formatBoardTime(board.updatedAt)}</span>
-          </div>
+          </SidebarTooltip>
+        </div>
+        <div
+          className={cn(
+            'app-sidebar-session-detail mt-0.5 flex min-w-0 items-center gap-2 text-[9px]',
+            selected ? 'session-row-meta' : 'md-text-faint'
+          )}
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {isCancelled ? '已取消' : board.mode === 'ta' ? 'TA 看板' : '通用看板'}
+          </span>
+          <span className="shrink-0 tabular-nums">{formatBoardTime(board.updatedAt)}</span>
         </div>
       </div>
       <div
@@ -260,20 +253,17 @@ export function KanbanRailContent(): React.ReactElement {
           <h2 className="sidebar-head-title">看板</h2>
         </div>
         <div className="tool-cluster" role="group" aria-label="看板操作">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                className={cn('tool-cluster-accent', rolesSelected && 'is-active')}
-                onClick={handleOpenRoles}
-                aria-label="角色库 — 定义数字员工能力"
-                aria-pressed={rolesSelected}
-              >
-                角色库
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">角色库 — 定义数字员工能力</TooltipContent>
-          </Tooltip>
+          <SidebarTooltip label="角色库 — 定义数字员工能力" side="bottom">
+            <button
+              type="button"
+              className={cn('tool-cluster-accent', rolesSelected && 'is-active')}
+              onClick={handleOpenRoles}
+              aria-label="角色库 — 定义数字员工能力"
+              aria-pressed={rolesSelected}
+            >
+              角色库
+            </button>
+          </SidebarTooltip>
         </div>
       </div>
 
