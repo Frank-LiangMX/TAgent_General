@@ -4397,7 +4397,7 @@ html:not(.dark)[data-material='glass'] .btw-panel-glass::after,
   flex-direction: column;
   /* 标题/「新会话」行 与下方 list-well 之间要拉开，避免贴死 */
   gap: 16px;
-  padding: 4px 8px 10px 6px;
+  padding: 4px 6px 10px;
   box-sizing: border-box;
 }
 

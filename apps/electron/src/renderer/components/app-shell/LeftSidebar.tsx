@@ -11,6 +11,7 @@
  */
 
 import { useAtom, useSetAtom, useAtomValue, useStore } from 'jotai'
+import { ChatsCircle } from '@phosphor-icons/react'
 import {
   Pin,
   PinOff,
@@ -176,6 +177,7 @@ import {
   getAgentSessionVisualState,
   type SessionLeftAccent,
 } from '@/lib/agent-session-visual-state'
+import { resolveModelDisplayName } from '@/lib/model-logo'
 import { cn } from '@/lib/utils'
 
 interface SidebarItemProps {
@@ -356,6 +358,7 @@ export function LeftSidebar({
   const [agentSessions, setAgentSessions] = useAtom(agentSessionsAtom)
   const setSessionChannelMap = useSetAtom(agentSessionChannelMapAtom)
   const setSessionModelMap = useSetAtom(agentSessionModelMapAtom)
+  const sessionModelMap = useAtomValue(agentSessionModelMapAtom)
   const currentModeAgentSessions = React.useMemo(
     () => agentSessions.filter((session) => isAgentSessionInTopLevelMode(session, topLevelMode)),
     [agentSessions, topLevelMode]
@@ -1419,6 +1422,8 @@ export function LeftSidebar({
             activeSessionId={activeSessionId}
             agentProjectGroups={agentProjectGroups}
             agentIndicatorMap={agentIndicatorMap}
+            sessionModelMap={sessionModelMap}
+            channels={channels}
             collapsedWorkspaceIds={collapsedWorkspaceIds}
             setCollapsedWorkspaceIds={setCollapsedWorkspaceIds}
             currentWorkspaceId={currentWorkspaceId}
@@ -1484,6 +1489,8 @@ export function LeftSidebar({
             activeSessionId={activeSessionId}
             agentProjectGroups={agentProjectGroups}
             agentIndicatorMap={agentIndicatorMap}
+            sessionModelMap={sessionModelMap}
+            channels={channels}
             collapsedWorkspaceIds={collapsedWorkspaceIds}
             setCollapsedWorkspaceIds={setCollapsedWorkspaceIds}
             currentWorkspaceId={currentWorkspaceId}
@@ -1587,7 +1594,7 @@ export function LeftSidebar({
                           已归档会话 · {archivedAgentSessionCount}
                         </span>
                       </div>
-                      <div className="max-h-[60vh] overflow-y-auto scrollbar-thin p-1">
+                      <div className="max-h-[60vh] overflow-y-auto scrollbar-autohide p-1">
                         {archivedAgentSessionsList.length === 0 ? (
                           <div className="py-3 text-center text-[12px] text-foreground/40">
                             暂无已归档会话
@@ -1600,6 +1607,14 @@ export function LeftSidebar({
                                 session={session}
                                 active={session.id === activeSessionId}
                                 indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                                modelName={
+                                  sessionModelMap.get(session.id)
+                                    ? resolveModelDisplayName(
+                                        sessionModelMap.get(session.id)!,
+                                        channels
+                                      )
+                                    : undefined
+                                }
                                 leftAccent={getSessionLeftAccent(
                                   agentIndicatorMap.get(session.id) ?? 'idle',
                                   session.id === activeSessionId,
@@ -1696,6 +1711,8 @@ function SessionsRailContent({
   activeSessionId,
   agentProjectGroups,
   agentIndicatorMap,
+  sessionModelMap,
+  channels,
   collapsedWorkspaceIds,
   setCollapsedWorkspaceIds,
   currentWorkspaceId,
@@ -1730,6 +1747,8 @@ function SessionsRailContent({
   activeSessionId: string | null
   agentProjectGroups: AgentProjectGroup[]
   agentIndicatorMap: Map<string, SessionIndicatorStatus>
+  sessionModelMap: Map<string, string>
+  channels: import('@tagent/shared').Channel[]
   collapsedWorkspaceIds: Set<string>
   setCollapsedWorkspaceIds: React.Dispatch<React.SetStateAction<Set<string>>>
   currentWorkspaceId: string | null
@@ -1788,9 +1807,26 @@ function SessionsRailContent({
 
   const listRef = React.useRef<HTMLDivElement>(null)
 
+
   return (
     <div className="app-spatial-session-well list-well session-well flex-1 min-h-0 titlebar-no-drag">
-      <div ref={listRef} className="session-scroll scrollbar-thin min-h-0 relative">
+      <div className="group-label shrink-0">
+        <span>项目</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="ghost-plus opacity-100"
+              onClick={() => void onCreateProject()}
+              aria-label="新建项目"
+            >
+              +
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">选择目录新建项目</TooltipContent>
+        </Tooltip>
+      </div>
+      <div ref={listRef} className="session-scroll scrollbar-autohide min-h-0 relative">
         {/* 置顶分区（原型：位于 session-well 最上方） */}
         {pinnedAgentSessions.length > 0 && (
           <div className="session-group">
@@ -1804,6 +1840,11 @@ function SessionsRailContent({
                   session={session}
                   active={session.id === activeSessionId}
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                  modelName={
+                    sessionModelMap.get(session.id)
+                      ? resolveModelDisplayName(sessionModelMap.get(session.id)!, channels)
+                      : undefined
+                  }
                   leftAccent={getSessionLeftAccent(
                     agentIndicatorMap.get(session.id) ?? 'idle',
                     session.id === activeSessionId,
@@ -1824,30 +1865,11 @@ function SessionsRailContent({
           </div>
         )}
 
-        {/* 项目分区：标题始终带「新建项目」，避免有项目后入口消失 */}
-        <div className="session-group">
-          <div className="group-label">
-            <span>项目</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="ghost-plus opacity-100"
-                  onClick={() => void onCreateProject()}
-                  aria-label="新建项目"
-                >
-                  +
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">选择目录新建项目</TooltipContent>
-            </Tooltip>
+        {agentProjectGroups.length === 0 ? (
+          <div className="px-2 py-2 text-[11px] text-foreground/30 text-center select-none">
+            暂无项目
           </div>
-          {agentProjectGroups.length === 0 ? (
-            <div className="px-2 py-2 text-[11px] text-foreground/30 text-center select-none">
-              暂无项目
-            </div>
-          ) : null}
-        </div>
+        ) : null}
 
         {agentProjectGroups.length > 0
           ? agentProjectGroups.map((group) => (
@@ -1858,6 +1880,8 @@ function SessionsRailContent({
                 collapsed={collapsedWorkspaceIds.has(group.workspace.id)}
                 activeSessionId={activeSessionId}
                 agentIndicatorMap={agentIndicatorMap}
+                sessionModelMap={sessionModelMap}
+                channels={channels}
                 workspaceNameMap={workspaceNameMap}
                 onSelectProject={(id) => {
                   selectWorkspace(id)
@@ -2051,13 +2075,20 @@ const ConversationItem = React.memo(function ConversationItem({
             ) : (
               <div
                 className={cn(
-                  'truncate text-[13px] leading-5 flex items-center gap-1.5',
+                  'flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden pr-2 text-[13px] leading-5',
                   active ? 'session-row-title' : 'text-foreground/80'
                 )}
               >
                 {/* 置顶标记 */}
                 {showPinIcon && <Pin size={11} className="flex-shrink-0 text-primary/60" />}
-                <span className="truncate">{conversation.title}</span>
+                <ChatsCircle
+                  size={13}
+                  weight="regular"
+                  className={cn('flex-shrink-0', active ? 'opacity-80' : 'opacity-45')}
+                />
+                <span className="block min-w-0 max-w-full flex-1 truncate">
+                  {conversation.title}
+                </span>
               </div>
             )}
           </div>
@@ -2119,6 +2150,8 @@ interface AgentSessionItemProps {
   indicatorStatus: SessionIndicatorStatus
   /** 行底部状态横条语义；idle / 未传则不显示 */
   leftAccent?: SessionLeftAccent
+  /** 会话当前模型显示名 */
+  modelName?: string
   /** 是否禁用悬浮 Mini 地图 */
   disableMiniMap?: boolean
   /** 工作区名称 Badge（跨工作区列表时显示） */
@@ -2161,6 +2194,7 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
   active,
   indicatorStatus,
   leftAccent,
+  modelName,
   disableMiniMap,
   workspaceName,
   childClassName,
@@ -2251,9 +2285,15 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
     leftAccent,
   })
 
+  const hasIndicatorStatus =
+    indicatorStatus === 'running' ||
+    indicatorStatus === 'blocked' ||
+    indicatorStatus === 'completed'
+  const metaModelName = modelName?.trim() || '未选择模型'
+
   const rowClassName = cn(
     'session-list-row group relative min-w-0 titlebar-no-drag text-left',
-    isBatchMode && '!flex !items-center gap-2',
+    isBatchMode && '!flex !w-full !max-w-full !items-center gap-2 overflow-hidden',
     surface === 'well' && 'session-row-shell app-sidebar-session-row w-full',
     surface === 'compact' && 'w-full py-[7px] px-1',
     isBatchMode && 'session-list-row--batch',
@@ -2285,85 +2325,96 @@ const AgentSessionItem = React.memo(function AgentSessionItem({
           }}
           className={rowClassName}
         >
-          {/* 批量模式下显示 checkbox */}
-          {isBatchMode && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggleBatchSelect?.(session.id)
-              }}
-              className="flex-shrink-0 w-[18px] flex items-center justify-center text-foreground/60 hover:text-foreground"
-              aria-label={isBatchSelected ? '取消选中' : '选中'}
-            >
-              {isBatchSelected ? (
-                <CheckSquare className="size-3.5 text-primary" />
-              ) : (
-                <Square className="size-3.5" />
-              )}
-            </button>
-          )}
-          {/* 底部状态横条：仅用于非选中会话（后台会话）的状态指示 */}
-          {statusLineClass && (
-            <span
-              className={cn('session-status-line agent-session-status-line', statusLineClass)}
-              aria-hidden="true"
-            />
-          )}
-          {showRunningSweep && <span className="session-active-running-sweep" aria-hidden="true" />}
-          <div className="flex-1 min-w-0">
-            {editing ? (
-              <input
-                ref={inputRef}
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onBlur={saveTitle}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
-                maxLength={100}
-              />
-            ) : (
-              <div
-                className={cn(
-                  'session-row-actions-pad min-w-0 transition-[padding] duration-150',
-                  !isBatchMode && 'group-hover:pr-4'
-                )}
+          {isBatchMode ? (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleBatchSelect?.(session.id)
+                }}
+                className="flex-shrink-0 w-[18px] flex items-center justify-center text-foreground/60 hover:text-foreground"
+                aria-label={isBatchSelected ? '取消选中' : '选中'}
               >
-                <div
-                  className={cn(
-                    'truncate text-[13px] leading-[18px] flex items-center gap-1.5',
-                    !active && 'text-foreground/80'
-                  )}
-                >
-                  <span className={cn('truncate flex-1 min-w-0', active && 'session-row-title')}>
-                    {session.title}
-                  </span>
-                </div>
-                {!isBatchMode && (
+                {isBatchSelected ? (
+                  <CheckSquare className="size-3.5 text-primary" />
+                ) : (
+                  <Square className="size-3.5" />
+                )}
+              </button>
+              <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 overflow-hidden">
+                <ChatsCircle size={13} weight="regular" className="shrink-0 opacity-45" />
+                <span className="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] leading-[18px] text-foreground/80">
+                  {session.title}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* 底部状态横条：仅用于非选中会话（后台会话）的状态指示 */}
+              {hasIndicatorStatus && statusLineClass && (
+                <span
+                  className={cn('session-status-line agent-session-status-line', statusLineClass)}
+                  aria-hidden="true"
+                />
+              )}
+              {showRunningSweep && (
+                <span className="session-active-running-sweep" aria-hidden="true" />
+              )}
+              <div className="flex-1 min-w-0">
+                {editing ? (
+                  <input
+                    ref={inputRef}
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={saveTitle}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full bg-transparent text-[13px] leading-5 text-foreground border-b border-primary/50 outline-none px-0 py-0"
+                    maxLength={100}
+                  />
+                ) : (
                   <div
-                    className={cn(
-                      'app-sidebar-session-detail mt-0.5 flex min-w-0 items-center justify-between gap-2 text-[9px]',
-                      active ? 'session-row-meta' : 'md-text-faint'
-                    )}
+                    className="w-full min-w-0"
                   >
-                    <span className="truncate">
-                      {indicatorStatus === 'running'
-                        ? '正在执行'
-                        : indicatorStatus === 'blocked'
-                          ? '等待处理'
-                          : indicatorStatus === 'completed'
-                            ? '已完成'
-                            : '最近会话'}
-                    </span>
-                    <span className="flex-shrink-0 tabular-nums">
-                      {formatSessionTime(session.updatedAt)}
-                    </span>
+                    <div
+                      className={cn(
+                        'session-row-actions-pad flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden pr-7 text-[13px] leading-[18px] transition-[padding] duration-150 group-hover:pr-4',
+                        !active && 'text-foreground/80'
+                      )}
+                    >
+                      <ChatsCircle
+                        size={13}
+                        weight="regular"
+                        className={cn('flex-shrink-0', active ? 'opacity-80' : 'opacity-45')}
+                      />
+                      <span
+                        className={cn(
+                          'block min-w-0 max-w-full flex-1 truncate',
+                          active && 'session-row-title'
+                        )}
+                      >
+                        {session.title}
+                      </span>
+                    </div>
+                    <div
+                      className={cn(
+                        'app-sidebar-session-detail session-row-detail-pad mt-0.5 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 pl-5 pr-0 text-[9px] transition-[padding] duration-150 group-hover:pr-4',
+                        active ? 'session-row-meta' : 'md-text-faint'
+                      )}
+                    >
+                      <span className="block min-w-0 truncate" title={metaModelName}>
+                        {metaModelName}
+                      </span>
+                      <span className="flex-shrink-0 tabular-nums">
+                        {formatSessionTime(session.updatedAt)}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
-            )}
-          </div>
+            </>
+          )}
           {!editing && !isBatchMode && (
             <div
               className="absolute right-1.5 top-1/2 -translate-y-1/2"
@@ -2420,6 +2471,8 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   collapsed,
   activeSessionId,
   agentIndicatorMap,
+  sessionModelMap,
+  channels,
   workspaceNameMap,
   onSelectProject,
   onNewSession,
@@ -2452,6 +2505,8 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
   collapsed: boolean
   activeSessionId: string | null
   agentIndicatorMap: Map<string, SessionIndicatorStatus>
+  sessionModelMap: Map<string, string>
+  channels: import('@tagent/shared').Channel[]
   workspaceNameMap: Map<string, string>
   onSelectProject: (id: string) => void
   onNewSession: (workspaceId: string) => void
@@ -2783,6 +2838,11 @@ const AgentProjectGroupItem = React.memo(function AgentProjectGroupItem({
                   session={session}
                   active={session.id === activeSessionId}
                   indicatorStatus={agentIndicatorMap.get(session.id) ?? 'idle'}
+                  modelName={
+                    sessionModelMap.get(session.id)
+                      ? resolveModelDisplayName(sessionModelMap.get(session.id)!, channels)
+                      : undefined
+                  }
                   leftAccent={getSessionLeftAccent(
                     agentIndicatorMap.get(session.id) ?? 'idle',
                     session.id === activeSessionId,

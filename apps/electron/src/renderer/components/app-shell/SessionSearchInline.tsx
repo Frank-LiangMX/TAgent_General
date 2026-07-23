@@ -315,6 +315,7 @@ export function SessionSearchInline({
     selected?.scrollIntoView({ block: 'nearest' })
   }, [selectedIndex])
 
+
   const trimmedQuery = query.trim()
   const canSearch = trimmedQuery.length >= 2 && !loading
   const isQueryDirty = trimmedQuery !== committedQuery
@@ -364,7 +365,7 @@ export function SessionSearchInline({
 
       <div className="flex min-h-0 flex-1 flex-col">
         {showResults ? (
-          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-autohide">
             {/* 结果 meta */}
             <div className="flex items-center justify-between gap-2 px-1 pb-1.5 pt-0.5">
               <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/35">

@@ -1083,11 +1083,70 @@
 }
 
 .app-nav-sidebar .session-well {
-  padding: 2px 8px 12px;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 2px 4px 12px 2px;
 }
 
 .app-nav-sidebar .session-scroll {
-  padding: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0 2px 0 0;
+  scrollbar-gutter: stable;
+}
+
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button,
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button:single-button,
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button:double-button,
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button:vertical:start:decrement,
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button:vertical:end:increment,
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button:horizontal:start:decrement,
+.app-nav-sidebar .session-scroll::-webkit-scrollbar-button:horizontal:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button,
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button:single-button,
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button:double-button,
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button:vertical:start:decrement,
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button:vertical:end:increment,
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button:horizontal:start:decrement,
+.app-nav-sidebar .scrollbar-autohide::-webkit-scrollbar-button:horizontal:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+.app-nav-sidebar *::-webkit-scrollbar-button,
+.app-nav-sidebar *::-webkit-scrollbar-button:single-button,
+.app-nav-sidebar *::-webkit-scrollbar-button:double-button,
+.app-nav-sidebar *::-webkit-scrollbar-button:start:decrement,
+.app-nav-sidebar *::-webkit-scrollbar-button:end:increment,
+.app-nav-sidebar *::-webkit-scrollbar-button:vertical:start:decrement,
+.app-nav-sidebar *::-webkit-scrollbar-button:vertical:end:increment,
+.app-nav-sidebar *::-webkit-scrollbar-button:horizontal:start:decrement,
+.app-nav-sidebar *::-webkit-scrollbar-button:horizontal:end:increment,
+.app-nav-sidebar *::-webkit-scrollbar-track-piece:start,
+.app-nav-sidebar *::-webkit-scrollbar-track-piece:end,
+.app-nav-sidebar *::-webkit-scrollbar-track-piece:vertical:start,
+.app-nav-sidebar *::-webkit-scrollbar-track-piece:vertical:end {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
 }
 
 .app-nav-sidebar .session-group {
@@ -1155,6 +1214,10 @@
   padding-right: 1rem; /* = pr-4 / group-hover:pr-4 */
 }
 
+.session-list-row[data-actions-open] .session-row-detail-pad {
+  padding-right: 1rem; /* 时间行与标题行同样为三点菜单让位 */
+}
+
 .app-nav-sidebar .app-sidebar-project-button:hover {
   background: rgb(255 255 255 / 34%);
 }
@@ -1177,7 +1240,7 @@
 .app-nav-sidebar .app-sidebar-session-row {
   min-height: 49px;
   /* 预留 hover translateX 空间，避免右移裁切三点菜�?*/
-  margin-right: 2px;
+  margin-right: 0;
   padding: 8px 9px;
   border: 1px solid transparent;
   border-radius: 12px;
@@ -1213,6 +1276,12 @@
     0 5px 14px rgb(72 91 128 / 7%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(1.12);
   backdrop-filter: blur(12px) saturate(1.12);
+}
+
+.app-nav-sidebar .session-row-shell,
+.app-nav-sidebar .session-list-row {
+  max-width: 100%;
+  margin-right: 0;
 }
 
 /*
