@@ -30,6 +30,7 @@ import {
   AGENT_ROLE_IPC_CHANNELS,
   COMMAND_IPC_CHANNELS,
   CSV_IPC_CHANNELS,
+  TERMINAL_IPC_CHANNELS,
 } from '@tagent/shared'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
@@ -1439,6 +1440,29 @@ export interface ElectronAPI {
     ) => () => void
     onTaskProgress: (
       callback: (payload: import('@tagent/shared').TaskProgressPayload) => void
+    ) => () => void
+  }
+
+  // ===== 内置终端 =====
+
+  terminal: {
+    /** 创建（或重连）一个 PTY 会话；重连时主进程重放环形缓冲 */
+    create: (
+      input: import('@tagent/shared').TerminalCreatePayload
+    ) => Promise<import('@tagent/shared').TerminalCreateResult>
+    /** 向 PTY 写入用户输入（UTF-8 字符串） */
+    write: (input: import('@tagent/shared').TerminalWritePayload) => Promise<boolean>
+    /** 调整 PTY 列/行 */
+    resize: (input: import('@tagent/shared').TerminalResizePayload) => Promise<boolean>
+    /** 销毁 PTY 会话（关 tab 时调） */
+    dispose: (sessionId: string) => Promise<boolean>
+    /** 订阅 PTY 输出流（main → renderer），返回取消订阅函数 */
+    onData: (
+      callback: (payload: import('@tagent/shared').TerminalDataPayload) => void
+    ) => () => void
+    /** 订阅 PTY 退出事件（main → renderer），返回取消订阅函数 */
+    onExit: (
+      callback: (payload: import('@tagent/shared').TerminalExitPayload) => void
     ) => () => void
   }
 
@@ -3818,6 +3842,38 @@ const electronAPI: ElectronAPI = {
       ipcRenderer.on(KANBAN_IPC_CHANNELS.TASK_PROGRESS, listener)
       return () => {
         ipcRenderer.removeListener(KANBAN_IPC_CHANNELS.TASK_PROGRESS, listener)
+      }
+    },
+  },
+
+  // ===== 内置终端 =====
+
+  terminal: {
+    create: (input: import('@tagent/shared').TerminalCreatePayload) =>
+      ipcRenderer.invoke(TERMINAL_IPC_CHANNELS.CREATE, input),
+    write: (input: import('@tagent/shared').TerminalWritePayload) =>
+      ipcRenderer.invoke(TERMINAL_IPC_CHANNELS.WRITE, input),
+    resize: (input: import('@tagent/shared').TerminalResizePayload) =>
+      ipcRenderer.invoke(TERMINAL_IPC_CHANNELS.RESIZE, input),
+    dispose: (sessionId: string) => ipcRenderer.invoke(TERMINAL_IPC_CHANNELS.DISPOSE, sessionId),
+    onData: (callback: (payload: import('@tagent/shared').TerminalDataPayload) => void) => {
+      const listener = (
+        _event: unknown,
+        payload: import('@tagent/shared').TerminalDataPayload
+      ): void => callback(payload)
+      ipcRenderer.on(TERMINAL_IPC_CHANNELS.DATA, listener)
+      return () => {
+        ipcRenderer.removeListener(TERMINAL_IPC_CHANNELS.DATA, listener)
+      }
+    },
+    onExit: (callback: (payload: import('@tagent/shared').TerminalExitPayload) => void) => {
+      const listener = (
+        _event: unknown,
+        payload: import('@tagent/shared').TerminalExitPayload
+      ): void => callback(payload)
+      ipcRenderer.on(TERMINAL_IPC_CHANNELS.EXIT, listener)
+      return () => {
+        ipcRenderer.removeListener(TERMINAL_IPC_CHANNELS.EXIT, listener)
       }
     },
   },

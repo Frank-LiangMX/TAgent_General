@@ -22,6 +22,7 @@ asar: true
 asarUnpack:
   - 'node_modules/@anthropic-ai/**'
   - 'node_modules/better-sqlite3/**/*'
+  - 'node_modules/node-pty/**/*'
 
 # 跳过 npm install（代码已被 esbuild/Vite 打包，npm 不识别 workspace:* 协议）
 npmRebuild: false
@@ -49,6 +50,8 @@ files:
   - node_modules/pdfjs-dist/**/*
   # SQLite 原生模块（资产库、内存层服务使用）
   - node_modules/better-sqlite3/**/*
+  # node-pty 原生模块（内置终端 PTY）
+  - node_modules/node-pty/**/*
   # 排除 workspace 包的 symlink（代码已被 esbuild/Vite 打包到 dist/ 中）
 
 # 通用额外资源

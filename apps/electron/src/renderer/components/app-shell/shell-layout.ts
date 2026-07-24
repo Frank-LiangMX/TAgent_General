@@ -40,7 +40,7 @@ export interface RailSelectionState {
 const GENERAL_SIDEBAR_ITEMS = new Set<RailItem>(['sessions', 'skills', 'draft', 'kanban'])
 
 /** 仅 rail + main 的功能页（不占左侧 sidebar） */
-const GENERAL_RAIL_ONLY_ITEMS = new Set<RailItem>(['automation', 'memory'])
+const GENERAL_RAIL_ONLY_ITEMS = new Set<RailItem>(['automation', 'memory', 'terminal'])
 
 const TA_SIDEBAR_ITEMS = new Set<RailItem>([
   'sessions',

@@ -81,7 +81,14 @@ export const installedPluginNavAtom = atom<InstalledPluginNavFilter>('overview')
 // ===== Rail Item Atoms =====
 
 /** 通用模式下的侧栏功能项（文件功能已迁移至右侧边栏） */
-export type GeneralRailItem = 'sessions' | 'skills' | 'automation' | 'draft' | 'kanban' | 'memory'
+export type GeneralRailItem =
+  | 'sessions'
+  | 'skills'
+  | 'automation'
+  | 'draft'
+  | 'kanban'
+  | 'memory'
+  | 'terminal'
 
 /** TA 模式下的侧栏功能项 */
 export type TARailItem =

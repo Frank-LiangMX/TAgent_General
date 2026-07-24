@@ -38,6 +38,7 @@ import { AutomationMainView } from '@/components/automation/AutomationMainView'
 import { Panel } from '@/components/app-shell/Panel'
 import { KanbanMainView } from '@/components/kanban/KanbanMainView'
 import { MemoryMonitorPanel } from '@/components/memory/MemoryMonitorPanel'
+import { TerminalMainView } from '@/components/terminal/TerminalMainView'
 import { AssetLibraryPanel } from '@/components/ta/asset-library/AssetLibraryPanel'
 import { TAConfigPanel } from '@/components/ta/config/TAConfigPanel'
 import { PipelinePanel } from '@/components/ta/pipeline/PipelinePanel'
@@ -90,6 +91,10 @@ export function MainArea(): React.ReactElement {
 
     if (activeRailItem === 'memory') {
       return <MemoryMonitorPanel />
+    }
+
+    if (activeRailItem === 'terminal') {
+      return <TerminalMainView />
     }
 
     // 草稿是跨模式常驻入口，统一走通用 Tab 主区渲染

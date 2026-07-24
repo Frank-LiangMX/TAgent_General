@@ -148,6 +148,7 @@ import { exitPlanService } from './lib/agent-exit-plan-service'
 import { permissionService } from './lib/agent-permission-service'
 import { registerKanbanIpcHandlers } from './lib/kanban-ipc'
 import { registerAgentRoleIpcHandlers } from './lib/agent-role-ipc'
+import { registerTerminalPtyIpc } from './lib/terminal-ipc'
 import {
   runAgent,
   stopAgent,
@@ -4726,6 +4727,24 @@ export function registerIpcHandlers(): void {
   // ===== Kanban 看板 =====
 
   registerKanbanIpcHandlers()
+
+  // ===== 内置终端（node-pty + xterm.js） =====
+
+  registerTerminalPtyIpc({
+    ipcMain,
+    // 懒加载主窗口获取器，避免与 main/index.ts 循环依赖（main/index.ts import 本文件）
+    getMainWindow: () => {
+      // esbuild 打成 cjs，require 可用；运行时才解析，避开模块初始化期循环
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mod = require('./index') as typeof import('./index')
+      return mod.getMainWindow()
+    },
+    logError: (category, message, detail) => {
+      console.error(`[${category}] ${message}`, detail ?? '')
+    },
+    // 颜色模式先固定 native，跟 TAgent 主题深/浅走
+    getTerminalColorMode: () => 'native',
+  })
 
   // ===== Agent 角色库 =====
 

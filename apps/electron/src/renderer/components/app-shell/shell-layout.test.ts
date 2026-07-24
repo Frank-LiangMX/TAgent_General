@@ -97,7 +97,7 @@ describe('deriveShellLayout', () => {
     expect(derive({ topLevelMode, activeRailItem }).sidebar).toBe('open')
   })
 
-  test.each(['automation', 'memory'] as const)(
+  test.each(['automation', 'memory', 'terminal'] as const)(
     '%s is rail-only in general (no sidebar)',
     (item) => {
       expect(railItemSupportsSidebar('general', item)).toBe(false)

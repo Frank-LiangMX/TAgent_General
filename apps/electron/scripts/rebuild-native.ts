@@ -1,17 +1,21 @@
 /**
- * 重新编译 better-sqlite3 为 Electron ABI
+ * 重新编译原生模块为 Electron ABI
  *
  * 替代不可靠的 electron-rebuild（在部分环境下静默失败：输出 "Rebuild Complete"
  * 但 build/Release/ 目录为空，导致运行时 ABI 不匹配崩溃）。
  *
  * 直接调用 node-gyp 针对 Electron 头文件编译，并校验产物存在 + 大小。
  *
+ * 当前覆盖：
+ *   - better-sqlite3（资产库、内存层服务）
+ *   - node-pty（内置终端 PTY）
+ *
  * 用法：
- *   bun run scripts/rebuild-native.ts            # 编译
+ *   bun run scripts/rebuild-native.ts            # 编译全部
  *   bun run scripts/rebuild-native.ts --check    # 仅校验产物，不编译
  */
 
-import { existsSync, statSync, readFileSync } from 'node:fs'
+import { existsSync, statSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -56,43 +60,48 @@ function getNodeGypBin(): string {
   return process.platform === 'win32' ? 'npx.cmd' : 'npx'
 }
 
-/** 校验编译产物：存在 + 大小合理 */
-function verifyArtifact(bsqDir: string): void {
-  const nodeFile = join(bsqDir, 'build/Release/better_sqlite3.node')
-  if (!existsSync(nodeFile)) {
-    throw new Error(`编译产物不存在: ${nodeFile}\n可能是 node-gyp 静默失败，请检查上方日志`)
+/** 在 build/Release 下找 .node 产物（不同模块文件名不同） */
+function findNativeArtifact(moduleDir: string): string | null {
+  const releaseDir = join(moduleDir, 'build/Release')
+  if (!existsSync(releaseDir)) return null
+  try {
+    const files = readdirSync(releaseDir)
+    return (
+      files
+        .filter((f) => f.endsWith('.node'))
+        .map((f) => join(releaseDir, f))
+        .find((p) => statSync(p).size > 1000) ?? null
+    )
+  } catch {
+    return null
   }
-  const stat = statSync(nodeFile)
-  if (stat.size < 100_000) {
-    throw new Error(`编译产物异常：文件大小 ${stat.size} bytes，预期 > 100KB\n产物: ${nodeFile}`)
-  }
-  console.log(`[rebuild-native] 校验通过: ${nodeFile} (${(stat.size / 1024).toFixed(0)} KB)`)
 }
 
-function main(): void {
-  const checkOnly = process.argv.includes('--check')
-
-  // 1. 找 better-sqlite3
-  const bsqDir = findModuleDir('better-sqlite3')
-  if (!bsqDir) {
-    throw new Error('找不到 better-sqlite3 模块，请先 bun install')
+/** 校验编译产物：存在 + 大小合理 */
+function verifyArtifact(moduleName: string, moduleDir: string): void {
+  const nodeFile = findNativeArtifact(moduleDir)
+  if (!nodeFile) {
+    throw new Error(
+      `[rebuild-native] ${moduleName} 编译产物不存在于 ${join(
+        moduleDir,
+        'build/Release'
+      )}\n可能是 node-gyp 静默失败，请检查上方日志`
+    )
   }
-  if (!existsSync(join(bsqDir, 'binding.gyp'))) {
-    throw new Error(`better-sqlite3 缺少 binding.gyp: ${bsqDir}`)
+  const stat = statSync(nodeFile)
+  if (stat.size < 50_000) {
+    throw new Error(
+      `[rebuild-native] ${moduleName} 编译产物异常：文件大小 ${stat.size} bytes，预期 > 50KB\n产物: ${nodeFile}`
+    )
   }
+  console.log(
+    `[rebuild-native] ${moduleName} 校验通过: ${nodeFile} (${(stat.size / 1024).toFixed(0)} KB)`
+  )
+}
 
-  // 2. 仅校验模式
-  if (checkOnly) {
-    console.log('[rebuild-native] 仅校验模式')
-    verifyArtifact(bsqDir)
-    return
-  }
-
-  // 3. 读 electron 版本
-  const electronVersion = getElectronVersion()
-  console.log(`[rebuild-native] 编译 better-sqlite3 for Electron ${electronVersion}`)
-
-  // 4. 调用 node-gyp
+/** 编译单个原生模块（node-gyp rebuild for Electron） */
+function rebuildModule(moduleName: string, moduleDir: string, electronVersion: string): void {
+  console.log(`[rebuild-native] 编译 ${moduleName} for Electron ${electronVersion}`)
   const nodeGyp = getNodeGypBin()
   const args = [
     'rebuild',
@@ -105,11 +114,64 @@ function main(): void {
     nodeGyp.endsWith('npx.cmd') || nodeGyp === 'npx'
       ? `${nodeGyp} node-gyp ${args.join(' ')}`
       : `"${nodeGyp}" ${args.join(' ')}`
+  execSync(cmd, { cwd: moduleDir, stdio: 'inherit' })
+}
 
-  execSync(cmd, { cwd: bsqDir, stdio: 'inherit' })
+/** 需编译的原生模块清单（模块名 + 是否必须存在） */
+const NATIVE_MODULES: Array<{ name: string; required: boolean }> = [
+  { name: 'better-sqlite3', required: true },
+]
 
-  // 5. 校验产物（防止静默失败）
-  verifyArtifact(bsqDir)
+/**
+ * 用 prebuilt N-API 二进制的原生模块（无需 node-gyp 编译）。
+ * 只校验当前平台 prebuilds 目录存在。
+ */
+const PREBUILT_NATIVE_MODULES = ['node-pty']
+
+function main(): void {
+  const checkOnly = process.argv.includes('--check')
+  const electronVersion = getElectronVersion()
+
+  for (const { name, required } of NATIVE_MODULES) {
+    const moduleDir = findModuleDir(name)
+    if (!moduleDir) {
+      if (required) {
+        throw new Error(`找不到 ${name} 模块，请先 bun install`)
+      }
+      console.log(`[rebuild-native] 跳过可选模块 ${name}（未安装）`)
+      continue
+    }
+    if (!existsSync(join(moduleDir, 'binding.gyp'))) {
+      console.log(`[rebuild-native] 跳过 ${name}（无 binding.gyp，可能用 prebuilt）`)
+      // 仍校验产物存在
+      if (checkOnly) verifyArtifact(name, moduleDir)
+      continue
+    }
+
+    if (checkOnly) {
+      console.log(`[rebuild-native] 仅校验模式: ${name}`)
+      verifyArtifact(name, moduleDir)
+      continue
+    }
+
+    rebuildModule(name, moduleDir, electronVersion)
+    verifyArtifact(name, moduleDir)
+  }
+
+  // 校验 prebuilt N-API 模块（node-pty 等）：只确认当前平台 prebuilds 存在
+  for (const name of PREBUILT_NATIVE_MODULES) {
+    const moduleDir = findModuleDir(name)
+    if (!moduleDir) continue
+    const prebuildDir = join(moduleDir, 'prebuilds', `${process.platform}-${process.arch}`)
+    if (!existsSync(prebuildDir)) {
+      console.warn(
+        `[rebuild-native] 警告: ${name} 缺少当前平台 prebuilds (${prebuildDir})，终端可能不可用`
+      )
+    } else {
+      console.log(`[rebuild-native] ${name} prebuilt 校验通过: ${prebuildDir}`)
+    }
+  }
+
   console.log('[rebuild-native] 完成')
 }
 

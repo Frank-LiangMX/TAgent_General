@@ -1478,6 +1478,7 @@ export function LeftSidebar({
         return <KanbanRailContent />
       case 'memory':
       case 'automation':
+      case 'terminal':
         // rail-only：不占 sidebar（壳层已折叠）；兜底避免误渲染旧列表
         return null
       case 'sessions':
@@ -1804,7 +1805,6 @@ function SessionsRailContent({
   )
 
   const listRef = React.useRef<HTMLDivElement>(null)
-
 
   return (
     <div className="app-spatial-session-well list-well session-well flex-1 min-h-0 titlebar-no-drag">

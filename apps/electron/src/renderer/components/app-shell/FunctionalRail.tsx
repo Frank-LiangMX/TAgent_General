@@ -25,6 +25,7 @@ import {
   PencilSimpleLine,
   PuzzlePiece,
   SealCheck,
+  Terminal,
   TreeStructure,
 } from '@phosphor-icons/react'
 import * as React from 'react'
@@ -84,6 +85,12 @@ const GENERAL_RAIL_ITEMS: Array<{
     label: '记忆',
     icon: <Brain {...RAIL_ICON} />,
     description: 'L0-L5 记忆层监控',
+  },
+  {
+    id: 'terminal',
+    label: '终端',
+    icon: <Terminal {...RAIL_ICON} />,
+    description: '内置终端（本地 shell）',
   },
 ]
 

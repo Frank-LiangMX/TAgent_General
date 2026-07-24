@@ -81,3 +81,6 @@ export * from './agent-role'
 
 // 命令注册表（command-registry 统一命令路由）
 export * from './command'
+
+// 内置终端（node-pty + xterm.js）
+export * from './terminal'
