@@ -104,6 +104,8 @@ release/*.yml
 *.temp
 .cache/
 .idea/
+# Vite/打包工具误吐到仓库根的临时编译产物（如 tmp-leftsidebar-vite.js）
+tmp-*.js
 # NSIS installer sidebars (not referenced by electron-builder.yml, kept locally for future use)
 apps/electron/resources/installer-sidebar.bmp
 apps/electron/resources/uninstaller-sidebar.bmp
