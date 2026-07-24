@@ -54,7 +54,7 @@ export function resolveLogoKey(
 }
 
 export function getThemeIconCandidatePaths(key: LogoKey): Array<{ path: string; exists: boolean }> {
-  const relativePath = join('theme-icons', `tagent-${key}.png`)
+  const relativePath = join('tagent-logo-proposals-v2', `tagent-${key}.png`)
   const candidates = app.isPackaged
     ? [
         join(process.resourcesPath, relativePath),

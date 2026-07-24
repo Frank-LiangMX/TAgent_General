@@ -55,10 +55,8 @@ import {
   rightRailItemAtom,
 } from '@/atoms/app-mode'
 import { activeTabAtom } from '@/atoms/tab-atoms'
-import { workspaceManagerOpenAtom } from '@/atoms/workspace'
 import { designEnabledAtom, designImmersiveAtom } from '@/atoms/design-preview-atoms'
 import { DesignImmersiveLayout } from '@/components/design-preview/DesignImmersiveLayout'
-import { ProjectManagerDialog } from '@/components/agent/WorkspaceManagerDialog'
 import { MainArea } from '@/components/tabs/MainArea'
 import { WindowControls } from '@/components/WindowControls'
 import { AppShellProvider, type AppShellContextType } from '@/contexts/AppShellContext'
@@ -234,7 +232,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
   /* nav 贴 main（shell-island-gap=0）；光学左缝在 content 内 session-gutter */
   const contentBaseInsetLeft = navClusterWidth + SHELL_EDGE_PADDING
 
-  const [workspaceManagerOpen, setWorkspaceManagerOpen] = useAtom(workspaceManagerOpenAtom)
   const [rightPanelWidth, setRightPanelWidth] = useAtom(agentSidePanelWidthAtom)
   /** 视口宽度：右栏 max 随 resize 重算，超界时写入 atom 纠正 */
   const [viewportWidth, setViewportWidth] = React.useState(getViewportWidth)
@@ -1084,8 +1081,6 @@ export function AppShell({ contextValue }: AppShellProps): React.ReactElement {
             <LeftSidebar activeRailItem={activeRailItem} width={navSidebarWidth} />
           </NavIsland>
         </InertRegion>
-
-        <ProjectManagerDialog open={workspaceManagerOpen} onOpenChange={setWorkspaceManagerOpen} />
 
         <main
           ref={workspaceRef}

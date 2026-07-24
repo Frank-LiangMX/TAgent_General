@@ -51,6 +51,34 @@ import { settingsOpenAtom } from '@/atoms/settings-tab'
 import { hasUpdateAtom, updateDownloadedAtom } from '@/atoms/updater'
 import { userProfileAtom } from '@/atoms/user-profile'
 import { cn } from '@/lib/utils'
+import { themeLogoKeyAtom } from '@/atoms/theme'
+import tagentDefaultLight from '../../../../resources/tagent-logo-proposals-v2/tagent-default-light.png'
+import tagentDefaultDark from '../../../../resources/tagent-logo-proposals-v2/tagent-default-dark.png'
+import tagentOceanLight from '../../../../resources/tagent-logo-proposals-v2/tagent-ocean-light.png'
+import tagentOceanDark from '../../../../resources/tagent-logo-proposals-v2/tagent-ocean-dark.png'
+import tagentForestLight from '../../../../resources/tagent-logo-proposals-v2/tagent-forest-light.png'
+import tagentForestDark from '../../../../resources/tagent-logo-proposals-v2/tagent-forest-dark.png'
+import tagentSlateLight from '../../../../resources/tagent-logo-proposals-v2/tagent-slate-light.png'
+import tagentSlateDark from '../../../../resources/tagent-logo-proposals-v2/tagent-slate-dark.png'
+import tagentOrangeLight from '../../../../resources/tagent-logo-proposals-v2/tagent-orange-light.png'
+import tagentOrangeDark from '../../../../resources/tagent-logo-proposals-v2/tagent-orange-dark.png'
+import tagentPurpleLight from '../../../../resources/tagent-logo-proposals-v2/tagent-purple-light.png'
+import tagentPurpleDark from '../../../../resources/tagent-logo-proposals-v2/tagent-purple-dark.png'
+
+const THEME_LOGO_MAP: Record<string, string> = {
+  'default-light': tagentDefaultLight,
+  'default-dark': tagentDefaultDark,
+  'ocean-light': tagentOceanLight,
+  'ocean-dark': tagentOceanDark,
+  'forest-light': tagentForestLight,
+  'forest-dark': tagentForestDark,
+  'slate-light': tagentSlateLight,
+  'slate-dark': tagentSlateDark,
+  'orange-light': tagentOrangeLight,
+  'orange-dark': tagentOrangeDark,
+  'purple-light': tagentPurpleLight,
+  'purple-dark': tagentPurpleDark,
+}
 
 /** 与原型 rail-button 一致：18px Regular */
 const RAIL_ICON = { size: 18 as const, weight: 'regular' as const }
@@ -86,12 +114,13 @@ const GENERAL_RAIL_ITEMS: Array<{
     icon: <Brain {...RAIL_ICON} />,
     description: 'L0-L5 记忆层监控',
   },
-  {
-    id: 'terminal',
-    label: '终端',
-    icon: <Terminal {...RAIL_ICON} />,
-    description: '内置终端（本地 shell）',
-  },
+  // 1.7 版本隐藏终端入口，2.0 重构后再开放
+  // {
+  //   id: 'terminal',
+  //   label: '终端',
+  //   icon: <Terminal {...RAIL_ICON} />,
+  //   description: '内置终端（本地 shell）',
+  // },
 ]
 
 /** 双模式常驻功能区（Rail 顶端）— 原型 draft / skills */
@@ -189,6 +218,7 @@ export function FunctionalRail(): React.ReactElement {
   const setSettingsOpen = useSetAtom(settingsOpenAtom)
   const userProfile = useAtomValue(userProfileAtom)
   const [globalOfficeMode, setGlobalOfficeMode] = useAtom(globalOfficeModeAtom)
+  const themeLogoKey = useAtomValue(themeLogoKeyAtom)
 
   const [modeStatus, setModeStatus] = React.useState<ModeStatusSummary | null>(null)
   const [isSwitching, setIsSwitching] = React.useState(false)
@@ -313,7 +343,12 @@ export function FunctionalRail(): React.ReactElement {
     <div className="nav-island-rail relative z-[1] h-full flex flex-col items-center shrink-0">
       <div className="app-rail-island app-rail-island--primary">
         <div className="app-rail-brand" aria-hidden="true">
-          T
+          <img
+            src={THEME_LOGO_MAP[themeLogoKey] ?? tagentDefaultLight}
+            alt=""
+            className="w-[22px] h-[22px] object-contain"
+            draggable={false}
+          />
         </div>
         <div className="w-full flex flex-col items-center">
           <div className="relative flex flex-col items-center gap-1.5 w-full">
@@ -387,7 +422,8 @@ export function FunctionalRail(): React.ReactElement {
 
       <div className="app-rail-island app-rail-island--system">
         <div className="flex flex-col items-center gap-1.5 w-full">
-          {modeButtons.map(({ value, label, icon, description }) => {
+          {/* 1.7 版本隐藏 G/TA 模式切换，2.0 重构后再开放 */}
+          {/* {modeButtons.map(({ value, label, icon, description }) => {
             const isActive = topLevelMode === value
             const taskCount =
               value === 'general' ? (modeStatus?.generalTasks ?? 0) : (modeStatus?.taTasks ?? 0)
@@ -433,21 +469,23 @@ export function FunctionalRail(): React.ReactElement {
                 </TooltipContent>
               </Tooltip>
             )
-          })}
+          })} */}
         </div>
 
-        {/* Office 全局模式切换 — 原型无额外分割线，与 G/TA 同组 */}
+        {/* 1.7 版本隐藏 Office 模式切换，2.0 重构后再开放 */}
         <div className="flex flex-col items-center gap-1.5 w-full">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => setGlobalOfficeMode(!globalOfficeMode)}
+                onClick={() => {
+                  // 1.7 版本不进入，显示开发中
+                  import('sonner').then(({ toast }) => {
+                    toast.info('AI Office 正在开发中，敬请期待')
+                  })
+                }}
                 aria-label="AI Office"
-                className={cn(
-                  'rail-island-btn size-9 flex items-center justify-center rounded-xl titlebar-no-drag',
-                  globalOfficeMode && 'rail-island-btn--active'
-                )}
+                className="rail-island-btn size-9 flex items-center justify-center rounded-xl titlebar-no-drag opacity-50"
               >
                 <Buildings {...RAIL_ICON} />
               </button>
@@ -455,9 +493,7 @@ export function FunctionalRail(): React.ReactElement {
             <TooltipContent side="right">
               <div className="text-xs">
                 <div className="font-medium">AI Office</div>
-                <div className="text-muted-foreground">
-                  {globalOfficeMode ? '返回经典工作台' : '进入沉浸式办公室'}
-                </div>
+                <div className="text-muted-foreground">开发中，敬请期待</div>
               </div>
             </TooltipContent>
           </Tooltip>

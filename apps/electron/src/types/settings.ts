@@ -330,8 +330,6 @@ export interface AppSettings {
   mainWindowState?: MainWindowState
   /** 在渠道表单中选择 Token Plan 供应商时显示消费提醒（默认 true） */
   showTokenPlanWarning?: boolean
-  /** @deprecated 关闭按钮已固定为隐藏到托盘，此字段不再使用 */
-  closeAction?: 'minimize-to-tray' | 'quit'
   /** 全局 hook 开关配置（auto-typecheck 等，默认全开） */
   hooks?: import('@tagent/shared').HooksConfig
   /** Agent 行为设置（看板 worker 模型分配、角色库等） */

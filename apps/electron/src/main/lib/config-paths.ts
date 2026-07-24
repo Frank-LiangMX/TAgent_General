@@ -559,14 +559,6 @@ function parseSkillCatalogFields(skillDir: string): {
   }
 }
 
-/**
- * 列出 bundle 内 legacy Skill 目录（Proma 时代遗留，不再进入插件商店）
- *
- * @deprecated 商店 Skill 见 `getPluginStoreSkills()`
- */
-export function listBundledStoreSkills(): PluginStoreSkillEntry[] {
-  return []
-}
 
 /**
  * 获取默认 Skills 模板目录路径

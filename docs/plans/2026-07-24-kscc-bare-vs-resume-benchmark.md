@@ -11,12 +11,19 @@
 
 | 项 | 值 |
 |---|---|
-| kscc 版本 | 1.1.20（`~/AppData/Roaming/npm/kscc.cmd`） |
-| 模型 | glm-5.2（ksccModel 默认，contextWindow 1024000 = 1M） |
+| kscc 版本 | 1.1.28（初始测试为 1.1.20） |
+| 主要模型 | glm-5.2（contextWindow 1M） |
+| 验证模型 | kimi-k2.5（contextWindow 200k） |
 | 模型后端 | 公司内网 kscc 渠道（`BASE_API`） |
 | 机器 | Windows 11，本机直跑 |
 | 测试方式 | `kscc -p` 非交互，`--output-format json` 拿 usage/duration |
 | 敏感信息 | token/成本字段已脱敏，只留 token 数与毫秒 |
+
+**模型选择理由**：
+- **glm-5.2**：1M context，主力测试，速度最快，数据最全（4 组）。
+- **kimi-k2.5**：200k context，关键验证 —— resume 在 200k 模型容易爆，bare 能否收住？实测结论：**能**，且省 13.8× token。
+
+**备注**：用户反馈 `kscc my-page` 计费页显示的消耗算法可能与 JSON 中的 `usage` 字段不完全一致（实际扣费以计费页为准）。
 
 **调用模式定义**：
 - **bare 泵**（2.0 目标）：`kscc -p --bare --tools "" --max-turns 1 --system-prompt "<Pi的prompt>" --output-format json --model glm-5.2 "<Pi喂的messages>"`。三件套零工具契约（见 §3.5）。
@@ -125,10 +132,10 @@ resume 的 cache_read（8128→34048）看起来省很多，但命中的是 CLI 
 **A：完全相反，bare 省得多**。不是高 20-30%，是**省一个量级**（短会话省 168 倍、长会话省 14 倍）。根源：bare 砍掉 CLI 的 1.4-2.4 万 token/轮注入，且前缀稳定时同样享受 cache。早期"bare 无 cache 会费更多"的担心实测不成立。
 
 **Q2：Pi + kscc bare 会不会比现在更好更快？**
-**A：会，三项全胜**：
+**A：会，三项全胜**（glm-5.2 与 kimi-k2.5 双模型验证）：
 - **省**：token 省一个量级（砍 CLI 注入 + cache 双重）
 - **快**：速度快 2-4 倍（不重放、无 CLI 注入开销）
-- **稳**：收得住 200k 上下文（bare 不 resume、不重放 B，Pi 按窗口裁剪；resume 在 200k 模型会 prompt_too_long 爆）
+- **稳**：收得住 200k 上下文（bare 不 resume、不重放 B，Pi 按窗口裁剪；resume 在 200k 模型会 prompt_too_long 爆）。**kimi（200k）验证尤其关键** —— 这是当前 resume 最容易爆的场景。
 
 ### 5.2 bare 泵方案判定
 
@@ -169,7 +176,32 @@ kscc -p --resume <sid> --output-format json --model glm-5.2 "状态管理用什�
 
 ---
 
-## 7. 数据汇总表
+## 7. 多模型对比（glm-5.2 vs kimi-k2.5）
+
+| 模型 | 场景 | bare input | resume input | bare 节省 | bare dur | resume dur | bare 快 |
+|---|---|---|---|---|---|---|---|
+| **glm-5.2** | 长单轮 | 987 | 14348 | **14.5×** | 1026ms | 2031ms | **2.0×** |
+| **kimi-k2.5** | 长单轮 | 949 | 13131 | **13.8×** | 10019ms | 22259ms | **2.2×** |
+
+**结论**：glm（1M context）与 kimi（200k context）的**节省倍数一致**（约 14 倍）。这意味着 bare 泵方案在 200k 模型上同样有效，且能收住上下文（resume 在 200k 模型容易爆，bare 不重放、Pi 裁剪稳收）。
+
+**kimi 组D 多轮 cache 行为**：
+
+| 轮次 | bare input | bare cache | resume input | resume cache |
+|---|---|---|---|---|
+| R1 | 0 | 949 | 0 | 31563 |
+| R2 | 267 | 768 | 14861 | 18176 |
+| R3 | 27 | 1024 | 113 | 33024 |
+
+- **Both hit cache**：前缀稳定时两模型都享受 cache（bare R1 cache=949，resume R1 cache=31563）。
+- **Cache 内容本质差异**：bare cache 命中的是「真实内容」（system + 背景 ~1000 token），resume cache 命中的是「CLI 注入肥肉」（~3.1 万 token）。
+- **累计开销**：resume 每轮都要背负 3 万+ token 的 cache_read（即使命中也要传输/计算），bare 只需背负 ~1000。
+
+**速度**：kimi 整体比 glm 慢（glm 1-2s，kimi 10-22s），但 **bare 相对 resume 的速度优势比例一致**（约 2 倍）。
+
+---
+
+## 8. 数据汇总表
 
 | 场景 | bare input | resume input | bare 节省 | bare dur | resume dur | bare 快 |
 |---|---|---|---|---|---|---|

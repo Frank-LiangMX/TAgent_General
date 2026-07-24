@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+// Vite define 全局变量
+declare const __APP_VERSION__: string
+
 // CSS 模块类型声明
 declare module '*.css' {
   const content: Record<string, string>

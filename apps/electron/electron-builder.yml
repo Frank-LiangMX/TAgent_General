@@ -78,8 +78,8 @@ extraResources:
   - from: resources/iconTemplate@3x.png
     to: iconTemplate@3x.png
   # 主题图标（窗口/托盘动态切换，theme-icon-resolver.ts 加载）
-  - from: resources/theme-icons
-    to: theme-icons
+  - from: resources/tagent-logo-proposals-v2
+    to: tagent-logo-proposals-v2
     filter:
       - '**/*.png'
   # Chart.js（CSV 看板内联用，生成 HTML 时读取）
