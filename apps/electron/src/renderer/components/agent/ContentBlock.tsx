@@ -224,6 +224,8 @@ export interface ContentBlockProps {
   childBlocks?: SDKContentBlock[]
   /** 是否正在流式输出中（仅流式中的未完成工具调用才显示 spinner） */
   isStreaming?: boolean
+  /** 是否为正在流式输出的 live 思考块（末尾 thinking 块 + isStreaming，仅 thinking 块生效） */
+  isLive?: boolean
 }
 
 // ===== 提示词折叠行 =====
@@ -623,72 +625,97 @@ function ToolUseBlock({
   )
 }
 
-// ===== 思考块（默认展开，Thinking 标签 + 虚线边框） =====
+// ===== 思考块（live 块恒展开，其余折叠；折叠态只挂纯文本预览） =====
 
 interface ThinkingBlockProps {
   block: SDKThinkingBlock
   dimmed?: boolean
+  /** 是否为正在流式输出的 live 思考块（末尾 thinking 块 + isStreaming） */
+  isLive?: boolean
 }
 
-/** 思考块折叠行数阈值 */
-const THINKING_COLLAPSE_LINE_THRESHOLD = 4
+/** 折叠态纯文本预览截断长度（字符数） */
+const THINKING_PREVIEW_MAX_CHARS = 200
+/** 折叠态纯文本预览截断行数 */
+const THINKING_PREVIEW_MAX_LINES = 4
+/** 展开阈值：超过此长度/行数才提供折叠，短块直接全展开 */
+const THINKING_EXPAND_CHAR_THRESHOLD = 200
+const THINKING_EXPAND_LINE_THRESHOLD = 4
 
-function ThinkingBlock({ block, dimmed = false }: ThinkingBlockProps): React.ReactElement {
+/** 折叠态纯文本预览：取前 N 行、每行截断，整体再限字符数 */
+function buildThinkingPreview(text: string): string {
+  const lines = text.split('\n')
+  const trimmed = lines.slice(0, THINKING_PREVIEW_MAX_LINES)
+  let preview = trimmed.join('\n')
+  if (preview.length > THINKING_PREVIEW_MAX_CHARS) {
+    preview = preview.slice(0, THINKING_PREVIEW_MAX_CHARS) + '…'
+  } else if (lines.length > THINKING_PREVIEW_MAX_LINES) {
+    preview = preview + '…'
+  }
+  return preview
+}
+
+function ThinkingBlock({
+  block,
+  dimmed = false,
+  isLive = false,
+}: ThinkingBlockProps): React.ReactElement {
   const thinkingExpanded = useAtomValue(thinkingExpandedAtom)
-  const [isExpanded, setIsExpanded] = React.useState(thinkingExpanded)
-  const [shouldCollapse, setShouldCollapse] = React.useState(false)
-  const contentRef = React.useRef<HTMLDivElement>(null)
+  // 用户手动 override 标记：null = 未 override，true/false = 用户显式展开/折叠
+  const [userExpanded, setUserExpanded] = React.useState<boolean | null>(null)
 
-  // 检测内容是否超过阈值行数（useLayoutEffect：在 paint 前同步执行，避免「展开→收起」闪屏）
-  React.useLayoutEffect(() => {
-    if (!contentRef.current) return
-    const el = contentRef.current
-    const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 22
-    const maxHeight = lineHeight * THINKING_COLLAPSE_LINE_THRESHOLD
-    setShouldCollapse(el.scrollHeight > maxHeight + 10)
+  // 静态阈值判定是否"够长可折叠"（不读 DOM，不每帧重算，治卡+闪）
+  const shouldCollapse = React.useMemo(() => {
+    const text = block.thinking ?? ''
+    return text.length > THINKING_EXPAND_CHAR_THRESHOLD ||
+      text.split('\n').length > THINKING_EXPAND_LINE_THRESHOLD
   }, [block.thinking])
 
-  // 当全局偏好变更时同步（仅在"应折叠"时生效）
-  React.useEffect(() => {
-    setIsExpanded(thinkingExpanded)
-  }, [thinkingExpanded])
+  // 折叠联动：
+  // - live 块恒展开（看实时思考）
+  // - 非 live 块：用户手动 override 优先，否则回退全局 thinkingExpandedAtom（默认 false=折叠）
+  // - 不够长（shouldCollapse=false）的非 live 块直接全展开
+  const isExpanded = isLive
+    ? true
+    : userExpanded !== null
+      ? userExpanded
+      : shouldCollapse
+        ? thinkingExpanded
+        : true
 
   const toggleExpand = React.useCallback(() => {
-    setIsExpanded((prev) => !prev)
-  }, [])
+    setUserExpanded((prev) => (prev === null ? !isExpanded : !prev))
+  }, [isExpanded])
 
   return (
     <div className={cn('agent-thinking-block relative', dimmed && 'agent-thinking-block--dimmed')}>
-      {/* 对齐原型 think-block：badge 在虚线卡内头部 */}
-      <div
-        className={cn(
-          'agent-thinking-body relative',
-          shouldCollapse && !isExpanded && 'agent-thinking-body--collapsed'
-        )}
-      >
+      <div className="agent-thinking-body relative">
         <div className="agent-thinking-head">
           <span className="agent-thinking-badge">思考</span>
           <SessionThinkingIcon className="agent-thinking-head-icon" aria-hidden={true} />
+          {isLive && <span className="agent-thinking-live-dot" aria-hidden={true} />}
         </div>
-        <div
-          ref={contentRef}
-          className={cn(
-            'agent-thinking-content prose prose-sm dark:prose-invert max-w-none',
-            'prose-p:my-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-            'overflow-hidden transition-[max-height] duration-200',
-            shouldCollapse && !isExpanded && 'max-h-[5.6em]'
-          )}
-        >
-          <MessageResponse>{block.thinking}</MessageResponse>
-        </div>
-        {shouldCollapse && (
+        {isExpanded ? (
+          // 展开态：挂完整 markdown
+          <div
+            className={cn(
+              'agent-thinking-content prose prose-sm dark:prose-invert max-w-none',
+              'prose-p:my-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+            )}
+          >
+            <MessageResponse>{block.thinking}</MessageResponse>
+          </div>
+        ) : (
+          // 折叠态：只挂纯文本预览，不解析 markdown（治卡：live 块每帧变长不会触发 markdown 重解析）
+          <div className={cn('agent-thinking-preview', dimmed && 'agent-thinking-preview--dimmed')}>
+            {buildThinkingPreview(block.thinking ?? '')}
+          </div>
+        )}
+        {shouldCollapse && !isLive && (
           <button
             type="button"
             onClick={toggleExpand}
-            className={cn(
-              'agent-thinking-fade flex items-center gap-1 transition-colors',
-              !isExpanded && 'absolute bottom-0 left-0 right-0'
-            )}
+            className="agent-thinking-fade flex items-center gap-1 transition-colors"
           >
             {isExpanded ? (
               <>
@@ -720,6 +747,7 @@ export function ContentBlock({
   dimmed = false,
   childBlocks,
   isStreaming,
+  isLive,
 }: ContentBlockProps): React.ReactElement | null {
   // text 块 — 主要内容，不受 dimmed 影响
   if (block.type === 'text') {
@@ -753,7 +781,7 @@ export function ContentBlock({
   if (block.type === 'thinking') {
     const thinkingBlock = block as SDKThinkingBlock
     if (!thinkingBlock.thinking) return null
-    return <ThinkingBlock block={thinkingBlock} dimmed={dimmed} />
+    return <ThinkingBlock block={thinkingBlock} dimmed={dimmed} isLive={isLive} />
   }
 
   return null

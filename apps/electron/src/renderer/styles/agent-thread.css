@@ -298,15 +298,39 @@
   background: color-mix(in srgb, hsl(var(--background)) 42%, transparent);
 }
 
-.tagent-agent-thread .agent-thinking-body--collapsed {
-  padding-bottom: 1.75rem;
-}
-
 .tagent-agent-thread .agent-thinking-head {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 6px;
+}
+
+.tagent-agent-thread .agent-thinking-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  margin-left: 2px;
+  background: color-mix(in srgb, hsl(var(--primary)) 70%, hsl(var(--muted-foreground)));
+  box-shadow: 0 0 0 0 color-mix(in srgb, hsl(var(--primary)) 70%, transparent);
+  animation: agent-thinking-live-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes agent-thinking-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, hsl(var(--primary)) 50%, transparent);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--primary)) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagent-agent-thread .agent-thinking-live-dot {
+    animation: none;
+  }
 }
 
 .tagent-agent-thread .agent-thinking-badge {
@@ -360,21 +384,23 @@
   color: hsl(var(--muted-foreground) / 0.85);
 }
 
-.tagent-agent-thread .agent-thinking-body--collapsed .agent-thinking-fade {
-  padding: 1rem 12px 8px;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, hsl(var(--background)) 55%, transparent) 40%,
-    transparent 100%
-  );
+/* 折叠态纯文本预览：不解析 markdown，4 行 line-clamp + pre-wrap，治流式卡顿 */
+.tagent-agent-thread .agent-thinking-preview {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: hsl(var(--muted-foreground) / 0.85);
+  font-weight: 400;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.tagent-agent-thread .agent-turn-process .agent-thinking-body--collapsed .agent-thinking-fade {
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, hsl(var(--background)) 65%, transparent) 42%,
-    transparent 100%
-  );
+.tagent-agent-thread .agent-thinking-preview--dimmed {
+  color: hsl(var(--muted-foreground) / 0.7);
 }
 
 [data-material='glass'] .tagent-agent-thread .agent-thinking-body {

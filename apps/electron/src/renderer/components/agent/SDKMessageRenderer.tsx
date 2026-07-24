@@ -701,6 +701,16 @@ export function AssistantTurnRenderer({
     topLevelBlocks.push(...merged)
   }
 
+  // live 块识别：流式期间末尾 thinking 块 = 正在增长的 live 块（mergeStreamingContentIntoBlocks
+  // 把 streamingThinking 写进末尾 thinking 块）。流式结束后无 live 块。
+  const lastThinkingIndex = React.useMemo(() => {
+    if (!isStreaming) return -1
+    for (let i = topLevelBlocks.length - 1; i >= 0; i--) {
+      if (topLevelBlocks[i]!.type === 'thinking') return i
+    }
+    return -1
+  }, [topLevelBlocks, isStreaming])
+
   // 检测是否有主要内容（text 块），用于决定 tool/thinking 是否 dimmed
   const hasTextContent = topLevelBlocks.some(
     (b) => b.type === 'text' && 'text' in b && !!(b as { text: string }).text
@@ -756,6 +766,8 @@ export function AssistantTurnRenderer({
       block.type === 'tool_use' &&
       ((block as { name: string }).name === 'Agent' || (block as { name: string }).name === 'Task')
     const childBlocks = isAgentTool ? childBlocksMap.get((block as { id: string }).id) : undefined
+    // 末尾 thinking 块在流式期间 = live 块（恒展开看实时思考）
+    const blockIsLive = block.type === 'thinking' && i === lastThinkingIndex
 
     return (
       <ContentBlock
@@ -769,6 +781,7 @@ export function AssistantTurnRenderer({
         dimmed={hasTextContent && block.type !== 'text'}
         childBlocks={childBlocks}
         isStreaming={isStreaming}
+        isLive={blockIsLive || undefined}
       />
     )
   }

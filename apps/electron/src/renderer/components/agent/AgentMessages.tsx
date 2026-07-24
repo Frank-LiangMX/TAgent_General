@@ -816,7 +816,15 @@ function AgentMessagesImpl({
   }, [allGroups, liveMessages, streaming])
 
   // 迷你地图：一刻度 = 一轮（以用户消息为锚），预览含用户 + 助手摘要
+  // 流式期间冻结：流式每 token 都会让 allGroups 引用变化，导致此 useMemo 每帧全量重算
+  // （遍历所有 group + 对每个 assistant-turn 调 getGroupPreview → markdownToPlainText）。
+  // 但流式中历史预览根本不变（只有当前正在生成的 turn 在变，预览每帧算没意义且马上又变）。
+  // 故流式时直接返回上一次非流式时的快照（minimapFrozenRef.current），省 O(T) CPU。
+  const minimapFrozenRef = React.useRef<MinimapItem[]>([])
   const minimapItems: MinimapItem[] = React.useMemo(() => {
+    // 流式期间返回冻结快照，不重算
+    if (streaming) return minimapFrozenRef.current
+
     const items: MinimapItem[] = []
     for (let i = 0; i < allGroups.length; i += 1) {
       const group = allGroups[i]
@@ -855,10 +863,21 @@ function AgentMessagesImpl({
       })
     }
     return items
-  }, [allGroups, userProfile.avatar])
+  }, [allGroups, userProfile.avatar, streaming])
+
+  // 非流式时把算出的 minimapItems 同步到冻结快照 ref，供下次流式期间复用
+  React.useEffect(() => {
+    if (!streaming && minimapItems.length > 0) {
+      minimapFrozenRef.current = minimapItems
+    }
+  }, [streaming, minimapItems])
 
   // 同步 minimap 缓存到 Tab 级别（供 Tab hover 预览使用）
+  // 流式期间不写全局 atom：minimapItems 流式时是冻结快照（引用不变），但这里仍加 streaming
+  // 守卫，确保流式期间绝不触发 setMinimapCache，避免拖累所有订阅该 atom 的 Tab/侧栏组件重渲染。
   React.useEffect(() => {
+    // 流式期间冻结，不广播到全局 atom
+    if (streaming) return
     if (minimapItems.length > 0) {
       setMinimapCache((prev) => {
         const next = new Map(prev)
@@ -866,7 +885,7 @@ function AgentMessagesImpl({
         return next
       })
     }
-  }, [sessionId, minimapItems, setMinimapCache])
+  }, [sessionId, minimapItems, setMinimapCache, streaming])
 
   // 所有用户消息的数据 — 供 StickyUserMessage 使用
   const allUserMessagesData = React.useMemo(() => {
