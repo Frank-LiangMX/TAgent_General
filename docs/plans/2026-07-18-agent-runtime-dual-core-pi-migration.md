@@ -203,16 +203,23 @@ Pi loop（唯一 Agent 环）
 
 **含义**：不能假设 Pi 可像普通 Anthropic 兼容网关一样 HTTP 直连；在获管理员**客户端/应用白名单**前，**必须经 kscc 官方客户端**入网。
 
-### 3.2 `kscc --bare` 泵能力
+### 3.2 `kscc --bare` 泵能力（2026-07-24 实测更新，kscc 1.1.20 / glm-5.2）
+
+> 2026-07-18 为本机试探标注；**2026-07-24 已实跑测试矩阵钉死**，详见 §3.5。
 
 | 项 | 结果 |
 |----|------|
-| `--bare` 可用性 | ✅ 可用；系统注入明显轻于非 bare |
+| `--bare` 可用性 | ✅ 可用；明显轻于非 bare |
 | `stream-json` | ✅ 需同时 `--verbose`，否则报错 |
 | thinking | ✅ 有 `thinking` content block + `thinking_tokens` 系统事件 |
-| 流式粒度 | ⚠️ **事件/块级**为主；本机粗测 `text_delta` / `content_block_delta` ≈ 0，**弱于**当前 TAgent SDK `includePartialMessages` 打字机 |
-| 默认 tools | ⚠️ init 仍见 `Bash` / `Edit` / `Read`；要求「列目录」时 **仍走 tool 路径** |
-| 与「纯 LLM」差距 | `--bare` ≠ 无工具；必须再 **显式关工具 + max-turns 1** |
+| 流式粒度 | ⚠️ **块级**，`text_delta`/`content_block_delta` = 0；无真增量。打字机需 Pi 前端用 `useSmoothStream` fake（块→逐字），非阻塞（G2 可过） |
+| 默认 tools | ⚠️ bare 默认仍带 Bash/Read/Edit，且**会真执行**（"列目录" num_turns=2 真去列） |
+| 零工具契约 | ✅ **三件套达成干净零工具**（§3.5 测试3）：`--tools ""` + `--max-turns 1` + system prompt 明确禁工具/禁输出工具标记。单 `--tools ""` 不够（模型仍生成 `<command>` 等标记文本），必须 system prompt 从模型层堵 |
+| system prompt 污染 | ✅ bare 默认塞 ~351 token 默认 prompt；`--system-prompt` 可覆盖（指定后降到 121），污染可控 |
+| context 控制 / resume | ✅ **bare 不 resume、不读 sdk-config B JSONL、每次独立**（问"刚才说了什么"答"第一条消息"）。Pi 喂多少 bare 收多少——**这是"收得住上下文"的前提，实测达成** |
+| 与「纯 LLM」差距 | bare 三件套后接近纯 LLM；唯一剩流式块级（前端 fake 弥补） |
+
+**关键结论**：bare 泵当 Pi 大脑**实测可行**。核心价值（不 resume、Pi 控制 context、能收住 200k 上下文）达成；G1 零工具门禁可过（三件套契约）；G2 流式可过（前端 fake 打字机）。详见 §3.5 实测数据与 KsccBareProvider 契约。
 
 ### 3.3 与「当下 TAgent 调用」对照（摘要）
 
@@ -230,8 +237,56 @@ Pi loop（唯一 Agent 环）
 | 方案 | 优势 | 劣势 | 短期采用？ |
 |------|------|------|------------|
 | **A 双核**：外 Pi / kscc 现状 | 内网零回归、推广稳、Pi 可先外网验证 | 双栈维护税、自管只完成一半 | ✅ **阶段 1** |
-| **B 全 Pi + bare** | 架构统一、真自管、可删 SDK | bare 未验证、流式/零工具风险、内网回归大 | ⏳ **阶段 2–4** |
+| **B 全 Pi + bare** | 架构统一、真自管、可删 SDK | bare 流式块级（前端 fake 弥补）；零工具需三件套契约；内网回归大 | ⏳ **阶段 2–4**（bare 已验证可行） |
 | 永久双核无终点 | 看似稳 | 双栈永久化、新功能加倍 | ❌ 禁止 |
+
+### 3.5 `kscc --bare` 实测详情（2026-07-24，kscc 1.1.20 / glm-5.2）
+
+实跑 8 组测试矩阵，结论钉死。**敏感 token 已脱敏**。
+
+**测试环境**：`where kscc` → `~/AppData/Roaming/npm/kscc.cmd`；`kscc --version` = 1.1.20；默认 `ksccModel: glm-5.2`（contextWindow 1024000 = 1M）。
+
+**关键测试结果**：
+
+| # | 测试 | 命令要点 | 结果 |
+|---|---|---|---|
+| 1 | bare 基本可用 | `--bare --output-format json "reply pong"` | ✅ success，result=pong，duration 558ms，含 usage/usageTokens/session_id |
+| 2 | 流式粒度 | `--bare --verbose --output-format stream-json "数到5"` | ⚠️ 事件类型 system/assistant/result，**text_delta=0**，块级无真增量 |
+| 3a | bare 默认工具 | `--bare "列出当前目录所有文件"` | ❌ 真执行工具（num_turns=2，真去 ls 列了目录） |
+| 3b | `--tools ""` 单用 | `--tools "" "列出目录"` | ⚠️ 不执行，但输出仍含 `<command>ls -la</command>` 标记文本（污染） |
+| 3c | `--disallowedTools` 全禁 | `--disallowedTools "Bash Read Edit Write Glob Grep Task"` | ⚠️ 不执行，但仍输出 `<FilesystemTool ...>` 标记 |
+| 3d | **三件套（干净）** | `--tools "" --max-turns 1 --system-prompt "绝对不要用工具/不要输出工具标记" "列出目录"` | ✅ **输出干净**：模型答"我无法访问文件系统，是纯聊天助手"，**无工具标记**，num_turns=1 |
+| 5 | system prompt 污染 | 裸 `--bare "hi"` vs `--system-prompt "..."` | 裸 input=351 token（bare 默认 prompt）；指定 system-prompt 后=121 token（**可覆盖，污染可控**） |
+| 6 | bare 是否 resume | `--bare "我刚才说了什么"` | ✅ 答"这是第一条消息"——**bare 不 resume、不读 B JSONL、每次独立** |
+
+**KsccBareProvider 契约（基于实测，阶段 2 设计依据）**：
+
+```text
+spawn: kscc -p --bare --verbose --output-format stream-json \
+       --model <m> --max-turns 1 \
+       --tools "" \
+       --system-prompt "<Pi 的 system prompt + 禁工具/禁工具标记指令>"
+parse: NDJSON → thinking / text / usage / result
+不做: Agent 多 turn / MCP / 权限环 / resume / SubAgent / 工具执行
+```
+
+**三件套零工具契约（G1 门禁）**：
+1. `--tools ""` —— CLI 层禁工具集
+2. `--max-turns 1` —— 防多轮
+3. `--system-prompt` 明确「绝对不要使用任何工具、不要输出工具调用标记」—— **模型层堵**（kscc+glm 下光 CLI 禁不够，模型仍生成 `<command>` 标记，必须 system prompt 说服）
+
+**两个适配层（TAgent 自研）**：
+1. **Pi 端过滤兜底**：即便三件套，偶发模型仍可能吐工具标记，Pi 消费 NDJSON 时过滤 `<command>`/`<FilesystemTool>`/`tool_use` 之类，只留 thinking/text
+2. **前端打字机 fake**：bare 块级无 text_delta，用现有 `useSmoothStream`（packages/ui/src/hooks/useSmoothStream.ts）把块在前端逐字吐，用户无感
+
+**context 控制（核心价值，实测达成）**：bare 不 resume、不读 B、每次独立 → Pi 喂多少 bare 收多少 → **Pi 按模型窗口裁剪/压缩再喂**（apikey 同理）→ 200k 模型（glm-5.1/kimi）也能收住，不会"一大坨爆了"。前提：TAgent 接 Pi 时用自己的 `context-window.ts`（glm-5.1=200k）喂 Pi `buildModel`，**不能照搬 Proma 的推断**（Proma 把 glm-5.1 映射成 1M，会误判）。
+
+**与现状 kscc（Claude runtime resume B）对照**：
+- 现状：spawn kscc 完整 Agent + `--resume` B → CLI 自己读 6MB B 全量重放 → 爆/慢（auto-compaction 在 kscc 渠道失效，B 只增不减）
+- bare 泵：spawn kscc `--bare` 三件套 → 不 resume、不读 B → Pi 自管 context → 收得住
+- 这是"kscc 从 Agent 降级为纯模型泵"的实测依据，也是治今日 kscc 长会话爆的根。
+
+
 
 ---
 
@@ -371,17 +426,17 @@ function resolveAgentRuntime(channel, sessionMeta, settings):
 
 **不做**：Agent 多 turn、MCP、权限环、resume 长会话、SubAgent。
 
-### 6.2 必须先钉死的 CLI 契约
+### 6.2 CLI 契约（2026-07-24 实测已钉死，详见 §3.5）
 
-在合并默认路径前，用固定脚本锁定：
+零工具契约已实测确认（三件套），其余在合并默认路径前用固定脚本复核：
 
-| 契约 | 要求 |
-|------|------|
-| 零工具 | 要求「执行 Bash 列目录」时 **无 tool 执行**；仅文本拒绝或 Pi 侧 tool |
-| thinking | stream 中可解析 thinking 或明确降级策略 |
-| 流式 | 定义可接受延迟与 UI 策略（块显示 / 本地平滑） |
-| 取消 | 用户停止后进程退出、无僵尸 |
-| 并发 | 多会话同时泵的资源上限 |
+| 契约 | 要求 | 实测状态 |
+|------|------|---------|
+| 零工具 | 「列目录」时无 tool 执行 + 输出无工具标记 | ✅ 三件套达成（`--tools ""` + `--max-turns 1` + system prompt 禁工具/禁标记），§3.5 测试3d |
+| thinking | stream 中可解析 thinking 或明确降级策略 | ✅ 有 thinking block + thinking_tokens（§3.2） |
+| 流式 | 块级无 text_delta；用 `useSmoothStream` 前端 fake 逐字 | ✅ 实测块级，前端 fake 可过 G2（§3.5） |
+| 取消 | 用户停止后进程退出、无僵尸 | ⏳ 阶段 2 复核（spawn + SIGTERM 杀子进程） |
+| 并发 | 多会话同时泵的资源上限 | ⏳ 阶段 2 复核 |
 
 ### 6.3 与「申请 HTTP 白名单」并行（可选加速终点）
 
@@ -483,8 +538,7 @@ function resolveAgentRuntime(channel, sessionMeta, settings):
    - 建议：默认 Pi，高级设置可回退 Claude 一版，便于对比。  
 2. 看板 worker 在双核期是否允许「父 Pi / 子 Claude」混跑？  
    - 建议：阶段 1 同会话 runtime 一致，降低复杂度。  
-3. `--tools` 零工具的最终 CLI 写法以何为准？  
-   - 阶段 2 启动时用矩阵脚本钉死，写入本文附录。  
+3. ~~`--tools` 零工具的最终 CLI 写法以何为准？~~ **已解决（2026-07-24 实测，§3.5）**：三件套 `--tools ""` + `--max-turns 1` + system prompt 禁工具/禁标记。单 `--tools ""` 不够（模型仍生成 `<command>` 标记），必须 system prompt 从模型层堵。kscc 不完全等于官方 claude 的 `--tools` 语义。
 4. 公司 HTTP 白名单推进 owner 是谁？  
    - 产品/接口人待填。  
 
@@ -531,3 +585,4 @@ kscc -p --bare --verbose --output-format stream-json --model <model> "..."
 |------|------|
 | 2026-07-18 | 初稿：双核短期策略、bare 调研摘要、阶段门禁、与现状调用对照 |
 | 2026-07-18 | 补充 §1.5 / §2.1.6 / §4.7：走 Pi 后与 Proma 分道、自研产品叙事与协作纪律 |
+| 2026-07-24 | §3.2/§3.5/§6.2/开放问题3 更新：实跑 `kscc --bare` 测试矩阵（kscc 1.1.20/glm-5.2），零工具三件套契约钉死、bare 不 resume/Pi 控制 context 验证达成、流式块级前端 fake。bare 泵当 Pi 大脑由"未验证"升级为"实测可行"。关联今日 kscc 长会话爆根因调研（B JSONL 只增不减 + auto-compaction 失效，继承自 Proma，根治靠阶段 2 bare 泵）。 |
