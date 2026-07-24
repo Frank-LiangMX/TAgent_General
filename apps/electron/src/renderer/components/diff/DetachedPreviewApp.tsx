@@ -14,7 +14,7 @@ import { DefaultAppOpenButton } from './DefaultAppOpenButton'
 import { DiffTabContent } from './DiffTabContent'
 import { getDefaultAppTargetPath, getPreviewFileAccess } from './preview-open-path'
 
-import { agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
+import { agentDiffRefreshVersionAtom, normalizePreviewPath } from '@/atoms/agent-atoms'
 import { cn } from '@/lib/utils'
 
 function getPreviewId(): string | null {
@@ -60,7 +60,11 @@ export function DetachedPreviewApp(): React.ReactElement {
     if (!data) return
     setRefreshVersionMap((prev) => {
       const map = new Map(prev)
-      map.set(data.sessionId, (prev.get(data.sessionId) ?? 0) + 1)
+      const inner = new Map(map.get(data.sessionId) ?? new Map<string, number>())
+      // 文件级 bump：只刷新本独立预览窗口正在显示的文件
+      const norm = normalizePreviewPath(data.filePath)
+      if (norm) inner.set(norm, (inner.get(norm) ?? 0) + 1)
+      map.set(data.sessionId, inner)
       return map
     })
   }, [data, setRefreshVersionMap])

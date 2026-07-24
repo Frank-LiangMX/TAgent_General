@@ -71,6 +71,7 @@ import {
   workingDoneSessionIdsAtom,
   agentSessionPathMapAtom,
   agentDiffRefreshVersionAtom,
+  normalizePreviewPath,
   agentDiffUnseenChangesAtom,
   agentDiffUnseenFilesAtom,
   agentDiffPanelTabAtom,
@@ -490,6 +491,44 @@ export function useGlobalAgentListeners(): void {
     const pendingWriteTools = new Map<string, { path: string; sessionId: string }>()
     /** 正在执行的 git 突变 Bash 命令：toolUseId → sessionId（完成后触发 diff 刷新） */
     const pendingGitMutateTools = new Map<string, string>()
+
+    /**
+     * 递增指定 session 下指定文件 path 的 diff 刷新版本号（文件级隔离）。
+     * path 为空时跳过（拿不到被改文件路径的写工具不触发文件级 bump）。
+     */
+    const bumpFileDiffRefresh = (sessionId: string, filePath: string) => {
+      const norm = normalizePreviewPath(filePath)
+      if (!norm) return
+      store.set(agentDiffRefreshVersionAtom, (prev) => {
+        const m = new Map(prev)
+        const inner = new Map(m.get(sessionId) ?? new Map<string, number>())
+        inner.set(norm, (inner.get(norm) ?? 0) + 1)
+        m.set(sessionId, inner)
+        return m
+      })
+    }
+
+    /**
+     * 兜底：递增指定 session 下所有已记录文件的版本号（git 突变拿不到精确文件列表时使用）。
+     * 没有任何已记录文件时退化为「至少让聚合版本号变大」——插入一个哨兵 key，
+     * 保证 DiffChangesList 的聚合版本号能感知到这次改动而重新拉取。
+     */
+    const bumpSessionDiffRefreshFallback = (sessionId: string) => {
+      store.set(agentDiffRefreshVersionAtom, (prev) => {
+        const m = new Map(prev)
+        const inner = new Map(m.get(sessionId) ?? new Map<string, number>())
+        if (inner.size === 0) {
+          // 哨兵 key：无已记录文件时仍需让聚合版本号递增，驱动 DiffChangesList 重新拉取
+          inner.set('__session_fallback__', 1)
+        } else {
+          for (const key of inner.keys()) {
+            inner.set(key, (inner.get(key) ?? 0) + 1)
+          }
+        }
+        m.set(sessionId, inner)
+        return m
+      })
+    }
 
     /** 构建导航到指定会话的回调 */
     const makeNavigateToSession = (sessionId: string, sessionTitle: string) => () => {
@@ -1022,11 +1061,8 @@ export function useGlobalAgentListeners(): void {
               const entry = pendingWriteTools.get(event.toolUseId)!
               const writtenPath = entry.path
               pendingWriteTools.delete(event.toolUseId)
-              store.set(agentDiffRefreshVersionAtom, (prev) => {
-                const m = new Map(prev)
-                m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
-                return m
-              })
+              // 文件级 bump：只递增被改文件的版本号，不牵连同会话其他预览
+              bumpFileDiffRefresh(sessionId, writtenPath)
               if (writtenPath) {
                 const autoPreviewEnabled = store.get(autoPreviewEnabledAtom)
                 const previewPromise = autoPreviewEnabled
@@ -1081,11 +1117,9 @@ export function useGlobalAgentListeners(): void {
             // Bash git 突变命令完成时，仅刷新 diff 列表（不标记 unseen，避免红点）
             if (pendingGitMutateTools.has(event.toolUseId)) {
               pendingGitMutateTools.delete(event.toolUseId)
-              store.set(agentDiffRefreshVersionAtom, (prev) => {
-                const m = new Map(prev)
-                m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
-                return m
-              })
+              // git 命令不易精确解析出改了哪些文件，兜底 bump 整个会话所有已记录文件
+              // （无已记录文件时插入哨兵 key，至少让聚合版本号变大驱动列表重新拉取）
+              bumpSessionDiffRefreshFallback(sessionId)
             }
           } else if (event.type === 'shell_killed') {
             store.set(backgroundTasksAtomFamily(sessionId), (prev) => {
@@ -1596,12 +1630,14 @@ export function useGlobalAgentListeners(): void {
     const fileContentHashMap = new Map<string, string>()
     const HASH_MAX = 100
     let focusCheckSeq = 0
-    const bumpDiffRefresh = (sessionId: string) => {
-      store.set(agentDiffRefreshVersionAtom, (prev) => {
-        const m = new Map(prev)
-        m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
-        return m
-      })
+    const bumpDiffRefresh = (sessionId: string, filePath?: string) => {
+      // 文件级 bump：聚焦 hash 检测针对当前预览文件，只 bump 该文件
+      if (filePath) {
+        bumpFileDiffRefresh(sessionId, filePath)
+        return
+      }
+      // 无明确文件（非 previewOnly 预览或拿不到 filePath）时退回会话级兜底
+      bumpSessionDiffRefreshFallback(sessionId)
     }
 
     const onWindowFocus = async () => {
@@ -1640,7 +1676,7 @@ export function useGlobalAgentListeners(): void {
 
         if (prevHash === undefined || prevHash !== hash) {
           // 首次建立 hash 基准时也刷新一次，避免用户离开窗口后首次外部修改被吞掉。
-          bumpDiffRefresh(activeSessionId)
+          bumpDiffRefresh(activeSessionId, previewFile.filePath)
         }
         fileContentHashMap.set(hashKey, hash)
 
@@ -1652,7 +1688,7 @@ export function useGlobalAgentListeners(): void {
       } catch {
         // 读取失败时删除旧 hash，并触发一次刷新让预览进入真实失败/空状态。
         fileContentHashMap.delete(hashKey)
-        bumpDiffRefresh(activeSessionId)
+        bumpDiffRefresh(activeSessionId, previewFile.filePath)
       }
     }
     window.addEventListener('focus', onWindowFocus)

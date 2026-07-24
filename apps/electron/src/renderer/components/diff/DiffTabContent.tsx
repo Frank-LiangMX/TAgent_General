@@ -24,7 +24,7 @@ import { MarkdownRichEditor } from './MarkdownRichEditor'
 import { MarkdownToc } from './MarkdownToc'
 import { PreviewFindBar } from './PreviewFindBar'
 
-import { agentDiffViewModeAtom, agentDiffRefreshVersionAtom } from '@/atoms/agent-atoms'
+import { agentDiffViewModeAtom, agentDiffRefreshVersionAtom, normalizePreviewPath } from '@/atoms/agent-atoms'
 import { markdownTocOpenAtom } from '@/atoms/markdown-toc'
 import { quotedSelectionMapAtom } from '@/atoms/preview-atoms'
 import { resolvedThemeAtom } from '@/atoms/theme'
@@ -258,7 +258,8 @@ export function DiffTabContent({
   const [copied, setCopied] = React.useState(false)
   const refreshVersionMap = useAtomValue(agentDiffRefreshVersionAtom)
   const setRefreshVersionMap = useSetAtom(agentDiffRefreshVersionAtom)
-  const refreshVersion = refreshVersionMap.get(sessionId) ?? 0
+  // 文件级版本号：只取本预览文件 path 的版本号，agent 改别的文件时本预览不刷
+  const refreshVersion = refreshVersionMap.get(sessionId)?.get(normalizePreviewPath(filePath)) ?? 0
   const previewContentVersion = previewOnly ? refreshVersion : 0
   const theme = useAtomValue(resolvedThemeAtom)
   const [tocOpen, setTocOpen] = useAtom(markdownTocOpenAtom)
@@ -966,7 +967,10 @@ export function DiffTabContent({
           })
           setRefreshVersionMap((prev) => {
             const m = new Map(prev)
-            m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
+            const inner = new Map(m.get(sessionId) ?? new Map<string, number>())
+            const norm = normalizePreviewPath(filePath)
+            inner.set(norm, (inner.get(norm) ?? 0) + 1)
+            m.set(sessionId, inner)
             return m
           })
           setAutosaveStatus('saved')
@@ -1004,10 +1008,14 @@ export function DiffTabContent({
   const handleManualRefresh = React.useCallback(() => {
     setRefreshVersionMap((prev) => {
       const m = new Map(prev)
-      m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
+      const inner = new Map(m.get(sessionId) ?? new Map<string, number>())
+      // 手动刷新只作用于当前预览文件
+      const norm = normalizePreviewPath(filePath)
+      if (norm) inner.set(norm, (inner.get(norm) ?? 0) + 1)
+      m.set(sessionId, inner)
       return m
     })
-  }, [sessionId, setRefreshVersionMap])
+  }, [sessionId, filePath, setRefreshVersionMap])
 
   // persistRef 始终持有最新 persistMarkdownDraft，供 setTimeout / unmount cleanup 调用。
   // 用 effect 而非渲染期赋值，避免 React 19 严格模式下并发渲染中途读到中间态。

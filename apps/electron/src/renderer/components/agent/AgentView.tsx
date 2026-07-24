@@ -100,6 +100,7 @@ import {
   agentSDKMessagesCacheAtom,
   setSessionMessagesCache,
   agentDiffRefreshVersionAtom,
+  normalizePreviewPath,
   agentSessionsAtom,
   agentAttachedDirectoriesMapAtom,
   agentAttachedFilesMapAtom,
@@ -2737,9 +2738,29 @@ export function AgentView({ sessionId, surface = 'classic' }: AgentViewProps): R
       })
 
       // 刷新预览面板的 diff（文件已被回退，当前显示的内容已过期）
+      // 文件级 bump：回退影响的文件 + 当前预览文件（兜底），保证被回退的预览与 diff 列表都刷新
+      const rewindFiles = result.fileRewind?.filesChanged ?? []
+      const currentPreviewFile = store.get(previewFileMapAtom).get(sessionId)
+      const bumpPaths = new Set<string>()
+      for (const f of rewindFiles) bumpPaths.add(normalizePreviewPath(f))
+      if (currentPreviewFile?.filePath) bumpPaths.add(normalizePreviewPath(currentPreviewFile.filePath))
       store.set(agentDiffRefreshVersionAtom, (prev) => {
         const m = new Map(prev)
-        m.set(sessionId, (prev.get(sessionId) ?? 0) + 1)
+        const inner = new Map(m.get(sessionId) ?? new Map<string, number>())
+        if (bumpPaths.size === 0) {
+          // 无明确文件列表（兜底）：bump 整个会话所有已记录文件，至少驱动聚合版本号变大
+          if (inner.size === 0) {
+            inner.set('__session_fallback__', 1)
+          } else {
+            for (const key of inner.keys()) inner.set(key, (inner.get(key) ?? 0) + 1)
+          }
+        } else {
+          for (const norm of bumpPaths) {
+            if (!norm) continue
+            inner.set(norm, (inner.get(norm) ?? 0) + 1)
+          }
+        }
+        m.set(sessionId, inner)
         return m
       })
 

@@ -598,8 +598,49 @@ export const agentDiffPanelTabAtom = atom<Map<string, 'project' | 'activity' | '
 /** Diff 视图模式：'split' | 'unified' */
 export const agentDiffViewModeAtom = atom<'split' | 'unified'>('split')
 
-/** Diff 刷新版本号 — 按 session 隔离，Agent 写工具完成时递增 */
-export const agentDiffRefreshVersionAtom = atom(new Map<string, number>())
+/**
+ * Diff 刷新版本号 — 按 session + filePath 隔离，Agent 写工具完成时只递增被改文件的版本号。
+ *
+ * 外层 Map：sessionId → 内层 Map：filePath → 版本号。
+ * 同会话内 agent 改 A 文件只 bump A 的版本号，正在看 B 文件的预览不会跟着白屏刷新。
+ * git 突变命令拿不到精确文件列表时，对该 session 下所有已记录文件兜底 bump（见 useGlobalAgentListeners）。
+ *
+ * 注意：bump 存入与 DiffTabContent 取值都必须先经 [[normalizePreviewPath]] 规范化，
+ * 否则同一文件因路径写法（大小写/分隔符/相对绝对）不同会 bump 到取不到 = 漏刷。
+ */
+export const agentDiffRefreshVersionAtom = atom(new Map<string, Map<string, number>>())
+
+/**
+ * 规范化预览文件路径，作为 agentDiffRefreshVersionAtom 内层 Map 的 key。
+ *
+ * 统一为正斜杠 + 小写盘符（Windows 下 C:/... 与 c:/... 视作同一文件），
+ * 避免 bump 与取值因路径写法不一致导致漏刷（漏刷比多刷更糟）。
+ */
+export function normalizePreviewPath(filePath: string): string {
+  if (!filePath) return ''
+  const forward = filePath.replace(/\\/g, '/')
+  // Windows 盘符前缀小写：C:/ → c:/
+  return forward.replace(/^([A-Za-z]:)/, (m) => m.toLowerCase())
+}
+
+/**
+ * 取一个 session 下所有文件版本号的最大值，用作「该会话任意文件被改」的聚合信号。
+ *
+ * DiffChangesList 这类覆盖整会话改动的列表，只要任意文件被 bump 就需要重新拉取，
+ * 用聚合最大值即可（单调递增，任意文件 bump 都会变大）。
+ */
+export function getSessionDiffRefreshVersion(
+  versionMap: Map<string, Map<string, number>>,
+  sessionId: string
+): number {
+  const inner = versionMap.get(sessionId)
+  if (!inner || inner.size === 0) return 0
+  let max = 0
+  for (const v of inner.values()) {
+    if (v > max) max = v
+  }
+  return max
+}
 
 /** 当前会话选中的 worktree 路径，null = 默认行为（显示 session 改动） */
 export const agentSelectedWorktreeAtom = atom(new Map<string, string | null>())

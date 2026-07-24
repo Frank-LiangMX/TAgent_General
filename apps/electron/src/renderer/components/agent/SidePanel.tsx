@@ -41,6 +41,7 @@ import {
   agentAttachedFilesMapAtom,
   agentPendingFilesAtomFamily,
   agentDiffRefreshVersionAtom,
+  getSessionDiffRefreshVersion,
   fileBrowserAutoRevealAtom,
   agentSelectedWorktreeAtom,
   sessionReadFilesAtom,
@@ -165,7 +166,8 @@ export function SidePanel({
   const filesVersion = useAtomValue(workspaceFilesVersionAtom)
   const setFilesVersion = useSetAtom(workspaceFilesVersionAtom)
   const diffRefreshVersionMap = useAtomValue(agentDiffRefreshVersionAtom)
-  const diffRefreshVersion = diffRefreshVersionMap.get(sessionId) ?? 0
+  // DiffChangesList 覆盖整会话改动，取该 session 所有文件版本号的聚合（任意文件被 bump 都重新拉取）
+  const diffRefreshVersion = getSessionDiffRefreshVersion(diffRefreshVersionMap, sessionId)
 
   // 派生当前工作区 slug（用于 FileDropZone IPC 调用）
   const currentWorkspaceId = useAtomValue(currentAgentWorkspaceIdAtom)
