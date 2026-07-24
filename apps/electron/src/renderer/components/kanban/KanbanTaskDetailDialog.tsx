@@ -266,7 +266,7 @@ export function KanbanTaskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <KanbanDetailContent className="max-w-[920px]">
+      <KanbanDetailContent className="h-[85vh] max-w-[920px]">
         <KanbanDetailA11yTitle title={task.title} description={task.id} />
         <KanbanDetailHeader
           icon={
