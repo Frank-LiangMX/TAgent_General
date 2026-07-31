@@ -261,6 +261,11 @@ def preflight_checks(tag: str) -> None:
     if notes_file.exists():
         notes_text = notes_file.read_text(encoding="utf-8")
         expected_title = f"# {tag}"
+        version_headings = re.findall(
+            r"^# v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$",
+            notes_text,
+            flags=re.MULTILINE,
+        )
         if expected_title not in notes_text:
             errors.append(
                 f"RELEASE_NOTES.md 中未找到 {expected_title!r} 标题\n"
@@ -271,8 +276,13 @@ def preflight_checks(tag: str) -> None:
                 "RELEASE_NOTES.md 内容过短，疑似未写完整发布说明\n"
                 "  → 修复: 补齐本版新功能 / 修复 / 清理条目"
             )
+        elif version_headings != [expected_title]:
+            errors.append(
+                f"RELEASE_NOTES.md 必须只包含当前版本一个标题，当前为 {version_headings!r}\n"
+                f"  → 修复: 删除历史版本段落，只保留 {expected_title}（防止嵌套旧版说明写进 Release body）"
+            )
         else:
-            print(f"  ✓ RELEASE_NOTES.md 包含 {expected_title}")
+            print(f"  ✓ RELEASE_NOTES.md 仅包含 {expected_title}")
     else:
         errors.append("RELEASE_NOTES.md 文件不存在")
 
