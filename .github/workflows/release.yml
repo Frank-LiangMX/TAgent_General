@@ -125,6 +125,8 @@ jobs:
         run: |
           test -f RELEASE_NOTES.md
           head -n 5 RELEASE_NOTES.md
+          # 正文只能包含当前版本一个标题，防止嵌套历史版本说明被写进 Release body
+          test "$(grep -cE '^# v[0-9]' RELEASE_NOTES.md)" = "1"
 
       # build-desktop jobs 已通过 --publish always 上传产物到 GitHub Release。
       # 本 job 仅同步 Release Notes 正文和元数据，不重新上传/覆盖 assets。

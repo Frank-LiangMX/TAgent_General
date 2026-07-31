@@ -227,6 +227,37 @@ def confirm_or_abort(args: argparse.Namespace, tag: str) -> None:
         raise ReleaseError("Aborted.")
 
 
+def validate_release_notes(notes_text: str, tag: str) -> list[str]:
+    """校验 RELEASE_NOTES.md 正文，返回错误列表（空列表 = 通过）。
+
+    要求：包含目标 tag 标题、正文非空、且只包含当前版本一个标题
+    （防止嵌套历史版本说明写进 Release body）。
+    """
+    errors: list[str] = []
+    expected_title = f"# {tag}"
+    version_headings = re.findall(
+        r"^# v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$",
+        notes_text,
+        flags=re.MULTILINE,
+    )
+    if expected_title not in notes_text:
+        errors.append(
+            f"RELEASE_NOTES.md 中未找到 {expected_title!r} 标题\n"
+            f"  → 修复: 在 RELEASE_NOTES.md 中添加 {expected_title} 段落"
+        )
+    elif len(notes_text.strip()) < 40:
+        errors.append(
+            "RELEASE_NOTES.md 内容过短，疑似未写完整发布说明\n"
+            "  → 修复: 补齐本版新功能 / 修复 / 清理条目"
+        )
+    elif version_headings != [expected_title]:
+        errors.append(
+            f"RELEASE_NOTES.md 必须只包含当前版本一个标题，当前为 {version_headings!r}\n"
+            f"  → 修复: 删除历史版本段落，只保留 {expected_title}（防止嵌套旧版说明写进 Release body）"
+        )
+    return errors
+
+
 def preflight_checks(tag: str) -> None:
     """发布前自动检查，不通过则中止。
 
@@ -259,20 +290,11 @@ def preflight_checks(tag: str) -> None:
     print("[preflight] 检查 release notes...")
     notes_file = REPO_ROOT / "RELEASE_NOTES.md"
     if notes_file.exists():
-        notes_text = notes_file.read_text(encoding="utf-8")
-        expected_title = f"# {tag}"
-        if expected_title not in notes_text:
-            errors.append(
-                f"RELEASE_NOTES.md 中未找到 {expected_title!r} 标题\n"
-                f"  → 修复: 在 RELEASE_NOTES.md 中添加 {expected_title} 段落"
-            )
-        elif len(notes_text.strip()) < 40:
-            errors.append(
-                "RELEASE_NOTES.md 内容过短，疑似未写完整发布说明\n"
-                "  → 修复: 补齐本版新功能 / 修复 / 清理条目"
-            )
+        notes_errors = validate_release_notes(notes_file.read_text(encoding="utf-8"), tag)
+        if notes_errors:
+            errors.extend(notes_errors)
         else:
-            print(f"  ✓ RELEASE_NOTES.md 包含 {expected_title}")
+            print(f"  ✓ RELEASE_NOTES.md 仅包含 #{tag}")
     else:
         errors.append("RELEASE_NOTES.md 文件不存在")
 
