@@ -56,6 +56,9 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      # v1.7.0 之后 renderer 体积大增，macOS arm64 runner 上 vite build 默认堆 OOM（exit 134）
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v4
 
