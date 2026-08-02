@@ -223,3 +223,7 @@ publish:
   provider: github
   owner: Frank-LiangMX
   repo: TAgent_General
+  # electron-builder 默认按 draft 发布；若 release 已存在且是正式版（如网页手动创建），
+  # draft 模式会静默跳过上传（"existing type not compatible with publishing type"）。
+  # 显式指定 release 类型：新 tag 直接创建正式 release，已有 release 直接补传产物。
+  releaseType: release
