@@ -16,7 +16,7 @@
  */
 
 import { existsSync, statSync, readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
@@ -60,18 +60,17 @@ function getNodeGypBin(): string {
   return process.platform === 'win32' ? 'npx.cmd' : 'npx'
 }
 
-/** 在 build/Release 下找 .node 产物（不同模块文件名不同） */
-function findNativeArtifact(moduleDir: string): string | null {
+/** 在 build/Release 下找主 .node 产物（取最大文件：主模块远大于测试扩展等附属产物） */
+export function findNativeArtifact(moduleDir: string): string | null {
   const releaseDir = join(moduleDir, 'build/Release')
   if (!existsSync(releaseDir)) return null
   try {
     const files = readdirSync(releaseDir)
-    return (
-      files
-        .filter((f) => f.endsWith('.node'))
-        .map((f) => join(releaseDir, f))
-        .find((p) => statSync(p).size > 1000) ?? null
-    )
+    const artifacts = files
+      .filter((f) => f.endsWith('.node'))
+      .map((f) => join(releaseDir, f))
+      .filter((p) => statSync(p).size > 1000)
+    return artifacts.sort((a, b) => statSync(b).size - statSync(a).size)[0] ?? null
   } catch {
     return null
   }
@@ -175,9 +174,14 @@ function main(): void {
   console.log('[rebuild-native] 完成')
 }
 
-try {
-  main()
-} catch (err) {
-  console.error(`[rebuild-native] 失败: ${err instanceof Error ? err.message : err}`)
-  process.exit(1)
+// 直接运行时才执行编译（被 vitest 等 import 时跳过副作用）
+const isEntry =
+  process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+if (isEntry) {
+  try {
+    main()
+  } catch (err) {
+    console.error(`[rebuild-native] 失败: ${err instanceof Error ? err.message : err}`)
+    process.exit(1)
+  }
 }
